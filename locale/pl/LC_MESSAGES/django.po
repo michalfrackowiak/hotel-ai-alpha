@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 19:55+0100\n"
+"POT-Creation-Date: 2026-11-13 21:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -50,6 +50,9 @@ msgstr "Włączono dostawców: %(count)s."
 #, python-format
 msgid "%(name)s is now the default provider."
 msgstr "%(name)s jest teraz domyślnym dostawcą."
+
+msgid "A booking may not start (check in) on this night."
+msgstr "Rezerwacja nie może się rozpocząć (przyjazd) w tę noc."
 
 msgid "A hold keeps your room for 30 minutes while you decide."
 msgstr "Rezerwacja wstępna blokuje pokój przez 30 minut, aż podejmiesz decyzję."
@@ -298,6 +301,10 @@ msgstr "Zameldowanie"
 
 msgid "Check-in cannot be in the past."
 msgstr "Data zameldowania nie może być w przeszłości."
+
+#, python-format
+msgid "Check-in is not allowed on %(date)s."
+msgstr "Przyjazd nie jest dozwolony w dniu %(date)s."
 
 msgid "Check-out"
 msgstr "Wymeldowanie"
@@ -587,6 +594,9 @@ msgstr "Ustaw jako domyślnego"
 msgid "Manage your booking"
 msgstr "Zarządzaj rezerwacją"
 
+msgid "Maximum stay allowed for a booking that includes this night. 0 means no maximum."
+msgstr "Maksymalny pobyt dozwolony dla rezerwacji obejmującej tę noc. 0 oznacza brak maksimum."
+
 msgid "Messages"
 msgstr "Wiadomości"
 
@@ -643,6 +653,9 @@ msgstr "Brak zaplanowanych przyjazdów na dziś."
 
 msgid "No booking events yet."
 msgstr "Brak zdarzeń rezerwacji."
+
+msgid "No booking may include this night."
+msgstr "Żadna rezerwacja nie może obejmować tej nocy."
 
 msgid "No booking yet. Share your dates to get started."
 msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
@@ -1003,6 +1016,14 @@ msgstr ""
 "do czatu."
 
 #, python-format
+msgid "This date range allows at most %(nights)s nights."
+msgstr "Ten zakres dat pozwala na co najwyżej %(nights)s nocy."
+
+#, python-format
+msgid "This date range includes a closed night (%(date)s)."
+msgstr "Ten zakres dat zawiera zamkniętą noc (%(date)s)."
+
+#, python-format
 msgid "This date range requires a minimum stay of %(nights)s nights."
 msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
 
@@ -1237,6 +1258,12 @@ msgstr "klient"
 msgid "clients"
 msgstr "klienci"
 
+msgid "closed"
+msgstr "zamknięte"
+
+msgid "closed to arrival"
+msgstr "zamknięte na przyjazd"
+
 msgid "confirmation email sent at"
 msgstr "wysłano e-mail potwierdzający"
 
@@ -1368,6 +1395,9 @@ msgstr "maks. tokenów wyjściowych"
 
 msgid "max tool iterations"
 msgstr "maks. iteracji narzędzi"
+
+msgid "maximum nights"
+msgstr "maksymalna liczba nocy"
 
 msgid "message"
 msgstr "wiadomość"

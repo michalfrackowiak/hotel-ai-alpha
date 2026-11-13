@@ -10,6 +10,7 @@ from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -140,7 +141,7 @@ class BookingAdmin(admin.ModelAdmin):
         "cancelled_at",
         "cancellation_fee",
     )
-    actions = ("confirm_selected", "cancel_selected", "sync_calendar")
+    actions = ("confirm_selected", "cancel_selected", "sync_calendar", "resend_confirmation")
     fieldsets = (
         (None, {"fields": ("reference", "status", "source", "language")}),
         (_("Guest"), {"fields": ("client",)}),
@@ -212,6 +213,26 @@ class BookingAdmin(admin.ModelAdmin):
         if synced:
             self.message_user(request, _("%(count)s booking(s) synced.") % {"count": synced}, messages.SUCCESS)
 
+    @admin.action(description=_("Resend confirmation email"))
+    def resend_confirmation(self, request, queryset):
+        from apps.hotel.notifications import send_booking_confirmation
+
+        sent = 0
+        for booking in queryset:
+            try:
+                send_booking_confirmation(booking)
+                booking.confirmation_email_sent_at = timezone.now()
+                booking.save(update_fields=["confirmation_email_sent_at", "updated_at"])
+                sent += 1
+            except Exception as exc:  # noqa: BLE001
+                self.message_user(request, f"{booking.reference}: {exc}", messages.ERROR)
+        if sent:
+            self.message_user(
+                request,
+                _("%(count)s confirmation email(s) sent.") % {"count": sent},
+                messages.SUCCESS,
+            )
+
 
 @admin.register(BookingEvent)
 class BookingEventAdmin(admin.ModelAdmin):
@@ -233,7 +254,8 @@ class BookingEventAdmin(admin.ModelAdmin):
 
 @admin.register(DailyRate)
 class DailyRateAdmin(admin.ModelAdmin):
-    list_display = ("room_type", "date", "rate", "min_nights")
+    list_display = ("room_type", "date", "rate", "min_nights", "max_nights", "closed", "closed_to_arrival")
+    fields = ("room_type", "date", "rate", "min_nights", "max_nights", "closed", "closed_to_arrival")
     list_filter = ("room_type",)
     date_hierarchy = "date"
     search_fields = ("room_type__name",)

@@ -237,7 +237,21 @@ class DailyRate(TimeStampedModel):
         default=0,
         help_text=_("Minimum stay required for a booking that includes this night. 0 means no minimum."),
     )
-
+    max_nights = models.PositiveSmallIntegerField(
+        _("maximum nights"),
+        default=0,
+        help_text=_("Maximum stay allowed for a booking that includes this night. 0 means no maximum."),
+    )
+    closed = models.BooleanField(
+        _("closed"),
+        default=False,
+        help_text=_("No booking may include this night."),
+    )
+    closed_to_arrival = models.BooleanField(
+        _("closed to arrival"),
+        default=False,
+        help_text=_("A booking may not start (check in) on this night."),
+    )
     class Meta:
         ordering = ["date", "room_type"]
         verbose_name = _("daily rate")
