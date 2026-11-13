@@ -560,6 +560,31 @@ TRANSLATIONS: dict[str, str] = {
         "tę noc; 0 oznacza brak minimum."
     ),
     "Minimum nights": "Minimalna liczba nocy",
+    "Maximum nights": "Maksymalna liczba nocy",
+    "maximum nights": "maksymalna liczba nocy",
+    "rate plan": "plan cenowy",
+    "rate plans": "plany cenowe",
+    "adjustment": "korekta",
+    "refundable": "zwracalny",
+    "Percentage": "Procent",
+    "Fixed amount": "Stała kwota",
+    "Leave empty to make this plan available for every room type.": (
+        "Pozostaw puste, aby plan był dostępny dla wszystkich typów pokoi."
+    ),
+    "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency.": (
+        "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
+    ),
+    "Unknown rate plan.": "Nieznany plan cenowy.",
+    "This rate plan is not available for the selected room type.": (
+        "Ten plan cenowy nie jest dostępny dla wybranego typu pokoju."
+    ),
+    "Resend confirmation email": "Wyślij ponownie e-mail potwierdzający",
+    "%(count)s confirmation email(s) sent.": "Wysłano e-maile potwierdzające: %(count)s.",
+    "Calendar drift (failed, stale, unsynced)": "Rozjazd kalendarza (błędy, przestarzałe, niezsynchronizowane)",
+    "closed": "zamknięte",
+    "closed to arrival": "zamknięte na przyjazd",
+    "Closed": "Zamknięte",
+    "Closed to arrival": "Zamknięte na przyjazd",
     "Minimum nights for %(room)s on %(date)s": "Minimalna liczba nocy dla %(room)s w dniu %(date)s",
     "Minimum stay required for a booking that includes this night. 0 means no minimum.": (
         "Minimalny pobyt wymagany dla rezerwacji obejmującej tę noc. 0 oznacza brak minimum."
@@ -591,6 +616,20 @@ TRANSLATIONS: dict[str, str] = {
     "This booking can no longer be modified.": "Tej rezerwacji nie można już zmienić.",
     "This date range requires a minimum stay of %(nights)s nights.": (
         "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
+    ),
+    "This date range allows at most %(nights)s nights.": (
+        "Ten zakres dat pozwala na co najwyżej %(nights)s nocy."
+    ),
+    "This date range includes a closed night (%(date)s).": (
+        "Ten zakres dat zawiera zamkniętą noc (%(date)s)."
+    ),
+    "Check-in is not allowed on %(date)s.": "Przyjazd nie jest dozwolony w dniu %(date)s.",
+    "A booking may not start (check in) on this night.": (
+        "Rezerwacja nie może się rozpocząć (przyjazd) w tę noc."
+    ),
+    "No booking may include this night.": "Żadna rezerwacja nie może obejmować tej nocy.",
+    "Maximum stay allowed for a booking that includes this night. 0 means no maximum.": (
+        "Maksymalny pobyt dozwolony dla rezerwacji obejmującej tę noc. 0 oznacza brak maksimum."
     ),
     "This is a temporary hold. Cancelling it is free.": (
         "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."

@@ -84,8 +84,9 @@ docker compose down -v   # reset the demo database
 .\.venv\Scripts\python.exe manage.py send_booking_emails
 .\.venv\Scripts\python.exe manage.py sync_calendars --retry-failed
 .\.venv\Scripts\python.exe manage.py sync_calendars --reference HA-XXXXXX
-.\.venv\Scripts\python.exe manage.py reconcile_calendars
+..\.venv\Scripts\python.exe manage.py reconcile_calendars
 .\.venv\Scripts\python.exe manage.py reconcile_calendars --apply
+.\.venv\Scripts\python.exe manage.py export_bookings --from 2026-01-01 --to 2026-12-31 -o bookings.csv
 .\.venv\Scripts\python.exe manage.py rotate_provider_keys
 ```
 

@@ -27,6 +27,10 @@
       <span class="ops-card__label">{% trans "Calendar sync failures" %}</span>
     </div>
     <div class="ops-card">
+      <span class="ops-card__value">{{ calendar_drift_count }}</span>
+      <span class="ops-card__label">{% trans "Calendar drift (failed, stale, unsynced)" %}</span>
+    </div>
+    <div class="ops-card">
       <span class="ops-card__value">{{ stale_holds }}</span>
       <span class="ops-card__label">{% trans "Expired holds to clean up" %}</span>
     </div>

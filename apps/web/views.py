@@ -125,6 +125,15 @@ def ops_dashboard(request):
         .select_related("booking", "booking__client")
         .order_by("-updated_at")[:20]
     )
+    stale_calendar = BookingCalendarEvent.objects.filter(
+        status=BookingCalendarEvent.Status.SYNCED,
+        booking__status__in=(Booking.Status.CANCELLED, Booking.Status.EXPIRED, Booking.Status.NO_SHOW),
+    ).count()
+    not_synced_calendar = BookingCalendarEvent.objects.filter(
+        status=BookingCalendarEvent.Status.PENDING,
+    ).count() + Booking.objects.filter(
+        status__in=(Booking.Status.CONFIRMED, Booking.Status.CHECKED_IN),
+    ).filter(calendar_events__isnull=True).count()
     missing_email = Booking.objects.filter(
         status__in=active_statuses,
         client__email__gt="",
@@ -148,6 +157,8 @@ def ops_dashboard(request):
             "departure_count": departures.count(),
             "pending_count": pending_holds.count(),
             "failed_calendar_count": failed_calendar.count(),
+    "stale_calendar_count": stale_calendar,
+    "calendar_drift_count": failed_calendar.count() + stale_calendar + not_synced_calendar,
         },
     )
 

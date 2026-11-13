@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .models import DailyRate, PricingRule, Room, RoomType
+from .models import DailyRate, PricingRule, RatePlan, Room, RoomType
 
 MONEY = Decimal("0.01")
 
@@ -132,6 +132,7 @@ def quote(
     children: int = 0,
     room: Room | None = None,
     rules: list[PricingRule] | None = None,
+    rate_plan: RatePlan | None = None,
 ) -> Quote:
     """Build a nightly price breakdown for a room type and date range."""
     nights = validate_stay(check_in, check_out)
@@ -151,6 +152,29 @@ def quote(
             _("This date range requires a minimum stay of %(nights)s nights.") % {"nights": required_nights},
             "min_nights",
         )
+    # Closed nights and closed-to-arrival restrictions.
+    for offset in range(nights):
+        night = check_in + timedelta(days=offset)
+        override = overrides.get(night)
+        if override is not None and override.closed:
+            raise StayError(
+                _("This date range includes a closed night (%(date)s).") % {"date": night.isoformat()},
+                "date_closed",
+            )
+    if overrides.get(check_in) is not None and overrides[check_in].closed_to_arrival:
+        raise StayError(
+            _("Check-in is not allowed on %(date)s.") % {"date": check_in.isoformat()},
+            "closed_to_arrival",
+        )
+    max_allowed = 0
+    for row in overrides.values():
+        if row.max_nights and (max_allowed == 0 or row.max_nights < max_allowed):
+            max_allowed = row.max_nights
+    if max_allowed and nights > max_allowed:
+        raise StayError(
+            _("This date range allows at most %(nights)s nights.") % {"nights": max_allowed},
+            "max_nights",
+        )
 
     base_price = room_type.base_price.quantize(MONEY)
     nightly: list[NightlyRate] = []
@@ -160,12 +184,16 @@ def quote(
         override = overrides.get(night)
         if override is not None:
             rate = max(override.rate, Decimal("0")).quantize(MONEY)
+            rules_for_night = [str(_("Rate calendar"))]
+            if rate_plan is not None and rate_plan.applies_to(room_type):
+                rate = rate_plan.adjust(rate)
+                rules_for_night.append(f"Rate plan: {rate_plan.name}")
             nightly.append(
                 NightlyRate(
                     night=night,
                     base_rate=rate,
                     rate=rate,
-                    rules=[str(_("Rate calendar"))],
+                    rules=rules_for_night,
                 )
             )
             continue
@@ -181,12 +209,16 @@ def quote(
         )
         rate = base_price * (Decimal("1") + percent / Decimal("100")) + fixed
         rate = max(rate, Decimal("0")).quantize(MONEY)
+        night_rules = [rule.name for rule in matching]
+        if rate_plan is not None and rate_plan.applies_to(room_type):
+            rate = rate_plan.adjust(rate)
+            night_rules = night_rules + [f"Rate plan: {rate_plan.name}"]
         nightly.append(
             NightlyRate(
                 night=night,
                 base_rate=base_price,
                 rate=rate,
-                rules=[rule.name for rule in matching],
+                rules=night_rules,
             )
         )
 
