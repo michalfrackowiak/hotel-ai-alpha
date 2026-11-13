@@ -1265,6 +1265,69 @@ button { cursor: pointer; }
   .voice-sphere__core { animation: none !important; }
 }
 
+/* ------------------------------------------------------------------ voice avatar */
+.voice-avatar {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0.4rem 0 0.2rem;
+  display: grid;
+  place-items: center;
+}
+
+.voice-avatar__glow {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(228, 201, 138, 0.45), transparent 70%);
+  opacity: 0.5;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 0;
+}
+
+.voice-avatar__face {
+  position: relative;
+  width: 138px;
+  height: 138px;
+  z-index: 1;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+}
+
+.voice-avatar.is-active .voice-avatar__glow { opacity: 0.85; transform: scale(1.08); }
+.voice-avatar.is-speaking .voice-avatar__glow { opacity: 1; transform: scale(1.18); animation: avatar-glow 0.6s ease-in-out infinite alternate; }
+.voice-avatar.is-speaking .voice-avatar__face { transform: scale(1.04); }
+.voice-avatar.is-listening .voice-avatar__face { transform: scale(1.02); }
+.voice-avatar.is-thinking .voice-avatar__face { animation: avatar-think 1.2s ease-in-out infinite; }
+
+.voice-avatar.is-speaking .avatar-mouth { animation: avatar-mouth 0.28s steps(2) infinite; }
+.voice-avatar.is-pulse .avatar-mouth { transform: scaleY(1.6); transform-origin: center; }
+
+.avatar-eye { transition: transform 0.15s ease; }
+.voice-avatar.is-listening .avatar-eye { transform: scaleY(1.15); }
+.voice-avatar.is-thinking .avatar-eye { transform: translateY(-2px); }
+.voice-avatar.is-speaking .avatar-brow--left { transform: translateY(-1px); }
+.voice-avatar.is-speaking .avatar-brow--right { transform: translateY(-1px); }
+
+@keyframes avatar-glow {
+  0% { transform: scale(1.12); opacity: 0.85; }
+  100% { transform: scale(1.22); opacity: 1; }
+}
+
+@keyframes avatar-think {
+  0%, 100% { transform: rotate(-4deg) scale(1); }
+  50% { transform: rotate(4deg) scale(1.03); }
+}
+
+@keyframes avatar-mouth {
+  0% { d: path("M46 78 Q60 84 74 78"); }
+  50% { d: path("M46 78 Q60 92 74 78"); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-avatar__glow, .voice-avatar__face, .avatar-mouth, .avatar-eye { animation: none !important; }
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;

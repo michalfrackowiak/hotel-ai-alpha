@@ -18,7 +18,7 @@
   const interim = document.getElementById("transcript-interim");
   const bookingContainer = document.getElementById("voice-booking");
   const clearButton = document.getElementById("transcript-clear");
-const sphere = document.getElementById("voice-sphere");
+const sphere = document.getElementById("voice-avatar");
 
   const createUrl = root.dataset.createUrl;
   const messageUrlTemplate = root.dataset.messageUrl;
