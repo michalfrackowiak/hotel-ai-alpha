@@ -137,6 +137,13 @@ class PricingView(APIView):
         room_type = RoomType.objects.filter(slug=data["room_type"], is_active=True).first()
         if room_type is None:
             raise ApiError("room_type_not_found", "The selected room type is not available.", status_code=404)
+        rate_plan = None
+        if data.get("rate_plan"):
+            from apps.hotel.models import RatePlan
+
+            rate_plan = RatePlan.objects.filter(slug=data["rate_plan"]).first()
+            if rate_plan is None or not rate_plan.applies_to(room_type):
+                raise ApiError("invalid_rate_plan", "The selected rate plan is not available.", status_code=400)
         try:
             priced = quote(
                 room_type,
@@ -144,6 +151,7 @@ class PricingView(APIView):
                 data["check_out"],
                 adults=data.get("adults", 2),
                 children=data.get("children", 0),
+                rate_plan=rate_plan,
             )
         except StayError as exc:
             raise ApiError("invalid_stay", str(exc), details={"check_out": str(exc)}) from exc
@@ -171,6 +179,7 @@ class BookingCreateView(APIView):
                 source=data.get("source", "web"),
                 language=data.get("language", "en"),
                 special_requests=data.get("special_requests", ""),
+                rate_plan=data.get("rate_plan") or None,
             )
         except BookingError as exc:
             _raise_booking_error(exc)
@@ -200,6 +209,7 @@ class BookingDetailView(APIView):
                 room_type=data.get("room_type"),
                 adults=data.get("adults"),
                 children=data.get("children"),
+                rate_plan=data.get("rate_plan"),
                 actor="guest",
                 channel=booking.source,
             )

@@ -58,6 +58,7 @@ class PricingQuerySerializer(serializers.Serializer):
     check_out = serializers.DateField()
     adults = serializers.IntegerField(min_value=1, max_value=8, default=2, required=False)
     children = serializers.IntegerField(min_value=0, max_value=6, default=0, required=False)
+    rate_plan = serializers.SlugField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
         try:
@@ -80,6 +81,7 @@ class BookingSerializer(serializers.ModelSerializer):
     room = serializers.CharField(source="room.number", read_only=True)
     room_type = serializers.CharField(source="room.room_type.slug", read_only=True)
     room_type_name = serializers.CharField(source="room.room_type.name", read_only=True)
+    rate_plan = serializers.CharField(source="rate_plan.slug", read_only=True, allow_null=True)
     nights = serializers.IntegerField(read_only=True)
     can_confirm = serializers.BooleanField(read_only=True)
     can_cancel = serializers.BooleanField(read_only=True)
@@ -106,6 +108,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "room",
             "room_type",
             "room_type_name",
+            "rate_plan",
             "check_in",
             "check_out",
             "nights",
@@ -157,6 +160,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
 class BookingCreateSerializer(serializers.Serializer):
     room_type = serializers.SlugField()
+    rate_plan = serializers.SlugField(required=False, allow_blank=True, default="")
     check_in = serializers.DateField()
     check_out = serializers.DateField()
     adults = serializers.IntegerField(min_value=1, max_value=8, default=2, required=False)
@@ -188,6 +192,7 @@ class BookingModifySerializer(serializers.Serializer):
     check_in = serializers.DateField(required=False)
     check_out = serializers.DateField(required=False)
     room_type = serializers.SlugField(required=False)
+    rate_plan = serializers.SlugField(required=False, allow_blank=True)
     adults = serializers.IntegerField(min_value=1, max_value=8, required=False)
     children = serializers.IntegerField(min_value=0, max_value=6, required=False)
 

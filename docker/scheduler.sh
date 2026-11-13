@@ -9,5 +9,6 @@ interval="${HOLD_CLEANUP_INTERVAL_SECONDS:-300}"
 echo "==> Hold cleanup scheduler started (every ${interval}s)"
 while true; do
     python manage.py expire_holds || echo "expire_holds failed; will retry"
+    python manage.py reconcile_calendars --apply || echo "reconcile_calendars failed; will retry"
     sleep "$interval"
 done

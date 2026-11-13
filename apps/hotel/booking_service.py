@@ -20,7 +20,7 @@ from django.utils.translation import gettext as _
 
 from .availability import available_rooms, room_is_available
 from .cancellation import cancellation_preview
-from .models import Booking, BookingEvent, Client, Room, RoomType
+from .models import Booking, BookingEvent, Client, RatePlan, Room, RoomType
 from .pricing import StayError, quote, validate_stay
 
 logger = logging.getLogger(__name__)
@@ -187,6 +187,7 @@ def create_booking(
     language: str = "en",
     special_requests: str = "",
     room: Room | None = None,
+    rate_plan=None,
     hold_minutes: int | None = None,
 ) -> Booking:
     """Create a pending booking with a hold on the room."""
@@ -208,6 +209,14 @@ def create_booking(
         # same last room. SQLite serialises writers; PostgreSQL honours this.
         room_type = RoomType.objects.select_for_update().get(pk=room_type.pk)
 
+        # Resolve the rate plan (slug or instance) and make sure it applies.
+        if isinstance(rate_plan, str):
+            try:
+                rate_plan = RatePlan.objects.get(slug=rate_plan)
+            except RatePlan.DoesNotExist as exc:
+                raise BookingError("invalid_rate_plan", _("Unknown rate plan.")) from exc
+        if rate_plan is not None and not rate_plan.applies_to(room_type):
+            raise BookingError("invalid_rate_plan", _("This rate plan is not available for the selected room type."))
         if adults + children > room_type.capacity:
             raise BookingError(
                 "capacity_exceeded",
@@ -246,6 +255,7 @@ def create_booking(
                 adults=adults,
                 children=children,
                 room=assigned_room,
+                rate_plan=rate_plan,
             )
         except StayError as exc:
             raise BookingError(getattr(exc, "code", "invalid_stay"), str(exc)) from exc
@@ -254,6 +264,7 @@ def create_booking(
         booking = Booking(
             client=client,
             room=assigned_room,
+            rate_plan=rate_plan,
             check_in=check_in,
             check_out=check_out,
             adults=adults,
@@ -420,6 +431,7 @@ def modify_booking(
     check_in=None,
     check_out=None,
     room_type: RoomType | str | None = None,
+    rate_plan=None,
     adults: int | None = None,
     children: int | None = None,
     actor: str = BookingEvent.Actor.GUEST,
@@ -471,6 +483,17 @@ def modify_booking(
         target_type = resolve_room_type(room_type) if room_type else booking.room.room_type
         target_type = RoomType.objects.select_for_update().get(pk=target_type.pk)
 
+        if rate_plan is not None:
+            if isinstance(rate_plan, str):
+                if rate_plan == "":
+                    rate_plan = None
+                else:
+                    try:
+                        rate_plan = RatePlan.objects.get(slug=rate_plan)
+                    except RatePlan.DoesNotExist as exc:
+                        raise BookingError("invalid_rate_plan", _("Unknown rate plan.")) from exc
+            if rate_plan is not None and not rate_plan.applies_to(target_type):
+                raise BookingError("invalid_rate_plan", _("This rate plan is not available for the selected room type."))
         if new_adults + new_children > target_type.capacity:
             raise BookingError(
                 "capacity_exceeded",
@@ -495,6 +518,7 @@ def modify_booking(
             assigned_room = candidates[0]
 
         try:
+            effective_rate_plan = rate_plan if rate_plan is not None else booking.rate_plan
             priced = quote(
                 target_type,
                 new_check_in,
@@ -502,12 +526,14 @@ def modify_booking(
                 adults=new_adults,
                 children=new_children,
                 room=assigned_room,
+                rate_plan=effective_rate_plan,
             )
         except StayError as exc:
             raise BookingError(getattr(exc, "code", "invalid_stay"), str(exc)) from exc
 
         before = booking_snapshot(booking)
         booking.room = assigned_room
+        booking.rate_plan = effective_rate_plan
         booking.check_in = new_check_in
         booking.check_out = new_check_out
         booking.adults = new_adults
