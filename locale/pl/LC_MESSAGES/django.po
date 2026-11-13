@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 21:47+0100\n"
+"POT-Creation-Date: 2026-11-13 21:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -115,6 +115,9 @@ msgstr "Dorośli"
 
 msgid "All mapped calendars are in sync."
 msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
+
+msgid "All rooms are clean."
+msgstr "Wszystkie pokoje są czyste."
 
 msgid "Anthropic"
 msgstr "Anthropic"
@@ -334,6 +337,9 @@ msgstr "Dzieci"
 msgid "Choose a valid cancellation reason."
 msgstr "Wybierz prawidłowy powód anulowania."
 
+msgid "Clean"
+msgstr "Czysty"
+
 msgid "Clear"
 msgstr "Wyczyść"
 
@@ -408,6 +414,12 @@ msgstr "Wyjazdy"
 
 msgid "Departures today"
 msgstr "Dzisiejsze wyjazdy"
+
+msgid "Dirty"
+msgstr "Brudny"
+
+msgid "Dirty rooms"
+msgstr "Brudne pokoje"
 
 msgid "Disable selected providers"
 msgstr "Wyłącz wybranych dostawców"
@@ -536,6 +548,9 @@ msgstr "Rezerwacja wstępna wygasła bez potwierdzenia."
 msgid "Home"
 msgstr "Strona główna"
 
+msgid "Housekeeping"
+msgstr "Sprzątanie"
+
 msgid "How it works"
 msgstr "Jak to działa"
 
@@ -561,6 +576,9 @@ msgstr ""
 #, python-format
 msgid "Ignored an invalid rate for %(room)s on %(date)s."
 msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
+
+msgid "Inspected"
+msgstr "Sprawdzony"
 
 msgid "Language"
 msgstr "Język"
@@ -716,6 +734,9 @@ msgstr "Operacje"
 
 msgid "Other"
 msgstr "Inny"
+
+msgid "Out of order"
+msgstr "Wyłączony z użytku"
 
 msgid "Pending"
 msgstr "Oczekująca"
@@ -1095,6 +1116,9 @@ msgstr "Spróbuj innego numeru"
 msgid "Two ways to settle in"
 msgstr "Dwa sposoby na przytulny pobyt"
 
+msgid "Type"
+msgstr "Typ"
+
 msgid "Unknown rate plan."
 msgstr "Nieznany plan cenowy."
 
@@ -1403,6 +1427,9 @@ msgstr "goście"
 
 msgid "hold expires at"
 msgstr "blokada wygasa o"
+
+msgid "housekeeping status"
+msgstr "status sprzątania"
 
 msgid "kind"
 msgstr "rodzaj"

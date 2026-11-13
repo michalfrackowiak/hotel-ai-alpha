@@ -21,7 +21,7 @@ from .models import Booking, BookingEvent, Client, DailyRate, PricingRule, RateP
 class RoomInline(admin.TabularInline):
     model = Room
     extra = 1
-    fields = ("number", "name", "floor", "is_active")
+    fields = ("number", "name", "floor", "is_active", "housekeeping_status")
 
 
 @admin.register(RoomType)
@@ -45,8 +45,9 @@ class RoomTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ("number", "name", "room_type", "floor", "is_active", "calendar")
-    list_filter = ("room_type", "is_active", "floor")
+    list_display = ("number", "name", "room_type", "floor", "is_active", "housekeeping_status", "calendar")
+    list_filter = ("room_type", "is_active", "floor", "housekeeping_status")
+    list_editable = ("housekeeping_status", "is_active")
     search_fields = ("number", "name", "room_type__name")
     autocomplete_fields = ("room_type",)
 

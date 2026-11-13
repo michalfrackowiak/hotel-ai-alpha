@@ -17,7 +17,7 @@ from apps.hotel.access import (
 )
 from apps.hotel.booking_service import BookingError, get_booking
 from apps.hotel.cancellation import cancellation_preview
-from apps.hotel.models import Booking, BookingEvent, RoomType
+from apps.hotel.models import Booking, BookingEvent, Room, RoomType
 
 
 def home(request):
@@ -140,7 +140,8 @@ def ops_dashboard(request):
         confirmation_email_sent_at__isnull=True,
     ).count()
     recent_events = BookingEvent.objects.select_related("booking").order_by("-created_at", "-pk")[:20]
-
+    dirty_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.DIRTY).select_related("room_type").order_by("number")
+    out_of_order_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.OUT_OF_ORDER).select_related("room_type").order_by("number")
     return render(
         request,
         "web/ops.html",
@@ -157,8 +158,11 @@ def ops_dashboard(request):
             "departure_count": departures.count(),
             "pending_count": pending_holds.count(),
             "failed_calendar_count": failed_calendar.count(),
-    "stale_calendar_count": stale_calendar,
-    "calendar_drift_count": failed_calendar.count() + stale_calendar + not_synced_calendar,
+            "stale_calendar_count": stale_calendar,
+            "calendar_drift_count": failed_calendar.count() + stale_calendar + not_synced_calendar,
+            "dirty_rooms": dirty_rooms,
+            "dirty_room_count": dirty_rooms.count(),
+            "out_of_order_rooms": out_of_order_rooms,
         },
     )
 
