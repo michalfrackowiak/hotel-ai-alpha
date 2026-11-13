@@ -195,7 +195,7 @@ Theme: **revenue and delivery hardening**. The guest can now self-serve; the nex
 
 ### Must have
 
-1. **Rate plans and restrictions** — closed-to-arrival, fully-closed and min/max length-of-stay restrictions on top of the rate calendar. Named plans with derived nightly rates remain a follow-up.
+1. **Rate plans and restrictions** — closed-to-arrival, fully-closed and min/max length-of-stay restrictions plus named `RatePlan`s with percentage/fixed derived nightly rates. Bookings can opt into a plan; availability lists plan totals.
 2. **Nightly reconciliation and alerts** — `reconcile_calendars --apply` now runs from the scheduler sidecar; `/ops/` shows a calendar-drift counter (failed, stale, unsynced).
 3. **Email delivery provider** — resend action via the existing `send_booking_emails` command; transactional API (SES/Postmark) with bounce/complaint handling remains a follow-up.
 4. **Booking and revenue export** — `manage.py export_bookings` writes CSV for a date range, with optional status filter.

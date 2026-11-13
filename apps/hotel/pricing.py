@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .models import DailyRate, PricingRule, Room, RoomType
+from .models import DailyRate, PricingRule, RatePlan, Room, RoomType
 
 MONEY = Decimal("0.01")
 
@@ -132,6 +132,7 @@ def quote(
     children: int = 0,
     room: Room | None = None,
     rules: list[PricingRule] | None = None,
+    rate_plan: RatePlan | None = None,
 ) -> Quote:
     """Build a nightly price breakdown for a room type and date range."""
     nights = validate_stay(check_in, check_out)
@@ -183,12 +184,16 @@ def quote(
         override = overrides.get(night)
         if override is not None:
             rate = max(override.rate, Decimal("0")).quantize(MONEY)
+            rules_for_night = [str(_("Rate calendar"))]
+            if rate_plan is not None and rate_plan.applies_to(room_type):
+                rate = rate_plan.adjust(rate)
+                rules_for_night.append(f"Rate plan: {rate_plan.name}")
             nightly.append(
                 NightlyRate(
                     night=night,
                     base_rate=rate,
                     rate=rate,
-                    rules=[str(_("Rate calendar"))],
+                    rules=rules_for_night,
                 )
             )
             continue
@@ -204,12 +209,16 @@ def quote(
         )
         rate = base_price * (Decimal("1") + percent / Decimal("100")) + fixed
         rate = max(rate, Decimal("0")).quantize(MONEY)
+        night_rules = [rule.name for rule in matching]
+        if rate_plan is not None and rate_plan.applies_to(room_type):
+            rate = rate_plan.adjust(rate)
+            night_rules = night_rules + [f"Rate plan: {rate_plan.name}"]
         nightly.append(
             NightlyRate(
                 night=night,
                 base_rate=base_price,
                 rate=rate,
-                rules=[rule.name for rule in matching],
+                rules=night_rules,
             )
         )
 

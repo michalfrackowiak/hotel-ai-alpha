@@ -217,6 +217,60 @@ class PricingRule(TimeStampedModel):
         return price + self.amount
 
 
+class RatePlan(TimeStampedModel):
+    """A named pricing plan for one (or all) room types.
+
+    A plan derives its nightly rate from the calculated or daily-rate price
+    using a percentage or fixed adjustment. Bookings can opt into a plan; the
+    quote applies the adjustment to every night of the stay.
+    """
+
+    class Kind(models.TextChoices):
+        PERCENT = "percent", _("Percentage")
+        FIXED = "fixed", _("Fixed amount")
+
+    room_type = models.ForeignKey(
+        RoomType,
+        on_delete=models.CASCADE,
+        related_name="rate_plans",
+        null=True,
+        blank=True,
+        help_text=_("Leave empty to make this plan available for every room type."),
+    )
+    name = models.CharField(_("name"), max_length=120)
+    slug = models.SlugField(_("slug"), max_length=120, unique=True)
+    description = models.TextField(_("description"), blank=True)
+    kind = models.CharField(_("kind"), max_length=10, choices=Kind.choices, default=Kind.PERCENT)
+    adjustment = models.DecimalField(
+        _("adjustment"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0"),
+        help_text=_("Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."),
+    )
+    is_refundable = models.BooleanField(_("refundable"), default=True)
+    is_active = models.BooleanField(_("active"), default=True)
+    sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        verbose_name = _("rate plan")
+        verbose_name_plural = _("rate plans")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def applies_to(self, room_type: RoomType) -> bool:
+        return self.is_active and (self.room_type_id is None or self.room_type_id == room_type.pk)
+
+    def adjust(self, rate: Decimal) -> Decimal:
+        if self.kind == self.Kind.PERCENT:
+            value = rate * (Decimal("1") + self.adjustment / Decimal("100"))
+        else:
+            value = rate + self.adjustment
+        return max(value, Decimal("0")).quantize(Decimal("0.01"))
+
+
 class DailyRate(TimeStampedModel):
     """An explicit nightly rate and minimum stay for one room type and date.
 
@@ -306,6 +360,9 @@ class Booking(TimeStampedModel):
     )
     client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="bookings")
     room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="bookings")
+    rate_plan = models.ForeignKey(
+        "RatePlan", on_delete=models.PROTECT, related_name="bookings", null=True, blank=True
+    )
     check_in = models.DateField(_("check-in"), db_index=True)
     check_out = models.DateField(_("check-out"), db_index=True)
     adults = models.PositiveSmallIntegerField(_("adults"), default=2)

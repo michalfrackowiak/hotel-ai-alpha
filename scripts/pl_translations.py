@@ -562,6 +562,25 @@ TRANSLATIONS: dict[str, str] = {
     "Minimum nights": "Minimalna liczba nocy",
     "Maximum nights": "Maksymalna liczba nocy",
     "maximum nights": "maksymalna liczba nocy",
+    "rate plan": "plan cenowy",
+    "rate plans": "plany cenowe",
+    "adjustment": "korekta",
+    "refundable": "zwracalny",
+    "Percentage": "Procent",
+    "Fixed amount": "Stała kwota",
+    "Leave empty to make this plan available for every room type.": (
+        "Pozostaw puste, aby plan był dostępny dla wszystkich typów pokoi."
+    ),
+    "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency.": (
+        "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
+    ),
+    "Unknown rate plan.": "Nieznany plan cenowy.",
+    "This rate plan is not available for the selected room type.": (
+        "Ten plan cenowy nie jest dostępny dla wybranego typu pokoju."
+    ),
+    "Resend confirmation email": "Wyślij ponownie e-mail potwierdzający",
+    "%(count)s confirmation email(s) sent.": "Wysłano e-maile potwierdzające: %(count)s.",
+    "Calendar drift (failed, stale, unsynced)": "Rozjazd kalendarza (błędy, przestarzałe, niezsynchronizowane)",
     "closed": "zamknięte",
     "closed to arrival": "zamknięte na przyjazd",
     "Closed": "Zamknięte",

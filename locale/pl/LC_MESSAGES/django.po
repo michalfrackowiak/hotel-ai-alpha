@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 21:31+0100\n"
+"POT-Creation-Date: 2026-11-13 21:47+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -30,6 +30,10 @@ msgstr "Potwierdzono rezerwacje: %(count)s."
 #, python-format
 msgid "%(count)s booking(s) synced."
 msgstr "Zsynchronizowano rezerwacje: %(count)s."
+
+#, python-format
+msgid "%(count)s confirmation email(s) sent."
+msgstr "Wysłano e-maile potwierdzające: %(count)s."
 
 #, python-format
 msgid "%(count)s daily rate(s) saved."
@@ -219,6 +223,9 @@ msgstr "Butikowe pobyty · konsjerż AI"
 
 msgid "Calendar"
 msgstr "Kalendarz"
+
+msgid "Calendar drift (failed, stale, unsynced)"
+msgstr "Rozjazd kalendarza (błędy, przestarzałe, niezsynchronizowane)"
 
 msgid "Calendar sync failures"
 msgstr "Błędy synchronizacji kalendarza"
@@ -474,6 +481,9 @@ msgstr "Zapasowy identyfikator kalendarza, gdy mapowanie pokoju go nie określa.
 msgid "Find my booking"
 msgstr "Znajdź moją rezerwację"
 
+msgid "Fixed amount"
+msgstr "Stała kwota"
+
 msgid "Fixed amount per night"
 msgstr "Stała kwota za noc"
 
@@ -572,6 +582,9 @@ msgstr ""
 
 msgid "Leave empty to apply to every room type."
 msgstr "Pozostaw puste, aby zastosować do wszystkich typów pokoi."
+
+msgid "Leave empty to make this plan available for every room type."
+msgstr "Pozostaw puste, aby plan był dostępny dla wszystkich typów pokoi."
 
 msgid "Listening — speak now"
 msgstr "Słucham — mów teraz"
@@ -713,6 +726,13 @@ msgstr "Procent"
 msgid "Percent (e.g. 15 = +15%) or a fixed amount per night."
 msgstr "Procent (np. 15 = +15%) lub stała kwota za noc."
 
+msgid "Percentage"
+msgstr "Procent"
+
+#, python-format
+msgid "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."
+msgstr "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
+
 msgid "Plans changed"
 msgstr "Zmiana planów"
 
@@ -786,6 +806,9 @@ msgstr "Recepcja"
 
 msgid "Reference"
 msgstr "Numer"
+
+msgid "Resend confirmation email"
+msgstr "Wyślij ponownie e-mail potwierdzający"
 
 msgid "Reservation"
 msgstr "Rezerwacja"
@@ -1030,6 +1053,9 @@ msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
 msgid "This is a temporary hold. Cancelling it is free."
 msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
 
+msgid "This rate plan is not available for the selected room type."
+msgstr "Ten plan cenowy nie jest dostępny dla wybranego typu pokoju."
+
 msgid "This reservation can no longer be cancelled."
 msgstr "Tej rezerwacji nie można już anulować."
 
@@ -1068,6 +1094,9 @@ msgstr "Spróbuj innego numeru"
 
 msgid "Two ways to settle in"
 msgstr "Dwa sposoby na przytulny pobyt"
+
+msgid "Unknown rate plan."
+msgstr "Nieznany plan cenowy."
 
 msgid "Updating your reservation…"
 msgstr "Aktualizuję rezerwację…"
@@ -1155,6 +1184,9 @@ msgstr "aktywny"
 
 msgid "actor"
 msgstr "wykonawca"
+
+msgid "adjustment"
+msgstr "korekta"
 
 msgid "adjustment type"
 msgstr "typ korekty"
@@ -1450,8 +1482,17 @@ msgstr "typ dostawcy"
 msgid "rate"
 msgstr "stawka"
 
+msgid "rate plan"
+msgstr "plan cenowy"
+
+msgid "rate plans"
+msgstr "plany cenowe"
+
 msgid "reference"
 msgstr "numer"
+
+msgid "refundable"
+msgstr "zwracalny"
 
 msgid "role"
 msgstr "rola"

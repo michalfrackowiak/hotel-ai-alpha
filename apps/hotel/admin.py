@@ -15,7 +15,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from .booking_service import BookingError, cancel_booking, confirm_booking
-from .models import Booking, BookingEvent, Client, DailyRate, PricingRule, Room, RoomType
+from .models import Booking, BookingEvent, Client, DailyRate, PricingRule, RatePlan, Room, RoomType
 
 
 class RoomInline(admin.TabularInline):
@@ -250,6 +250,17 @@ class BookingEventAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(RatePlan)
+class RatePlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "room_type", "kind", "adjustment", "is_refundable", "is_active", "sort_order")
+    list_filter = ("is_active", "is_refundable", "kind", "room_type")
+    list_editable = ("is_active", "sort_order")
+    search_fields = ("name", "slug", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("sort_order", "name")
+    fields = ("name", "slug", "room_type", "description", "kind", "adjustment", "is_refundable", "is_active", "sort_order")
 
 
 @admin.register(DailyRate)

@@ -7,7 +7,7 @@ from datetime import date
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Booking, Room, RoomType
+from .models import Booking, RatePlan, Room, RoomType
 from .pricing import Quote, StayError, quote, validate_stay
 
 
@@ -89,6 +89,25 @@ def search_availability(
             # A rate-calendar minimum stay makes this room type unavailable for
             # the requested range; other room types may still be bookable.
             continue
+
+        plans = []
+        for plan in RatePlan.objects.filter(is_active=True).order_by("sort_order", "name"):
+            if not plan.applies_to(room_type):
+                continue
+            try:
+                plan_quote = quote(room_type, check_in, check_out, adults=guests, room=rooms[0], rate_plan=plan)
+            except StayError:
+                continue
+            plans.append(
+                {
+                    "slug": plan.slug,
+                    "name": plan.name,
+                    "is_refundable": plan.is_refundable,
+                    "total": str(plan_quote.total),
+                    "nightly_from": plan_quote.nightly[0].rate if plan_quote.nightly else None,
+                }
+            )
+
         results.append(
             {
                 "room_type": {
@@ -105,6 +124,7 @@ def search_availability(
                 "available_rooms": len(rooms),
                 "room_numbers": [room.number for room in rooms],
                 "quote": price.as_dict(),
+                "rate_plans": plans,
             }
         )
 
