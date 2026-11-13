@@ -74,3 +74,13 @@ def test_provider_slug_is_generated():
     )
 
     assert provider.slug == "my-openai"
+
+
+def test_demo_policy_strips_sentence_punctuation_from_email():
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+
+    slots = provider._extract_slots(
+        "", "My name is Anna Kowalska and my email is anna@example.com."
+    )
+
+    assert slots["email"] == "anna@example.com"

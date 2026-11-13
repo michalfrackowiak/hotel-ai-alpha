@@ -44,7 +44,7 @@ AFFIRMATIVE = re.compile(
     r"tak|potwierdzam|zgoda|rezerwuj|proszę|dobrze)\b",
     re.IGNORECASE,
 )
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
 PHONE = re.compile(r"(?<![\d])(\+?\d[\d\s()\-]{7,}\d)(?![\d])")
 GUESTS = re.compile(
     r"(\d+)\s*(?:adult|adults|guest|guests|person|people|osob[a-y]?|goś[ćc]i?)", re.IGNORECASE
