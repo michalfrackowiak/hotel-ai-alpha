@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 21:56+0100\n"
+"POT-Creation-Date: 2026-11-13 22:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -221,6 +221,9 @@ msgstr "Wymagane są daty zameldowania i wymeldowania."
 msgid "Both room types include breakfast on request, fast Wi-Fi and a quiet night's sleep."
 msgstr "Oba typy pokoi oferują śniadanie na życzenie, szybkie Wi-Fi i spokojny sen."
 
+msgid "Bounced"
+msgstr "Odbity"
+
 msgid "Boutique stays · AI concierge"
 msgstr "Butikowe pobyty · konsjerż AI"
 
@@ -350,6 +353,9 @@ msgstr ""
 "Numery dni tygodnia oddzielone przecinkami, poniedziałek=0. Przykład: 4,5 dla piątku "
 "i soboty."
 
+msgid "Complained"
+msgstr "Zgłoszona skarga"
+
 msgid "Confirm booking"
 msgstr "Potwierdź rezerwację"
 
@@ -402,6 +408,9 @@ msgstr "Drogi %(name)s, Twoja rezerwacja jest potwierdzona. Czekamy na Ciebie."
 
 msgid "Deleted"
 msgstr "Usunięte"
+
+msgid "Delivered"
+msgstr "Dostarczony"
 
 msgid "Deluxe Suite price"
 msgstr "Cena apartamentu Deluxe"
@@ -894,6 +903,9 @@ msgstr "Zobacz rzeczywistą dostępność"
 msgid "Send"
 msgstr "Wyślij"
 
+msgid "Sent"
+msgstr "Wysłany"
+
 msgid ""
 "Service account key JSON or OAuth authorised-user JSON. The file path from "
 "GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty."
@@ -1320,8 +1332,14 @@ msgstr "zamknięte"
 msgid "closed to arrival"
 msgstr "zamknięte na przyjazd"
 
+msgid "confirmation email error"
+msgstr "błąd e-maila potwierdzającego"
+
 msgid "confirmation email sent at"
 msgstr "wysłano e-mail potwierdzający"
+
+msgid "confirmation email status"
+msgstr "status e-maila potwierdzającego"
 
 msgid "confirmed at"
 msgstr "potwierdzono o"
@@ -1502,6 +1520,9 @@ msgstr "priorytet"
 
 msgid "provider"
 msgstr "dostawca"
+
+msgid "provider message id"
+msgstr "identyfikator wiadomości dostawcy"
 
 msgid "provider type"
 msgstr "typ dostawcy"

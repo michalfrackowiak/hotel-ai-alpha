@@ -410,6 +410,22 @@ class Booking(TimeStampedModel):
         blank=True,
     )
     confirmation_email_sent_at = models.DateTimeField(_("confirmation email sent at"), null=True, blank=True)
+    confirmation_email_status = models.CharField(
+        _("confirmation email status"),
+        max_length=20,
+        choices=[
+            ("pending", _("Pending")),
+            ("sent", _("Sent")),
+            ("delivered", _("Delivered")),
+            ("bounced", _("Bounced")),
+            ("complained", _("Complained")),
+            ("failed", _("Failed")),
+        ],
+        default="pending",
+        db_index=True,
+    )
+    confirmation_email_error = models.TextField(_("confirmation email error"), blank=True, default="")
+    confirmation_email_provider_id = models.CharField(_("provider message id"), max_length=200, blank=True, default="")
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 
     class Meta:

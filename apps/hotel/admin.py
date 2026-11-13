@@ -125,6 +125,7 @@ class BookingAdmin(admin.ModelAdmin):
         "total_price",
         "cancellation_fee",
         "hold_state",
+        "confirmation_email_status",
         "created_at",
     )
     list_filter = ("status", "source", "language", "cancelled_by", "room__room_type", "check_in")

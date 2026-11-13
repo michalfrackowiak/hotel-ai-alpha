@@ -53,11 +53,26 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
     )
     message.attach_alternative(html_body, "text/html")
     message.attach(f"{booking.reference}.ics", build_booking_ics(booking), "text/calendar")
-    message.send(fail_silently=False)
+    try:
+        message.send(fail_silently=False)
+    except Exception as exc:  # noqa: BLE001
+        Booking.objects.filter(pk=booking.pk).update(
+            confirmation_email_status="failed",
+            confirmation_email_error=str(exc),
+        )
+        booking.confirmation_email_status = "failed"
+        booking.confirmation_email_error = str(exc)
+        raise
 
     sent_at = timezone.now()
-    Booking.objects.filter(pk=booking.pk).update(confirmation_email_sent_at=sent_at)
+    Booking.objects.filter(pk=booking.pk).update(
+        confirmation_email_sent_at=sent_at,
+        confirmation_email_status="sent",
+        confirmation_email_error="",
+    )
     booking.confirmation_email_sent_at = sent_at
+    booking.confirmation_email_status = "sent"
+    booking.confirmation_email_error = ""
     logger.info("Sent confirmation email for booking %s to %s", booking.reference, email)
     return True
 
