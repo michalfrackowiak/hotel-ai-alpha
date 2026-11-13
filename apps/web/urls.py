@@ -1,0 +1,13 @@
+from django.urls import path
+
+from . import views
+
+app_name = "web"
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("chat/", views.chat_page, name="chat"),
+    path("voice/", views.voice_page, name="voice"),
+    path("booking/", views.booking_lookup, name="booking-lookup"),
+    path("booking/<str:reference>/", views.booking_detail, name="booking-detail"),
+]

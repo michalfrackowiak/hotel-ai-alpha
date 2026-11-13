@@ -1,0 +1,113 @@
+{% extends "web/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Chat" %} · {{ hotel.name }}{% endblock %}
+{% block body_class %}page-chat{% endblock %}
+
+{% block content %}
+<section class="shell chat-shell">
+  <div class="chat-panel"
+       id="chat-app"
+       data-create-url="{% url 'api:chat-session-create' %}"
+       data-session-url="{% url 'api:chat-session' session_key='__KEY__' %}"
+       data-message-url="{% url 'api:chat-message' session_key='__KEY__' %}"
+       data-booking-url="{% url 'web:booking-detail' reference='__REF__' %}"
+       data-language="{{ current_language }}"
+       data-room-type="{{ request.GET.room_type|default:'' }}"
+       data-check-in="{{ request.GET.check_in|default:'' }}"
+       data-check-out="{{ request.GET.check_out|default:'' }}"
+       data-guests="{{ request.GET.guests|default:'' }}">
+
+    <header class="chat-panel__header">
+      <span class="avatar" aria-hidden="true">{{ assistant.name|slice:":1" }}</span>
+      <div class="chat-panel__identity">
+        <h1>{{ assistant.name }}</h1>
+        <p class="status-line"><span class="dot" aria-hidden="true"></span>{% trans "AI concierge · online" %}</p>
+      </div>
+      <label class="chat-language">
+        <span class="sr-only">{% trans "Conversation language" %}</span>
+        <select id="chat-language">
+          {% for language in site_languages %}
+            <option value="{{ language.code }}"{% if language.code == current_language %} selected{% endif %}>{{ language.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </header>
+
+    <div class="chat-log" id="chat-log" role="log" aria-live="polite" aria-label="{% trans 'Conversation' %}"></div>
+
+    <div class="typing" id="chat-typing" hidden>
+      <span></span><span></span><span></span>
+      <em>{% trans "Aurora is typing" %}</em>
+    </div>
+
+    <div class="suggestions" id="chat-suggestions">
+      <button type="button" class="chip" data-suggestion="{% trans 'Do you have a room for two this weekend?' %}">{% trans "Room for two this weekend" %}</button>
+      <button type="button" class="chip" data-suggestion="{% trans 'What does the Deluxe Suite cost for three nights?' %}">{% trans "Deluxe Suite price" %}</button>
+      <button type="button" class="chip" data-suggestion="{% trans 'I would like to book a room from the 12th to the 15th of December.' %}">{% trans "Book in December" %}</button>
+    </div>
+
+    <form class="chat-composer" id="chat-form">
+      <label class="sr-only" for="chat-input">{% trans "Your message" %}</label>
+      <textarea id="chat-input" rows="1" maxlength="4000" data-autogrow
+                placeholder="{% trans 'Write in English or Polish…' %}"></textarea>
+      <button class="btn btn--primary" type="submit" id="chat-send">{% trans "Send" %}</button>
+    </form>
+    <p class="chat-note">{% trans "The assistant can make mistakes. Reception is always happy to help." %}</p>
+  </div>
+
+  <aside class="chat-aside">
+    <div class="aside-card">
+      <h2>{% trans "Your booking" %}</h2>
+      <div id="chat-booking">
+        <p class="muted">{% trans "No booking yet. Share your dates to get started." %}</p>
+      </div>
+    </div>
+
+    <div class="aside-card">
+      <h2>{% trans "Good to know" %}</h2>
+      <ul class="example-list">
+        <li>{% trans "Prices include VAT and are quoted for the whole stay." %}</li>
+        <li>{% trans "A hold keeps your room for 30 minutes while you decide." %}</li>
+        <li>{% trans "No card details are needed in the chat." %}</li>
+        <li>{% trans "You can ask to cancel or look up an existing booking." %}</li>
+      </ul>
+    </div>
+
+    <div class="aside-card aside-card--accent">
+      <h2>{% trans "Need a human?" %}</h2>
+      <p><a href="tel:{{ hotel.contact_phone|cut:' ' }}">{{ hotel.contact_phone }}</a></p>
+      <p><a href="mailto:{{ hotel.contact_email }}">{{ hotel.contact_email }}</a></p>
+    </div>
+  </aside>
+</section>
+
+<script id="chat-i18n" type="application/json">
+{
+  "you": "{% trans 'You' %}",
+  "assistant": "{% trans 'Aurora' %}",
+  "thinking": "{% trans 'Aurora is typing' %}",
+  "genericError": "{% trans 'Something went wrong. Please try again.' %}",
+  "networkError": "{% trans 'I could not reach the reception service. Check your connection and try again.' %}",
+  "bookingTitle": "{% trans 'Your reservation' %}",
+  "reference": "{% trans 'Reference' %}",
+  "guest": "{% trans 'Guest' %}",
+  "dates": "{% trans 'Dates' %}",
+  "nights": "{% trans 'nights' %}",
+  "guests": "{% trans 'guests' %}",
+  "total": "{% trans 'Total' %}",
+  "statusPending": "{% trans 'On hold' %}",
+  "statusConfirmed": "{% trans 'Confirmed' %}",
+  "statusCancelled": "{% trans 'Cancelled' %}",
+  "statusExpired": "{% trans 'Expired' %}",
+  "viewBooking": "{% trans 'View booking' %}",
+  "holdUntil": "{% trans 'Held until' %}",
+  "newConversation": "{% trans 'New conversation started.' %}",
+  "prefill": "{% trans 'I would like to book a room' %}"
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/chat.js' %}" defer></script>
+{% endblock %}

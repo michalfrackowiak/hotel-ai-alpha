@@ -1,0 +1,101 @@
+{% extends "web/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Voice concierge" %} · {{ hotel.name }}{% endblock %}
+{% block body_class %}page-voice{% endblock %}
+
+{% block content %}
+<section class="shell voice-shell">
+  <div class="voice-intro">
+    <p class="eyebrow">{% trans "Voice concierge" %}</p>
+    <h1>{% trans "Speak. We'll take care of the rest." %}</h1>
+    <p class="voice-intro__lede">
+      {% blocktrans %}Press the call button and talk naturally. Aurora listens, checks real availability and confirms your room — in English or Polish.{% endblocktrans %}
+    </p>
+  </div>
+
+  <div class="voice-grid">
+    <div class="call-card"
+         id="voice-app"
+         data-create-url="{% url 'api:chat-session-create' %}"
+         data-message-url="{% url 'api:chat-message' session_key='__KEY__' %}"
+         data-config-url="{% url 'api:voice-config' %}"
+         data-booking-url="{% url 'web:booking-detail' reference='__REF__' %}"
+         data-language="{{ current_language }}">
+
+      <div class="call-card__status">
+        <span class="pulse" id="call-pulse" aria-hidden="true"></span>
+        <span id="call-status">{% trans "Ready when you are" %}</span>
+      </div>
+
+      <button class="call-button" id="call-button" type="button" aria-label="{% trans 'Start voice call' %}">
+        <span class="call-button__icon" aria-hidden="true"></span>
+        <span class="call-button__label" id="call-button-label">{% trans "Start call" %}</span>
+      </button>
+
+      <div class="call-controls">
+        <label class="field field--inline">
+          <span>{% trans "Language" %}</span>
+          <select id="voice-language">
+            {% for language in site_languages %}
+              <option value="{{ language.code }}"{% if language.code == current_language %} selected{% endif %}>{{ language.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="voice-mute" checked>
+          <span>{% trans "Speak replies" %}</span>
+        </label>
+      </div>
+
+      <p class="call-hint" id="call-hint">
+        {% trans "Your browser will ask for microphone access. Audio is only sent to your own reception service." %}
+      </p>
+    </div>
+
+    <div class="transcript-card">
+      <header class="transcript-card__header">
+        <h2>{% trans "Live transcript" %}</h2>
+        <button type="button" class="link-button" id="transcript-clear">{% trans "Clear" %}</button>
+      </header>
+      <div class="transcript" id="transcript" role="log" aria-live="polite"></div>
+      <div class="transcript__interim" id="transcript-interim" aria-live="polite"></div>
+      <div class="transcript-card__booking" id="voice-booking"></div>
+    </div>
+  </div>
+</section>
+
+<script id="voice-i18n" type="application/json">
+{
+  "statusIdle": "{% trans 'Ready when you are' %}",
+  "statusConnecting": "{% trans 'Connecting…' %}",
+  "statusListening": "{% trans 'Listening — speak now' %}",
+  "statusThinking": "{% trans 'Checking availability…' %}",
+  "statusSpeaking": "{% trans 'Aurora is speaking' %}",
+  "statusEnded": "{% trans 'Call ended' %}",
+  "startCall": "{% trans 'Start call' %}",
+  "endCall": "{% trans 'End call' %}",
+  "you": "{% trans 'You' %}",
+  "assistant": "{% trans 'Aurora' %}",
+  "unsupported": "{% trans 'This browser does not support speech recognition. Please use Chrome or Edge, or switch to chat.' %}",
+  "unavailable": "{% trans 'The voice concierge is unavailable right now. Please use chat instead.' %}",
+  "permissionDenied": "{% trans 'Microphone access was blocked. Allow the microphone and try again.' %}",
+  "noSpeech": "{% trans 'I did not catch that. Try again, a little closer to the microphone.' %}",
+  "genericError": "{% trans 'Something went wrong. Please try again.' %}",
+  "networkError": "{% trans 'The reception service is unreachable. Check your connection.' %}",
+  "bookingTitle": "{% trans 'Reservation' %}",
+  "reference": "{% trans 'Reference' %}",
+  "guest": "{% trans 'Guest' %}",
+  "dates": "{% trans 'Dates' %}",
+  "nights": "{% trans 'nights' %}",
+  "total": "{% trans 'Total' %}",
+  "holdUntil": "{% trans 'Held until' %}",
+  "viewBooking": "{% trans 'View booking' %}",
+  "newCall": "{% trans 'Start a new call' %}"
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/voice.js' %}" defer></script>
+{% endblock %}

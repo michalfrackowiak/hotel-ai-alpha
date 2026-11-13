@@ -1,0 +1,32 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Booking not found" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card lookup-card--empty">
+    <p class="eyebrow">{% trans "Not found" %}</p>
+    <h1>{% trans "We could not find that booking" %}</h1>
+    <p class="lookup-card__lede">
+      {% blocktrans with ref=reference %}There is no reservation matching <strong>{{ ref }}</strong>. Check the reference and try again.{% endblocktrans %}
+    </p>
+
+    <div class="lookup-card__actions">
+      <a class="btn btn--primary" href="{% url 'web:booking-lookup' %}">{% trans "Try another reference" %}</a>
+      <a class="btn btn--ghost" href="{% url 'web:home' %}">{% trans "Back to rooms" %}</a>
+    </div>
+
+    <div class="lookup-card__help">
+      <p>
+        {% trans "Need a hand? Reception can find your reservation by name, email or phone." %}
+      </p>
+      <p>
+        <a href="tel:{{ hotel.contact_phone|cut:' ' }}">{{ hotel.contact_phone }}</a>
+        ·
+        <a href="mailto:{{ hotel.contact_email }}">{{ hotel.contact_email }}</a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

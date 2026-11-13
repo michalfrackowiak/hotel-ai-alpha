@@ -1,0 +1,70 @@
+{% load i18n static %}<!doctype html>
+<html lang="{{ current_language }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ hotel.name }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{{ hotel.tagline }}{% endblock %}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">{% trans "Skip to content" %}</a>
+
+  <header class="site-header">
+    <div class="shell site-header__inner">
+      <a class="brand" href="{% url 'web:home' %}">
+        <span class="brand__mark" aria-hidden="true">{{ hotel.name|slice:":1" }}</span>
+        <span class="brand__text">
+          <span class="brand__name">{{ hotel.name }}</span>
+          <span class="brand__tag">{% trans "AI reception" %}</span>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="{% trans 'Main navigation' %}">
+        <a href="{% url 'web:home' %}#rooms">{% trans "Rooms" %}</a>
+        {% if assistant.chat_enabled %}<a href="{% url 'web:chat' %}">{% trans "Chat" %}</a>{% endif %}
+        {% if assistant.voice_enabled %}<a href="{% url 'web:voice' %}">{% trans "Voice" %}</a>{% endif %}
+        <a href="{% url 'web:booking-lookup' %}">{% trans "My booking" %}</a>
+        {% if request.user.is_staff %}<a href="{% url 'admin:index' %}">{% trans "Admin" %}</a>{% endif %}
+      </nav>
+
+      <form class="language-switch" action="{% url 'set_language' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label class="sr-only" for="language-select">{% trans "Language" %}</label>
+        <select id="language-select" name="language" onchange="this.form.submit()">
+          {% for language in site_languages %}
+            <option value="{{ language.code }}"{% if language.code == current_language %} selected{% endif %}>{{ language.label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </header>
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell site-footer__inner">
+      <div>
+        <p class="site-footer__brand">{{ hotel.name }}</p>
+        <p>{{ hotel.address }}</p>
+      </div>
+      <div>
+        <p><a href="mailto:{{ hotel.contact_email }}">{{ hotel.contact_email }}</a></p>
+        <p><a href="tel:{{ hotel.contact_phone|cut:' ' }}">{{ hotel.contact_phone }}</a></p>
+      </div>
+      <div class="site-footer__meta">
+        <p>{% trans "Check-in" %} {{ hotel.check_in_time }} · {% trans "Check-out" %} {{ hotel.check_out_time }}</p>
+        <p>© {{ current_year }} {{ hotel.name }} · {% trans "AI reception alpha" %}</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/app.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

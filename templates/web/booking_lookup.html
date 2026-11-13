@@ -1,0 +1,40 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Find my booking" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card">
+    <p class="eyebrow">{% trans "Your reservation" %}</p>
+    <h1>{% trans "Find my booking" %}</h1>
+    <p class="lookup-card__lede">
+      {% trans "Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, confirm a hold or cancel." %}
+    </p>
+
+    <form class="lookup-form" method="get" action="{% url 'web:booking-lookup' %}">
+      <label class="field">
+        <span>{% trans "Booking reference" %}</span>
+        <input type="text" name="reference" placeholder="HA-XXXXXX" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" maxlength="12" required autofocus>
+      </label>
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Look up booking" %}</button>
+    </form>
+
+    <div class="lookup-card__help">
+      <h2>{% trans "Cannot find your reference?" %}</h2>
+      <p>
+        {% trans "Check the confirmation message from the concierge, or contact reception and we will look it up for you." %}
+      </p>
+      <p>
+        <a href="tel:{{ hotel.contact_phone|cut:' ' }}">{{ hotel.contact_phone }}</a>
+        ·
+        <a href="mailto:{{ hotel.contact_email }}">{{ hotel.contact_email }}</a>
+      </p>
+      <p>
+        <a class="link-button" href="{% url 'web:chat' %}">{% trans "Ask the concierge instead" %} →</a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

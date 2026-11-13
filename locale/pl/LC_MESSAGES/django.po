@@ -1,0 +1,1172 @@
+# Polish translations for Hotel Aurora.
+# Copyright (C) 2026 Hotel Aurora
+# This file is distributed under the same license as the Hotel Aurora project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Hotel Aurora 0.1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-12 23:03+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pl\n"
+"Language-Team: pl <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || "
+"n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#, python-format
+msgid "%(count)s booking(s) cancelled."
+msgstr "Anulowano rezerwacje: %(count)s."
+
+#, python-format
+msgid "%(count)s booking(s) confirmed."
+msgstr "Potwierdzono rezerwacje: %(count)s."
+
+#, python-format
+msgid "%(count)s booking(s) synced."
+msgstr "Zsynchronizowano rezerwacje: %(count)s."
+
+#, python-format
+msgid "%(count)s event(s) retried."
+msgstr "Ponowiono zdarzenia: %(count)s."
+
+#, python-format
+msgid "%(count)s provider(s) disabled."
+msgstr "Wyłączono dostawców: %(count)s."
+
+#, python-format
+msgid "%(count)s provider(s) enabled."
+msgstr "Włączono dostawców: %(count)s."
+
+#, python-format
+msgid "%(name)s is now the default provider."
+msgstr "%(name)s jest teraz domyślnym dostawcą."
+
+msgid "A hold keeps your room for 30 minutes while you decide."
+msgstr "Rezerwacja wstępna blokuje pokój przez 30 minut, aż podejmiesz decyzję."
+
+msgid "A percentage cannot be lower than -100."
+msgstr "Procent nie może być niższy niż -100."
+
+msgid "A reservation in three short steps"
+msgstr "Rezerwacja w trzech krótkich krokach"
+
+#, python-format
+msgid "A warmer welcome at %(name)s"
+msgstr "Cieplejsze powitanie w %(name)s"
+
+msgid "AI concierge · online"
+msgstr "Konsjerż AI · online"
+
+msgid "AI provider"
+msgstr "Dostawca AI"
+
+msgid "AI providers"
+msgstr "Dostawcy AI"
+
+msgid "AI reception"
+msgstr "Recepcja AI"
+
+msgid "AI reception alpha"
+msgstr "Recepcja AI (alfa)"
+
+msgid "API"
+msgstr "API"
+
+msgid "API base URL"
+msgstr "Bazowy adres API"
+
+msgid "API key"
+msgstr "Klucz API"
+
+msgid "Adjustment"
+msgstr "Korekta"
+
+msgid "Admin"
+msgstr "Administracja"
+
+msgid "Anthropic"
+msgstr "Anthropic"
+
+msgid "Ask about this room"
+msgstr "Zapytaj o ten pokój"
+
+msgid ""
+"Ask in English or Polish. The assistant checks live availability and can hold your "
+"room in under a minute."
+msgstr ""
+"Pytaj po angielsku lub polsku. Asystent sprawdza dostępność na żywo i może zablokować"
+" pokój w niecałą minutę."
+
+msgid "Ask the concierge"
+msgstr "Zapytaj konsjerża"
+
+msgid "Ask the concierge instead"
+msgstr "Zapytaj konsjerża"
+
+msgid "Assistant"
+msgstr "Asystent"
+
+msgid "At least one adult is required."
+msgstr "Wymagany jest co najmniej jeden dorosły."
+
+msgid "Aurora"
+msgstr "Aurora"
+
+msgid "Aurora is speaking"
+msgstr "Aurora mówi"
+
+msgid "Aurora is typing"
+msgstr "Aurora pisze"
+
+msgid "Availability and prices come from the hotel's booking engine, never from guesswork."
+msgstr "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domysłów."
+
+msgid "Back to rooms"
+msgstr "Wróć do pokoi"
+
+msgid "Behaviour"
+msgstr "Zachowanie"
+
+msgid "Book in December"
+msgstr "Rezerwacja w grudniu"
+
+msgid "Book with chat"
+msgstr "Zarezerwuj przez czat"
+
+msgid "Booked via"
+msgstr "Zarezerwowano przez"
+
+msgid "Booking not found"
+msgstr "Nie znaleziono rezerwacji"
+
+msgid "Booking not found."
+msgstr "Nie znaleziono rezerwacji."
+
+msgid "Booking reference"
+msgstr "Numer rezerwacji"
+
+#, python-format
+msgid "Bookings can be made at most %(days)s days ahead."
+msgstr "Rezerwacji można dokonać najwyżej %(days)s dni wcześniej."
+
+msgid "Both check-in and check-out dates are required."
+msgstr "Wymagane są daty zameldowania i wymeldowania."
+
+msgid "Both room types include breakfast on request, fast Wi-Fi and a quiet night's sleep."
+msgstr "Oba typy pokoi oferują śniadanie na życzenie, szybkie Wi-Fi i spokojny sen."
+
+msgid "Boutique stays · AI concierge"
+msgstr "Butikowe pobyty · konsjerż AI"
+
+msgid "Calendar"
+msgstr "Kalendarz"
+
+msgid "Calendars"
+msgstr "Kalendarze"
+
+msgid "Call"
+msgstr "Zadzwoń"
+
+msgid "Call ended"
+msgstr "Połączenie zakończone"
+
+msgid "Cancel reservation"
+msgstr "Anuluj rezerwację"
+
+msgid "Cancel selected bookings"
+msgstr "Anuluj wybrane rezerwacje"
+
+msgid "Cancel this reservation? This cannot be undone."
+msgstr "Anulować tę rezerwację? Tej operacji nie można cofnąć."
+
+msgid "Cancelled"
+msgstr "Anulowana"
+
+msgid "Cannot find your reference?"
+msgstr "Nie możesz znaleźć numeru rezerwacji?"
+
+msgid "Capacity & price"
+msgstr "Pojemność i cena"
+
+msgid "Chat"
+msgstr "Czat"
+
+msgid "Chat agent"
+msgstr "Agent czatu"
+
+msgid "Chat with the concierge"
+msgstr "Porozmawiaj z konsjerżem"
+
+msgid "Check availability"
+msgstr "Sprawdź dostępność"
+
+msgid ""
+"Check the confirmation message from the concierge, or contact reception and we will "
+"look it up for you."
+msgstr ""
+"Sprawdź wiadomość potwierdzającą od konsjerża lub skontaktuj się z recepcją, a "
+"odnajdziemy ją dla Ciebie."
+
+msgid "Check-in"
+msgstr "Zameldowanie"
+
+msgid "Check-in cannot be in the past."
+msgstr "Data zameldowania nie może być w przeszłości."
+
+msgid "Check-out"
+msgstr "Wymeldowanie"
+
+msgid "Check-out must be after check-in."
+msgstr "Wymeldowanie musi nastąpić po zameldowaniu."
+
+msgid "Checked in"
+msgstr "Zameldowany"
+
+msgid "Checked out"
+msgstr "Wymeldowany"
+
+msgid "Checking availability…"
+msgstr "Sprawdzam dostępność…"
+
+msgid "Clear"
+msgstr "Wyczyść"
+
+msgid ""
+"Comma separated weekday numbers, Monday=0. Example: 4,5 for Friday and Saturday "
+"nights."
+msgstr ""
+"Numery dni tygodnia oddzielone przecinkami, poniedziałek=0. Przykład: 4,5 dla piątku "
+"i soboty."
+
+msgid "Confirm booking"
+msgstr "Potwierdź rezerwację"
+
+msgid "Confirm selected bookings"
+msgstr "Potwierdź wybrane rezerwacje"
+
+msgid "Confirm this reservation now?"
+msgstr "Potwierdzić tę rezerwację teraz?"
+
+msgid "Confirm with confidence"
+msgstr "Potwierdź z pewnością"
+
+msgid "Confirmed"
+msgstr "Potwierdzona"
+
+msgid "Connecting…"
+msgstr "Łączę…"
+
+msgid "Contact"
+msgstr "Kontakt"
+
+msgid "Content"
+msgstr "Treść"
+
+msgid "Conversation"
+msgstr "Rozmowa"
+
+msgid "Conversation language"
+msgstr "Język rozmowy"
+
+msgid "Created"
+msgstr "Utworzono"
+
+msgid "Credentials"
+msgstr "Dane uwierzytelniające"
+
+msgid "Dates"
+msgstr "Terminy"
+
+msgid "Deleted"
+msgstr "Usunięte"
+
+msgid "Deluxe Suite price"
+msgstr "Cena apartamentu Deluxe"
+
+msgid "Demo policy (offline)"
+msgstr "Polityka demo (offline)"
+
+msgid "Disable selected providers"
+msgstr "Wyłącz wybranych dostawców"
+
+msgid "Do you have a room for two this weekend?"
+msgstr "Czy macie pokój dla dwóch osób w ten weekend?"
+
+msgid "Email or phone is required."
+msgstr "Wymagany jest adres e-mail lub numer telefonu."
+
+msgid "Enable selected providers"
+msgstr "Włącz wybranych dostawców"
+
+msgid "End call"
+msgstr "Zakończ połączenie"
+
+msgid "English"
+msgstr "Angielski"
+
+msgid "English prompts"
+msgstr "Podpowiedzi angielskie"
+
+msgid ""
+"Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, "
+"confirm a hold or cancel."
+msgstr ""
+"Wpisz numer, który otrzymałeś, np. HA-7KQ2M4, aby zobaczyć rezerwację, potwierdzić "
+"blokadę lub ją anulować."
+
+msgid "Expired"
+msgstr "Wygasła"
+
+msgid "Extras"
+msgstr "Dodatki"
+
+msgid "Failed"
+msgstr "Niepowodzenie"
+
+msgid "Fake (demo/testing)"
+msgstr "Atrapa (demo/testy)"
+
+msgid "Fallback calendar id when a room mapping does not specify one."
+msgstr "Zapasowy identyfikator kalendarza, gdy mapowanie pokoju go nie określa."
+
+msgid "Find my booking"
+msgstr "Znajdź moją rezerwację"
+
+msgid "Fixed amount per night"
+msgstr "Stała kwota za noc"
+
+msgid "Generation"
+msgstr "Generowanie"
+
+msgid "Good to know"
+msgstr "Warto wiedzieć"
+
+msgid "Google Calendar"
+msgstr "Google Calendar"
+
+msgid "Guest"
+msgstr "Gość"
+
+msgid "Guests"
+msgstr "Goście"
+
+msgid "Held until"
+msgstr "Zablokowane do"
+
+msgid "Hold"
+msgstr "Blokada"
+
+msgid "How it works"
+msgstr "Jak to działa"
+
+msgid "I could not reach the reception service. Check your connection and try again."
+msgstr "Nie udało się połączyć z usługą recepcji. Sprawdź połączenie i spróbuj ponownie."
+
+msgid "I did not catch that. Try again, a little closer to the microphone."
+msgstr "Nie usłyszałem tego. Spróbuj ponownie, bliżej mikrofonu."
+
+msgid "I would like to book a room"
+msgstr "Chciałbym zarezerwować pokój"
+
+msgid "I would like to book a room from the 12th to the 15th of December."
+msgstr "Chciałbym zarezerwować pokój od 12 do 15 grudnia."
+
+msgid "Language"
+msgstr "Język"
+
+msgid "Last minute"
+msgstr "Ostatnia chwila"
+
+msgid "Leave empty to apply to every room type."
+msgstr "Pozostaw puste, aby zastosować do wszystkich typów pokoi."
+
+msgid "Listening — speak now"
+msgstr "Słucham — mów teraz"
+
+msgid "Live transcript"
+msgstr "Transkrypcja na żywo"
+
+msgid "Long stay"
+msgstr "Długi pobyt"
+
+msgid "Look up booking"
+msgstr "Znajdź rezerwację"
+
+msgid "Main navigation"
+msgstr "Nawigacja główna"
+
+msgid "Make default"
+msgstr "Ustaw jako domyślnego"
+
+msgid "Messages"
+msgstr "Wiadomości"
+
+msgid "Metadata"
+msgstr "Metadane"
+
+msgid "Microphone access was blocked. Allow the microphone and try again."
+msgstr "Dostęp do mikrofonu został zablokowany. Zezwól na mikrofon i spróbuj ponownie."
+
+msgid "Model"
+msgstr "Model"
+
+msgid "My booking"
+msgstr "Moja rezerwacja"
+
+msgid "Need a hand? Reception can find your reservation by name, email or phone."
+msgstr ""
+"Potrzebujesz pomocy? Recepcja znajdzie Twoją rezerwację po nazwisku, e-mailu lub "
+"telefonie."
+
+msgid "Need a human?"
+msgstr "Potrzebujesz człowieka?"
+
+msgid "New conversation started."
+msgstr "Rozpoczęto nową rozmowę."
+
+msgid "Night"
+msgstr "Noc"
+
+msgid "No booking yet. Share your dates to get started."
+msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
+
+msgid "No card details are needed in the chat."
+msgstr "W czacie nie są potrzebne dane karty."
+
+msgid "No rooms are available for those dates. Try different dates or ask the concierge."
+msgstr "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
+
+msgid "No rooms of this type are available for the selected dates."
+msgstr "Brak pokoi tego typu w wybranych terminach."
+
+msgid "No show"
+msgstr "Nieobecność"
+
+msgid "Not found"
+msgstr "Nie znaleziono"
+
+msgid "Notes"
+msgstr "Notatki"
+
+msgid "Ollama / self-hosted"
+msgstr "Ollama / własny serwer"
+
+msgid "On hold"
+msgstr "Wstępnie zablokowana"
+
+msgid "Open chat"
+msgstr "Otwórz czat"
+
+msgid ""
+"Open the voice concierge and simply speak. It can check rooms, prices and confirm "
+"your stay."
+msgstr "Otwórz konsjerża głosowego i po prostu mów. Sprawdzi pokoje, ceny i potwierdzi pobyt."
+
+msgid "OpenAI"
+msgstr "OpenAI"
+
+msgid "Pending"
+msgstr "Oczekująca"
+
+msgid "Percent"
+msgstr "Procent"
+
+msgid "Percent (e.g. 15 = +15%) or a fixed amount per night."
+msgstr "Procent (np. 15 = +15%) lub stała kwota za noc."
+
+msgid "Please provide an email address or a phone number."
+msgstr "Podaj adres e-mail lub numer telefonu."
+
+msgid "Polish"
+msgstr "Polski"
+
+msgid "Polish prompts"
+msgstr "Podpowiedzi polskie"
+
+msgid "Prefer to talk it through?"
+msgstr "Wolisz porozmawiać?"
+
+msgid "Preferences"
+msgstr "Preferencje"
+
+msgid "Presentation"
+msgstr "Prezentacja"
+
+msgid ""
+"Press the call button and talk naturally. Aurora listens, checks real availability "
+"and confirms your room — in English or Polish."
+msgstr ""
+"Naciśnij przycisk połączenia i mów naturalnie. Aurora słucha, sprawdza rzeczywistą "
+"dostępność i potwierdza pokój — po angielsku lub polsku."
+
+msgid "Price"
+msgstr "Cena"
+
+msgid "Price breakdown"
+msgstr "Szczegóły ceny"
+
+msgid "Prices include VAT and are quoted for the whole stay."
+msgstr "Ceny zawierają VAT i dotyczą całego pobytu."
+
+msgid "Print"
+msgstr "Drukuj"
+
+msgid "Provide at least an email address or a phone number."
+msgstr "Podaj co najmniej adres e-mail lub numer telefonu."
+
+msgid "Rate"
+msgstr "Stawka"
+
+msgid "Ready"
+msgstr "Gotowe"
+
+msgid "Ready when you are"
+msgstr "Gotowe, kiedy chcesz"
+
+msgid "Reception"
+msgstr "Recepcja"
+
+msgid "Reference"
+msgstr "Numer"
+
+msgid "Reservation"
+msgstr "Rezerwacja"
+
+msgid "Reservation cancelled."
+msgstr "Rezerwacja anulowana."
+
+msgid "Reservation confirmed. See you soon!"
+msgstr "Rezerwacja potwierdzona. Do zobaczenia!"
+
+msgid "Retry calendar sync"
+msgstr "Ponów synchronizację kalendarza"
+
+msgid "Review the summary, confirm, and receive a booking reference you can look up any time."
+msgstr ""
+"Sprawdź podsumowanie, potwierdź i otrzymaj numer rezerwacji, do którego możesz wrócić"
+" w każdej chwili."
+
+msgid "Room"
+msgstr "Pokój"
+
+msgid "Room for two this weekend"
+msgstr "Pokój dla dwóch osób w ten weekend"
+
+msgid "Rooms"
+msgstr "Pokoje"
+
+msgid "Rooms & reservations"
+msgstr "Pokoje i rezerwacje"
+
+msgid "Rooms are being prepared. Please check back shortly."
+msgstr "Pokoje są przygotowywane. Zajrzyj wkrótce."
+
+msgid "Rules"
+msgstr "Zasady"
+
+msgid "Say hello"
+msgstr "Przywitaj się"
+
+msgid "Seasonal"
+msgstr "Sezonowa"
+
+msgid "See real availability"
+msgstr "Zobacz rzeczywistą dostępność"
+
+msgid "Send"
+msgstr "Wyślij"
+
+msgid ""
+"Service account key JSON or OAuth authorised-user JSON. The file path from "
+"GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty."
+msgstr ""
+"Klucz konta usługi w formacie JSON lub plik JSON autoryzacji OAuth. Gdy puste, "
+"używana jest ścieżka z GOOGLE_CALENDAR_CREDENTIALS_FILE."
+
+msgid ""
+"Service account key JSON or authorised-user token JSON. Alternatively set "
+"GOOGLE_CALENDAR_CREDENTIALS_FILE in the environment."
+msgstr ""
+"Klucz konta usługi w formacie JSON lub token autoryzowanego użytkownika. "
+"Alternatywnie ustaw GOOGLE_CALENDAR_CREDENTIALS_FILE w środowisku."
+
+msgid "Show rooms"
+msgstr "Pokaż pokoje"
+
+msgid "Skip to content"
+msgstr "Przejdź do treści"
+
+msgid "Something went wrong. Please try again."
+msgstr "Coś poszło nie tak. Spróbuj ponownie."
+
+msgid "Speak replies"
+msgstr "Czytaj odpowiedzi"
+
+msgid "Speak. We'll take care of the rest."
+msgstr "Mów. Resztą zajmiemy się my."
+
+msgid "Special requests"
+msgstr "Specjalne życzenia"
+
+msgid "Start a call"
+msgstr "Rozpocznij połączenie"
+
+msgid "Start a new call"
+msgstr "Rozpocznij nowe połączenie"
+
+msgid "Start a voice call"
+msgstr "Rozpocznij rozmowę głosową"
+
+msgid "Start call"
+msgstr "Rozpocznij połączenie"
+
+msgid "Start voice call"
+msgstr "Rozpocznij rozmowę głosową"
+
+msgid "Stay"
+msgstr "Pobyt"
+
+msgid "Stay with us"
+msgstr "Zatrzymaj się u nas"
+
+#, python-format
+msgid "Stays longer than %(nights)s nights are not supported."
+msgstr "Pobyty dłuższe niż %(nights)s nocy nie są obsługiwane."
+
+#, python-brace-format
+msgid "Stays longer than {nights} nights are not supported."
+msgstr "Pobyty dłuższe niż {nights} nocy nie są obsługiwane."
+
+msgid "Stored in the database. Leave empty to keep the current key."
+msgstr "Przechowywane w bazie danych. Pozostaw puste, aby zachować obecny klucz."
+
+msgid "Sync selected bookings to calendars"
+msgstr "Synchronizuj wybrane rezerwacje z kalendarzami"
+
+msgid "Synced"
+msgstr "Zsynchronizowane"
+
+msgid "System"
+msgstr "System"
+
+msgid ""
+"Tell the concierge your dates and how many people are travelling, in English or "
+"Polish."
+msgstr "Podaj konsjerżowi terminy i liczbę podróżnych — po angielsku lub polsku."
+
+msgid "Test calendar connection"
+msgstr "Testuj połączenie z kalendarzem"
+
+msgid "Test connection"
+msgstr "Testuj połączenie"
+
+msgid "The Google Calendar id dedicated to this room."
+msgstr "Identyfikator kalendarza Google przypisanego do tego pokoju."
+
+msgid "The assistant can make mistakes. Reception is always happy to help."
+msgstr "Asystent może się mylić. Recepcja zawsze chętnie pomoże."
+
+msgid "The booking is invalid."
+msgstr "Rezerwacja jest nieprawidłowa."
+
+msgid "The end date must be after the start date."
+msgstr "Data końcowa musi być późniejsza niż początkowa."
+
+msgid "The hold on this reservation expired before it was confirmed."
+msgstr "Blokada tej rezerwacji wygasła przed potwierdzeniem."
+
+msgid "The reception service is unreachable. Check your connection."
+msgstr "Usługa recepcji jest nieosiągalna. Sprawdź połączenie."
+
+msgid "The reservation hold has expired. Please choose the room again."
+msgstr "Blokada rezerwacji wygasła. Wybierz pokój ponownie."
+
+msgid "The room capacity is exceeded."
+msgstr "Przekroczono pojemność pokoju."
+
+msgid "The selected room is no longer available."
+msgstr "Wybrany pokój nie jest już dostępny."
+
+msgid "The selected room is not available."
+msgstr "Wybrany pokój jest niedostępny."
+
+msgid "The selected room type is not available."
+msgstr "Wybrany typ pokoju jest niedostępny."
+
+msgid "The voice concierge is unavailable right now. Please use chat instead."
+msgstr "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
+
+#, python-format
+msgid ""
+"There is no reservation matching <strong>%(ref)s</strong>. Check the reference and "
+"try again."
+msgstr "Brak rezerwacji o numerze <strong>%(ref)s</strong>. Sprawdź numer i spróbuj ponownie."
+
+msgid "This booking can no longer be cancelled."
+msgstr "Tej rezerwacji nie można już anulować."
+
+msgid "This booking can no longer be confirmed."
+msgstr "Tej rezerwacji nie można już potwierdzić."
+
+msgid ""
+"This browser does not support speech recognition. Please use Chrome or Edge, or "
+"switch to chat."
+msgstr ""
+"Ta przeglądarka nie obsługuje rozpoznawania mowy. Użyj Chrome lub Edge albo przejdź "
+"do czatu."
+
+msgid "This reservation has been cancelled."
+msgstr "Ta rezerwacja została anulowana."
+
+msgid "This room is already booked for the selected dates."
+msgstr "Ten pokój jest już zarezerwowany w wybranych terminach."
+
+#, python-format
+msgid "This room is on hold until %(time)s today. Confirm with reception to secure it."
+msgstr "Ten pokój jest zablokowany do %(time)s. Potwierdź w recepcji, aby go zatrzymać."
+
+#, python-format
+msgid "This room type sleeps up to %(capacity)s guests."
+msgstr "Ten typ pokoju mieści do %(capacity)s gości."
+
+msgid "Tool"
+msgstr "Narzędzie"
+
+msgid "Total"
+msgstr "Razem"
+
+msgid "Total (VAT included)"
+msgstr "Razem (z VAT)"
+
+msgid "Try another reference"
+msgstr "Spróbuj innego numeru"
+
+msgid "Two ways to settle in"
+msgstr "Dwa sposoby na przytulny pobyt"
+
+msgid "Updating your reservation…"
+msgstr "Aktualizuję rezerwację…"
+
+msgid "Use comma separated numbers between 0 and 6."
+msgstr "Użyj liczb od 0 do 6 oddzielonych przecinkami."
+
+msgid "Validity"
+msgstr "Ważność"
+
+msgid "View booking"
+msgstr "Zobacz rezerwację"
+
+msgid "Voice"
+msgstr "Głos"
+
+msgid "Voice agent"
+msgstr "Agent głosowy"
+
+msgid "Voice concierge"
+msgstr "Konsjerż głosowy"
+
+msgid "We could not find that booking"
+msgstr "Nie znaleźliśmy tej rezerwacji"
+
+msgid "Website"
+msgstr "Strona internetowa"
+
+msgid "Weekday numbers must be between 0 and 6."
+msgstr "Numery dni tygodnia muszą być między 0 a 6."
+
+msgid "Weekend"
+msgstr "Weekendowa"
+
+msgid "What does the Deluxe Suite cost for three nights?"
+msgstr "Ile kosztuje apartament Deluxe na trzy noce?"
+
+msgid "Window"
+msgstr "Okno"
+
+msgid "Write in English or Polish…"
+msgstr "Pisz po angielsku lub polsku…"
+
+msgid "You"
+msgstr "Ty"
+
+msgid "You can ask to cancel or look up an existing booking."
+msgstr "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
+
+#, python-format
+msgid "You're all set. We look forward to welcoming you — check-in is from %(checkin)s."
+msgstr "Wszystko gotowe. Czekamy na Ciebie — zameldowanie od %(checkin)s."
+
+msgid "Your booking"
+msgstr "Twoja rezerwacja"
+
+msgid ""
+"Your browser will ask for microphone access. Audio is only sent to your own reception"
+" service."
+msgstr ""
+"Przeglądarka poprosi o dostęp do mikrofonu. Dźwięk trafia wyłącznie do Twojej "
+"recepcji."
+
+msgid "Your message"
+msgstr "Twoja wiadomość"
+
+msgid "Your reservation"
+msgstr "Twoja rezerwacja"
+
+msgid "active"
+msgstr "aktywny"
+
+msgid "adjustment type"
+msgstr "typ korekty"
+
+msgid "adults"
+msgstr "dorośli"
+
+msgid "agent settings"
+msgstr "ustawienia agenta"
+
+msgid "always"
+msgstr "zawsze"
+
+msgid "amenities"
+msgstr "udogodnienia"
+
+msgid "amount"
+msgstr "kwota"
+
+msgid "assistant name"
+msgstr "nazwa asystenta"
+
+msgid "available"
+msgstr "dostępny"
+
+msgid "base price per night"
+msgstr "cena bazowa za noc"
+
+msgid "beds"
+msgstr "łóżka"
+
+msgid "booking"
+msgstr "rezerwacja"
+
+msgid "booking hold (minutes)"
+msgstr "blokada rezerwacji (minuty)"
+
+msgid "bookings"
+msgstr "rezerwacje"
+
+msgid "calendar connection"
+msgstr "połączenie kalendarza"
+
+msgid "calendar connections"
+msgstr "połączenia kalendarzy"
+
+msgid "calendar event"
+msgstr "zdarzenie kalendarza"
+
+msgid "calendar event id"
+msgstr "identyfikator zdarzenia kalendarza"
+
+msgid "calendar events"
+msgstr "zdarzenia kalendarza"
+
+msgid "calendar id"
+msgstr "identyfikator kalendarza"
+
+msgid "cancelled at"
+msgstr "anulowano o"
+
+msgid "capacity"
+msgstr "pojemność"
+
+msgid "channel"
+msgstr "kanał"
+
+msgid "chat enabled"
+msgstr "czat włączony"
+
+msgid "check-in"
+msgstr "zameldowanie"
+
+msgid "check-out"
+msgstr "wymeldowanie"
+
+msgid "children"
+msgstr "dzieci"
+
+msgid "client"
+msgstr "klient"
+
+msgid "clients"
+msgstr "klienci"
+
+msgid "confirmed at"
+msgstr "potwierdzono o"
+
+msgid "content"
+msgstr "treść"
+
+msgid "conversation"
+msgstr "rozmowa"
+
+msgid "conversations"
+msgstr "rozmowy"
+
+msgid "country"
+msgstr "kraj"
+
+msgid "credentials JSON"
+msgstr "dane uwierzytelniające JSON"
+
+msgid "currency"
+msgstr "waluta"
+
+msgid "days of week"
+msgstr "dni tygodnia"
+
+msgid "default calendar id"
+msgstr "domyślny identyfikator kalendarza"
+
+msgid "default provider"
+msgstr "domyślny dostawca"
+
+msgid "description"
+msgstr "opis"
+
+msgid "email"
+msgstr "e-mail"
+
+msgid "enabled"
+msgstr "włączony"
+
+msgid "enabled languages"
+msgstr "obsługiwane języki"
+
+msgid "error"
+msgstr "błąd"
+
+msgid "event id"
+msgstr "identyfikator zdarzenia"
+
+msgid "event payload"
+msgstr "dane zdarzenia"
+
+msgid "expired"
+msgstr "wygasła"
+
+msgid "extra settings"
+msgstr "ustawienia dodatkowe"
+
+msgid "fallback message (English)"
+msgstr "wiadomość zapasowa (angielska)"
+
+msgid "fallback message (Polish)"
+msgstr "wiadomość zapasowa (polska)"
+
+msgid "first name"
+msgstr "imię"
+
+msgid "floor"
+msgstr "piętro"
+
+msgid "from"
+msgstr "od"
+
+msgid "greeting (English)"
+msgstr "powitanie (angielskie)"
+
+msgid "greeting (Polish)"
+msgstr "powitanie (polskie)"
+
+msgid "guest"
+msgstr "gość"
+
+msgid "guests"
+msgstr "goście"
+
+msgid "hold expires at"
+msgstr "blokada wygasa o"
+
+msgid "kind"
+msgstr "rodzaj"
+
+msgid "language"
+msgstr "język"
+
+msgid "last name"
+msgstr "nazwisko"
+
+msgid "last synced at"
+msgstr "ostatnia synchronizacja"
+
+msgid "latency (ms)"
+msgstr "opóźnienie (ms)"
+
+msgid "marketing consent"
+msgstr "zgoda marketingowa"
+
+msgid "max output tokens"
+msgstr "maks. tokenów wyjściowych"
+
+msgid "max tool iterations"
+msgstr "maks. iteracji narzędzi"
+
+msgid "message"
+msgstr "wiadomość"
+
+msgid "messages"
+msgstr "wiadomości"
+
+msgid "minimum nights"
+msgstr "minimalna liczba nocy"
+
+msgid "model"
+msgstr "model"
+
+msgid "name"
+msgstr "nazwa"
+
+msgid "night"
+msgstr "noc"
+
+msgid "nights"
+msgstr "nocy"
+
+msgid "notes"
+msgstr "notatki"
+
+msgid "number"
+msgstr "numer"
+
+msgid "phone"
+msgstr "telefon"
+
+msgid "price breakdown"
+msgstr "szczegóły ceny"
+
+msgid "pricing rule"
+msgstr "reguła cenowa"
+
+msgid "pricing rules"
+msgstr "reguły cenowe"
+
+msgid "priority"
+msgstr "priorytet"
+
+msgid "provider"
+msgstr "dostawca"
+
+msgid "provider type"
+msgstr "typ dostawcy"
+
+msgid "reference"
+msgstr "numer"
+
+msgid "role"
+msgstr "rola"
+
+msgid "room"
+msgstr "pokój"
+
+msgid "room calendar"
+msgstr "kalendarz pokoju"
+
+msgid "room calendars"
+msgstr "kalendarze pokoi"
+
+msgid "room type"
+msgstr "typ pokoju"
+
+msgid "room types"
+msgstr "typy pokoi"
+
+msgid "rooms"
+msgstr "pokoje"
+
+msgid "short description"
+msgstr "krótki opis"
+
+msgid "size (m²)"
+msgstr "powierzchnia (m²)"
+
+msgid "slug"
+msgstr "slug"
+
+msgid "sort order"
+msgstr "kolejność"
+
+msgid "source"
+msgstr "źródło"
+
+msgid "special requests"
+msgstr "specjalne życzenia"
+
+msgid "speech-to-text provider"
+msgstr "dostawca zamiany mowy na tekst"
+
+msgid "state"
+msgstr "stan"
+
+msgid "status"
+msgstr "status"
+
+msgid "sync enabled"
+msgstr "synchronizacja włączona"
+
+msgid "system prompt (English)"
+msgstr "prompt systemowy (angielski)"
+
+msgid "system prompt (Polish)"
+msgstr "prompt systemowy (polski)"
+
+msgid "temperature"
+msgstr "temperatura"
+
+msgid "text-to-speech provider"
+msgstr "dostawca zamiany tekstu na mowę"
+
+msgid "timeout (seconds)"
+msgstr "limit czasu (sekundy)"
+
+msgid "token usage"
+msgstr "zużycie tokenów"
+
+msgid "tool call id"
+msgstr "identyfikator wywołania narzędzia"
+
+msgid "tool calls"
+msgstr "wywołania narzędzi"
+
+msgid "tool name"
+msgstr "nazwa narzędzia"
+
+msgid "total price"
+msgstr "cena całkowita"
+
+msgid "until"
+msgstr "do"
+
+msgid "valid from"
+msgstr "ważna od"
+
+msgid "valid until"
+msgstr "ważna do"
+
+msgid "voice enabled"
+msgstr "głos włączony"
+
+msgid "voice name (English)"
+msgstr "nazwa głosu (angielska)"
+
+msgid "voice name (Polish)"
+msgstr "nazwa głosu (polska)"
+
+#, python-format
+msgid "weekdays %(days)s"
+msgstr "dni tygodnia %(days)s"
+

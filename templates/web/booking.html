@@ -1,0 +1,123 @@
+{% extends "web/base.html" %}
+{% load i18n humanize static %}
+
+{% block title %}{{ booking.reference }} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell booking-shell">
+  <div class="booking-card" id="booking-card"
+       data-cancel-url="/api/v1/bookings/{{ booking.reference }}/cancel/"
+       data-confirm-url="/api/v1/bookings/{{ booking.reference }}/confirm/"
+       data-reference="{{ booking.reference }}"
+       data-msg-cancel-confirm="{% trans 'Cancel this reservation? This cannot be undone.' %}"
+       data-msg-confirm="{% trans 'Confirm this reservation now?' %}"
+       data-msg-working="{% trans 'Updating your reservation…' %}"
+       data-msg-cancelled="{% trans 'Reservation cancelled.' %}"
+       data-msg-confirmed="{% trans 'Reservation confirmed. See you soon!' %}"
+       data-msg-error="{% trans 'Something went wrong. Please try again.' %}">
+    <header class="booking-card__header">
+      <div>
+        <p class="eyebrow">{% trans "Reservation" %}</p>
+        <h1>{{ booking.reference }}</h1>
+        <p class="muted">{{ booking.client.full_name }} · {{ booking.client.email|default:booking.client.phone }}</p>
+      </div>
+      <span class="badge badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
+    </header>
+
+    {% if booking.status == "pending" %}
+      <p class="notice notice--warning">
+        {% blocktrans with time=booking.hold_expires_at|date:"H:i" %}This room is on hold until {{ time }} today. Confirm with reception to secure it.{% endblocktrans %}
+      </p>
+    {% elif booking.status == "confirmed" %}
+      <p class="notice notice--success">
+        {% blocktrans with checkin=hotel.check_in_time %}You're all set. We look forward to welcoming you — check-in is from {{ checkin }}.{% endblocktrans %}
+      </p>
+    {% elif booking.status == "cancelled" %}
+      <p class="notice notice--muted">{% trans "This reservation has been cancelled." %}</p>
+    {% elif booking.status == "expired" %}
+      <p class="notice notice--muted">{% trans "The hold on this reservation expired before it was confirmed." %}</p>
+    {% endif %}
+
+    <div class="detail-grid">
+      <div class="detail">
+        <span class="detail__label">{% trans "Check-in" %}</span>
+        <span class="detail__value">{{ booking.check_in|date:"D, d M Y" }}</span>
+        <span class="muted">{% trans "from" %} {{ hotel.check_in_time }}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Check-out" %}</span>
+        <span class="detail__value">{{ booking.check_out|date:"D, d M Y" }}</span>
+        <span class="muted">{% trans "until" %} {{ hotel.check_out_time }}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Room" %}</span>
+        <span class="detail__value">{{ booking.room.number }} · {{ booking.room_type.name }}</span>
+        <span class="muted">{{ booking.nights }} {% trans "nights" %}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Guests" %}</span>
+        <span class="detail__value">{{ booking.adults }} {% trans "adults" %}{% if booking.children %}, {{ booking.children }} {% trans "children" %}{% endif %}</span>
+        <span class="muted">{% trans "Booked via" %} {{ booking.get_source_display }}</span>
+      </div>
+    </div>
+
+    {% if booking.price_breakdown.nightly %}
+      <h2 class="booking-card__section-title">{% trans "Price breakdown" %}</h2>
+      <table class="price-table">
+        <thead>
+          <tr><th>{% trans "Night" %}</th><th>{% trans "Rate" %}</th><th>{% trans "Rules" %}</th></tr>
+        </thead>
+        <tbody>
+          {% for night in booking.price_breakdown.nightly %}
+            <tr>
+              <td>{{ night.date }}</td>
+              <td>{{ night.rate }} {{ booking.currency }}</td>
+              <td class="muted">{% if night.rules %}{{ night.rules|join:", " }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2">{% trans "Total (VAT included)" %}</th>
+            <th>{{ booking.total_price }} {{ booking.currency }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    {% endif %}
+
+    {% if booking.special_requests %}
+      <h2 class="booking-card__section-title">{% trans "Special requests" %}</h2>
+      <p>{{ booking.special_requests }}</p>
+    {% endif %}
+
+    <div class="booking-card__meta">
+      <p>{% trans "Created" %}: {{ booking.created_at|date:"d M Y, H:i" }}</p>
+      {% if booking.calendar_events.first %}
+        <p>
+          {% trans "Calendar" %}:
+          {{ booking.calendar_events.first.get_status_display }}
+          {% if booking.calendar_events.first.error_message %}
+            <span class="muted">({{ booking.calendar_events.first.error_message }})</span>
+          {% endif %}
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="booking-card__actions">
+      <button class="btn btn--ghost" type="button" onclick="window.print()">{% trans "Print" %}</button>
+      {% if booking.status == "pending" %}
+        <button class="btn btn--primary" type="button" id="confirm-booking">{% trans "Confirm booking" %}</button>
+      {% endif %}
+      {% if booking.status == "pending" or booking.status == "confirmed" %}
+        <button class="btn btn--danger" type="button" id="cancel-booking">{% trans "Cancel reservation" %}</button>
+      {% endif %}
+      <a class="btn btn--primary" href="{% url 'web:chat' %}">{% trans "Ask the concierge" %}</a>
+    </div>
+    <p class="form-status" id="booking-status" role="status" aria-live="polite"></p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/booking.js' %}" defer></script>
+{% endblock %}

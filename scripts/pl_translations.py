@@ -1,0 +1,466 @@
+"""Polish translations for the Hotel Aurora UI and admin.
+
+Keep the keys identical to the extracted msgids. Run
+``scripts/update_translations.py`` after editing this file.
+"""
+
+TRANSLATIONS: dict[str, str] = {
+    "%(count)s booking(s) cancelled.": "Anulowano rezerwacje: %(count)s.",
+    "%(count)s booking(s) confirmed.": "Potwierdzono rezerwacje: %(count)s.",
+    "%(count)s booking(s) synced.": "Zsynchronizowano rezerwacje: %(count)s.",
+    "%(count)s event(s) retried.": "Ponowiono zdarzenia: %(count)s.",
+    "%(count)s provider(s) disabled.": "Wyłączono dostawców: %(count)s.",
+    "%(count)s provider(s) enabled.": "Włączono dostawców: %(count)s.",
+    "%(name)s is now the default provider.": "%(name)s jest teraz domyślnym dostawcą.",
+    "A hold keeps your room for 30 minutes while you decide.": (
+        "Rezerwacja wstępna blokuje pokój przez 30 minut, aż podejmiesz decyzję."
+    ),
+    "A percentage cannot be lower than -100.": "Procent nie może być niższy niż -100.",
+    "A reservation in three short steps": "Rezerwacja w trzech krótkich krokach",
+    "A warmer welcome at %(name)s": "Cieplejsze powitanie w %(name)s",
+    "AI concierge · online": "Konsjerż AI · online",
+    "AI provider": "Dostawca AI",
+    "AI providers": "Dostawcy AI",
+    "AI reception": "Recepcja AI",
+    "AI reception alpha": "Recepcja AI (alfa)",
+    "API": "API",
+    "API base URL": "Bazowy adres API",
+    "API key": "Klucz API",
+    "Adjustment": "Korekta",
+    "Admin": "Administracja",
+    "Anthropic": "Anthropic",
+    "Ask about this room": "Zapytaj o ten pokój",
+    "Ask in English or Polish. The assistant checks live availability and can hold your room in under a minute.": (
+        "Pytaj po angielsku lub polsku. Asystent sprawdza dostępność na żywo "
+        "i może zablokować pokój w niecałą minutę."
+    ),
+    "Ask the concierge": "Zapytaj konsjerża",
+    "Ask the concierge instead": "Zapytaj konsjerża",
+    "Assistant": "Asystent",
+    "At least one adult is required.": "Wymagany jest co najmniej jeden dorosły.",
+    "Aurora": "Aurora",
+    "Aurora is speaking": "Aurora mówi",
+    "Aurora is typing": "Aurora pisze",
+    "Availability and prices come from the hotel's booking engine, never from guesswork.": (
+        "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domysłów."
+    ),
+    "Back to rooms": "Wróć do pokoi",
+    "Behaviour": "Zachowanie",
+    "Book in December": "Rezerwacja w grudniu",
+    "Book with chat": "Zarezerwuj przez czat",
+    "Booked via": "Zarezerwowano przez",
+    "Booking not found": "Nie znaleziono rezerwacji",
+    "Booking not found.": "Nie znaleziono rezerwacji.",
+    "Booking reference": "Numer rezerwacji",
+    "Bookings can be made at most %(days)s days ahead.": (
+        "Rezerwacji można dokonać najwyżej %(days)s dni wcześniej."
+    ),
+    "Both check-in and check-out dates are required.": "Wymagane są daty zameldowania i wymeldowania.",
+    "Both room types include breakfast on request, fast Wi-Fi and a quiet night's sleep.": (
+        "Oba typy pokoi oferują śniadanie na życzenie, szybkie Wi-Fi i spokojny sen."
+    ),
+    "Boutique stays · AI concierge": "Butikowe pobyty · konsjerż AI",
+    "Calendar": "Kalendarz",
+    "Calendars": "Kalendarze",
+    "Call": "Zadzwoń",
+    "Call ended": "Połączenie zakończone",
+    "Cancel reservation": "Anuluj rezerwację",
+    "Cancel selected bookings": "Anuluj wybrane rezerwacje",
+    "Cancel this reservation? This cannot be undone.": (
+        "Anulować tę rezerwację? Tej operacji nie można cofnąć."
+    ),
+    "Cancelled": "Anulowana",
+    "Cannot find your reference?": "Nie możesz znaleźć numeru rezerwacji?",
+    "Capacity & price": "Pojemność i cena",
+    "Chat": "Czat",
+    "Chat agent": "Agent czatu",
+    "Chat with the concierge": "Porozmawiaj z konsjerżem",
+    "Check availability": "Sprawdź dostępność",
+    "Check the confirmation message from the concierge, or contact reception and we will look it up for you.": (
+        "Sprawdź wiadomość potwierdzającą od konsjerża lub skontaktuj się z recepcją, "
+        "a odnajdziemy ją dla Ciebie."
+    ),
+    "Check-in": "Zameldowanie",
+    "Check-in cannot be in the past.": "Data zameldowania nie może być w przeszłości.",
+    "Check-out": "Wymeldowanie",
+    "Check-out must be after check-in.": "Wymeldowanie musi nastąpić po zameldowaniu.",
+    "Checked in": "Zameldowany",
+    "Checked out": "Wymeldowany",
+    "Checking availability…": "Sprawdzam dostępność…",
+    "Clear": "Wyczyść",
+    "Comma separated weekday numbers, Monday=0. Example: 4,5 for Friday and Saturday nights.": (
+        "Numery dni tygodnia oddzielone przecinkami, poniedziałek=0. "
+        "Przykład: 4,5 dla piątku i soboty."
+    ),
+    "Confirm booking": "Potwierdź rezerwację",
+    "Confirm selected bookings": "Potwierdź wybrane rezerwacje",
+    "Confirm this reservation now?": "Potwierdzić tę rezerwację teraz?",
+    "Confirm with confidence": "Potwierdź z pewnością",
+    "Confirmed": "Potwierdzona",
+    "Connecting…": "Łączę…",
+    "Contact": "Kontakt",
+    "Content": "Treść",
+    "Conversation": "Rozmowa",
+    "Conversation language": "Język rozmowy",
+    "Created": "Utworzono",
+    "Credentials": "Dane uwierzytelniające",
+    "Dates": "Terminy",
+    "Deleted": "Usunięte",
+    "Deluxe Suite price": "Cena apartamentu Deluxe",
+    "Demo policy (offline)": "Polityka demo (offline)",
+    "Disable selected providers": "Wyłącz wybranych dostawców",
+    "Do you have a room for two this weekend?": "Czy macie pokój dla dwóch osób w ten weekend?",
+    "Email or phone is required.": "Wymagany jest adres e-mail lub numer telefonu.",
+    "Enable selected providers": "Włącz wybranych dostawców",
+    "End call": "Zakończ połączenie",
+    "English": "Angielski",
+    "English prompts": "Podpowiedzi angielskie",
+    "Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, confirm a hold or cancel.": (
+        "Wpisz numer, który otrzymałeś, np. HA-7KQ2M4, aby zobaczyć rezerwację, "
+        "potwierdzić blokadę lub ją anulować."
+    ),
+    "Expired": "Wygasła",
+    "Extras": "Dodatki",
+    "Failed": "Niepowodzenie",
+    "Fake (demo/testing)": "Atrapa (demo/testy)",
+    "Fallback calendar id when a room mapping does not specify one.": (
+        "Zapasowy identyfikator kalendarza, gdy mapowanie pokoju go nie określa."
+    ),
+    "Find my booking": "Znajdź moją rezerwację",
+    "Fixed amount per night": "Stała kwota za noc",
+    "Generation": "Generowanie",
+    "Good to know": "Warto wiedzieć",
+    "Google Calendar": "Google Calendar",
+    "Guest": "Gość",
+    "Guests": "Goście",
+    "Held until": "Zablokowane do",
+    "Hold": "Blokada",
+    "How it works": "Jak to działa",
+    "I could not reach the reception service. Check your connection and try again.": (
+        "Nie udało się połączyć z usługą recepcji. Sprawdź połączenie i spróbuj ponownie."
+    ),
+    "I did not catch that. Try again, a little closer to the microphone.": (
+        "Nie usłyszałem tego. Spróbuj ponownie, bliżej mikrofonu."
+    ),
+    "I would like to book a room": "Chciałbym zarezerwować pokój",
+    "I would like to book a room from the 12th to the 15th of December.": (
+        "Chciałbym zarezerwować pokój od 12 do 15 grudnia."
+    ),
+    "Language": "Język",
+    "Last minute": "Ostatnia chwila",
+    "Leave empty to apply to every room type.": "Pozostaw puste, aby zastosować do wszystkich typów pokoi.",
+    "Listening — speak now": "Słucham — mów teraz",
+    "Live transcript": "Transkrypcja na żywo",
+    "Long stay": "Długi pobyt",
+    "Look up booking": "Znajdź rezerwację",
+    "Main navigation": "Nawigacja główna",
+    "Make default": "Ustaw jako domyślnego",
+    "Messages": "Wiadomości",
+    "Metadata": "Metadane",
+    "Microphone access was blocked. Allow the microphone and try again.": (
+        "Dostęp do mikrofonu został zablokowany. Zezwól na mikrofon i spróbuj ponownie."
+    ),
+    "Model": "Model",
+    "My booking": "Moja rezerwacja",
+    "Need a hand? Reception can find your reservation by name, email or phone.": (
+        "Potrzebujesz pomocy? Recepcja znajdzie Twoją rezerwację po nazwisku, e-mailu lub telefonie."
+    ),
+    "Need a human?": "Potrzebujesz człowieka?",
+    "New conversation started.": "Rozpoczęto nową rozmowę.",
+    "Night": "Noc",
+    "No booking yet. Share your dates to get started.": "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć.",
+    "No card details are needed in the chat.": "W czacie nie są potrzebne dane karty.",
+    "No rooms are available for those dates. Try different dates or ask the concierge.": (
+        "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
+    ),
+    "No rooms of this type are available for the selected dates.": (
+        "Brak pokoi tego typu w wybranych terminach."
+    ),
+    "No show": "Nieobecność",
+    "Not found": "Nie znaleziono",
+    "Notes": "Notatki",
+    "Ollama / self-hosted": "Ollama / własny serwer",
+    "On hold": "Wstępnie zablokowana",
+    "Open chat": "Otwórz czat",
+    "Open the voice concierge and simply speak. It can check rooms, prices and confirm your stay.": (
+        "Otwórz konsjerża głosowego i po prostu mów. Sprawdzi pokoje, ceny i potwierdzi pobyt."
+    ),
+    "OpenAI": "OpenAI",
+    "Pending": "Oczekująca",
+    "Percent": "Procent",
+    "Percent (e.g. 15 = +15%) or a fixed amount per night.": (
+        "Procent (np. 15 = +15%) lub stała kwota za noc."
+    ),
+    "Please provide an email address or a phone number.": "Podaj adres e-mail lub numer telefonu.",
+    "Polish": "Polski",
+    "Polish prompts": "Podpowiedzi polskie",
+    "Prefer to talk it through?": "Wolisz porozmawiać?",
+    "Preferences": "Preferencje",
+    "Presentation": "Prezentacja",
+    "Press the call button and talk naturally. Aurora listens, checks real availability and confirms your room — in English or Polish.": (
+        "Naciśnij przycisk połączenia i mów naturalnie. Aurora słucha, sprawdza rzeczywistą "
+        "dostępność i potwierdza pokój — po angielsku lub polsku."
+    ),
+    "Price": "Cena",
+    "Price breakdown": "Szczegóły ceny",
+    "Prices include VAT and are quoted for the whole stay.": (
+        "Ceny zawierają VAT i dotyczą całego pobytu."
+    ),
+    "Print": "Drukuj",
+    "Provide at least an email address or a phone number.": (
+        "Podaj co najmniej adres e-mail lub numer telefonu."
+    ),
+    "Rate": "Stawka",
+    "Ready": "Gotowe",
+    "Ready when you are": "Gotowe, kiedy chcesz",
+    "Reception": "Recepcja",
+    "Reference": "Numer",
+    "Reservation": "Rezerwacja",
+    "Reservation cancelled.": "Rezerwacja anulowana.",
+    "Reservation confirmed. See you soon!": "Rezerwacja potwierdzona. Do zobaczenia!",
+    "Retry calendar sync": "Ponów synchronizację kalendarza",
+    "Review the summary, confirm, and receive a booking reference you can look up any time.": (
+        "Sprawdź podsumowanie, potwierdź i otrzymaj numer rezerwacji, "
+        "do którego możesz wrócić w każdej chwili."
+    ),
+    "Room": "Pokój",
+    "Room for two this weekend": "Pokój dla dwóch osób w ten weekend",
+    "Rooms": "Pokoje",
+    "Rooms & reservations": "Pokoje i rezerwacje",
+    "Rooms are being prepared. Please check back shortly.": "Pokoje są przygotowywane. Zajrzyj wkrótce.",
+    "Rules": "Zasady",
+    "Say hello": "Przywitaj się",
+    "Seasonal": "Sezonowa",
+    "See real availability": "Zobacz rzeczywistą dostępność",
+    "Send": "Wyślij",
+    "Service account key JSON or OAuth authorised-user JSON. The file path from GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty.": (
+        "Klucz konta usługi w formacie JSON lub plik JSON autoryzacji OAuth. "
+        "Gdy puste, używana jest ścieżka z GOOGLE_CALENDAR_CREDENTIALS_FILE."
+    ),
+    "Service account key JSON or authorised-user token JSON. Alternatively set GOOGLE_CALENDAR_CREDENTIALS_FILE in the environment.": (
+        "Klucz konta usługi w formacie JSON lub token autoryzowanego użytkownika. "
+        "Alternatywnie ustaw GOOGLE_CALENDAR_CREDENTIALS_FILE w środowisku."
+    ),
+    "Show rooms": "Pokaż pokoje",
+    "Skip to content": "Przejdź do treści",
+    "Something went wrong. Please try again.": "Coś poszło nie tak. Spróbuj ponownie.",
+    "Speak replies": "Czytaj odpowiedzi",
+    "Speak. We'll take care of the rest.": "Mów. Resztą zajmiemy się my.",
+    "Special requests": "Specjalne życzenia",
+    "Start a call": "Rozpocznij połączenie",
+    "Start a new call": "Rozpocznij nowe połączenie",
+    "Start a voice call": "Rozpocznij rozmowę głosową",
+    "Start call": "Rozpocznij połączenie",
+    "Start voice call": "Rozpocznij rozmowę głosową",
+    "Stay": "Pobyt",
+    "Stay with us": "Zatrzymaj się u nas",
+    "Stays longer than %(nights)s nights are not supported.": (
+        "Pobyty dłuższe niż %(nights)s nocy nie są obsługiwane."
+    ),
+    "Stays longer than {nights} nights are not supported.": (
+        "Pobyty dłuższe niż {nights} nocy nie są obsługiwane."
+    ),
+    "Stored in the database. Leave empty to keep the current key.": (
+        "Przechowywane w bazie danych. Pozostaw puste, aby zachować obecny klucz."
+    ),
+    "Sync selected bookings to calendars": "Synchronizuj wybrane rezerwacje z kalendarzami",
+    "Synced": "Zsynchronizowane",
+    "System": "System",
+    "Tell the concierge your dates and how many people are travelling, in English or Polish.": (
+        "Podaj konsjerżowi terminy i liczbę podróżnych — po angielsku lub polsku."
+    ),
+    "Test calendar connection": "Testuj połączenie z kalendarzem",
+    "Test connection": "Testuj połączenie",
+    "The Google Calendar id dedicated to this room.": (
+        "Identyfikator kalendarza Google przypisanego do tego pokoju."
+    ),
+    "The assistant can make mistakes. Reception is always happy to help.": (
+        "Asystent może się mylić. Recepcja zawsze chętnie pomoże."
+    ),
+    "The booking is invalid.": "Rezerwacja jest nieprawidłowa.",
+    "The end date must be after the start date.": "Data końcowa musi być późniejsza niż początkowa.",
+    "The hold on this reservation expired before it was confirmed.": (
+        "Blokada tej rezerwacji wygasła przed potwierdzeniem."
+    ),
+    "The reception service is unreachable. Check your connection.": (
+        "Usługa recepcji jest nieosiągalna. Sprawdź połączenie."
+    ),
+    "The reservation hold has expired. Please choose the room again.": (
+        "Blokada rezerwacji wygasła. Wybierz pokój ponownie."
+    ),
+    "The room capacity is exceeded.": "Przekroczono pojemność pokoju.",
+    "The selected room is no longer available.": "Wybrany pokój nie jest już dostępny.",
+    "The selected room is not available.": "Wybrany pokój jest niedostępny.",
+    "The selected room type is not available.": "Wybrany typ pokoju jest niedostępny.",
+    "The voice concierge is unavailable right now. Please use chat instead.": (
+        "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
+    ),
+    "There is no reservation matching <strong>%(ref)s</strong>. Check the reference and try again.": (
+        "Brak rezerwacji o numerze <strong>%(ref)s</strong>. Sprawdź numer i spróbuj ponownie."
+    ),
+    "This booking can no longer be cancelled.": "Tej rezerwacji nie można już anulować.",
+    "This booking can no longer be confirmed.": "Tej rezerwacji nie można już potwierdzić.",
+    "This browser does not support speech recognition. Please use Chrome or Edge, or switch to chat.": (
+        "Ta przeglądarka nie obsługuje rozpoznawania mowy. "
+        "Użyj Chrome lub Edge albo przejdź do czatu."
+    ),
+    "This reservation has been cancelled.": "Ta rezerwacja została anulowana.",
+    "This room is already booked for the selected dates.": (
+        "Ten pokój jest już zarezerwowany w wybranych terminach."
+    ),
+    "This room is on hold until %(time)s today. Confirm with reception to secure it.": (
+        "Ten pokój jest zablokowany do %(time)s. Potwierdź w recepcji, aby go zatrzymać."
+    ),
+    "This room type sleeps up to %(capacity)s guests.": (
+        "Ten typ pokoju mieści do %(capacity)s gości."
+    ),
+    "Tool": "Narzędzie",
+    "Total": "Razem",
+    "Total (VAT included)": "Razem (z VAT)",
+    "Try another reference": "Spróbuj innego numeru",
+    "Two ways to settle in": "Dwa sposoby na przytulny pobyt",
+    "Updating your reservation…": "Aktualizuję rezerwację…",
+    "Use comma separated numbers between 0 and 6.": "Użyj liczb od 0 do 6 oddzielonych przecinkami.",
+    "Validity": "Ważność",
+    "View booking": "Zobacz rezerwację",
+    "Voice": "Głos",
+    "Voice agent": "Agent głosowy",
+    "Voice concierge": "Konsjerż głosowy",
+    "We could not find that booking": "Nie znaleźliśmy tej rezerwacji",
+    "Website": "Strona internetowa",
+    "Weekday numbers must be between 0 and 6.": "Numery dni tygodnia muszą być między 0 a 6.",
+    "Weekend": "Weekendowa",
+    "What does the Deluxe Suite cost for three nights?": "Ile kosztuje apartament Deluxe na trzy noce?",
+    "Window": "Okno",
+    "Write in English or Polish…": "Pisz po angielsku lub polsku…",
+    "You": "Ty",
+    "You can ask to cancel or look up an existing booking.": (
+        "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
+    ),
+    "You're all set. We look forward to welcoming you — check-in is from %(checkin)s.": (
+        "Wszystko gotowe. Czekamy na Ciebie — zameldowanie od %(checkin)s."
+    ),
+    "Your booking": "Twoja rezerwacja",
+    "Your browser will ask for microphone access. Audio is only sent to your own reception service.": (
+        "Przeglądarka poprosi o dostęp do mikrofonu. Dźwięk trafia wyłącznie do Twojej recepcji."
+    ),
+    "Your message": "Twoja wiadomość",
+    "Your reservation": "Twoja rezerwacja",
+    "active": "aktywny",
+    "adjustment type": "typ korekty",
+    "adults": "dorośli",
+    "agent settings": "ustawienia agenta",
+    "always": "zawsze",
+    "amenities": "udogodnienia",
+    "amount": "kwota",
+    "assistant name": "nazwa asystenta",
+    "available": "dostępny",
+    "base price per night": "cena bazowa za noc",
+    "beds": "łóżka",
+    "booking": "rezerwacja",
+    "booking hold (minutes)": "blokada rezerwacji (minuty)",
+    "bookings": "rezerwacje",
+    "calendar connection": "połączenie kalendarza",
+    "calendar connections": "połączenia kalendarzy",
+    "calendar event": "zdarzenie kalendarza",
+    "calendar event id": "identyfikator zdarzenia kalendarza",
+    "calendar events": "zdarzenia kalendarza",
+    "calendar id": "identyfikator kalendarza",
+    "cancelled at": "anulowano o",
+    "capacity": "pojemność",
+    "channel": "kanał",
+    "chat enabled": "czat włączony",
+    "check-in": "zameldowanie",
+    "check-out": "wymeldowanie",
+    "children": "dzieci",
+    "client": "klient",
+    "clients": "klienci",
+    "confirmed at": "potwierdzono o",
+    "content": "treść",
+    "conversation": "rozmowa",
+    "conversations": "rozmowy",
+    "country": "kraj",
+    "credentials JSON": "dane uwierzytelniające JSON",
+    "currency": "waluta",
+    "days of week": "dni tygodnia",
+    "default calendar id": "domyślny identyfikator kalendarza",
+    "default provider": "domyślny dostawca",
+    "description": "opis",
+    "email": "e-mail",
+    "enabled": "włączony",
+    "enabled languages": "obsługiwane języki",
+    "error": "błąd",
+    "event id": "identyfikator zdarzenia",
+    "event payload": "dane zdarzenia",
+    "expired": "wygasła",
+    "extra settings": "ustawienia dodatkowe",
+    "fallback message (English)": "wiadomość zapasowa (angielska)",
+    "fallback message (Polish)": "wiadomość zapasowa (polska)",
+    "first name": "imię",
+    "floor": "piętro",
+    "from": "od",
+    "greeting (English)": "powitanie (angielskie)",
+    "greeting (Polish)": "powitanie (polskie)",
+    "guest": "gość",
+    "guests": "goście",
+    "hold expires at": "blokada wygasa o",
+    "kind": "rodzaj",
+    "language": "język",
+    "last name": "nazwisko",
+    "last synced at": "ostatnia synchronizacja",
+    "latency (ms)": "opóźnienie (ms)",
+    "marketing consent": "zgoda marketingowa",
+    "max output tokens": "maks. tokenów wyjściowych",
+    "max tool iterations": "maks. iteracji narzędzi",
+    "message": "wiadomość",
+    "messages": "wiadomości",
+    "minimum nights": "minimalna liczba nocy",
+    "model": "model",
+    "name": "nazwa",
+    "night": "noc",
+    "nights": "nocy",
+    "notes": "notatki",
+    "number": "numer",
+    "phone": "telefon",
+    "price breakdown": "szczegóły ceny",
+    "pricing rule": "reguła cenowa",
+    "pricing rules": "reguły cenowe",
+    "priority": "priorytet",
+    "provider": "dostawca",
+    "provider type": "typ dostawcy",
+    "reference": "numer",
+    "role": "rola",
+    "room": "pokój",
+    "room calendar": "kalendarz pokoju",
+    "room calendars": "kalendarze pokoi",
+    "room type": "typ pokoju",
+    "room types": "typy pokoi",
+    "rooms": "pokoje",
+    "short description": "krótki opis",
+    "size (m²)": "powierzchnia (m²)",
+    "slug": "slug",
+    "sort order": "kolejność",
+    "source": "źródło",
+    "special requests": "specjalne życzenia",
+    "speech-to-text provider": "dostawca zamiany mowy na tekst",
+    "state": "stan",
+    "status": "status",
+    "sync enabled": "synchronizacja włączona",
+    "system prompt (English)": "prompt systemowy (angielski)",
+    "system prompt (Polish)": "prompt systemowy (polski)",
+    "temperature": "temperatura",
+    "text-to-speech provider": "dostawca zamiany tekstu na mowę",
+    "timeout (seconds)": "limit czasu (sekundy)",
+    "token usage": "zużycie tokenów",
+    "tool call id": "identyfikator wywołania narzędzia",
+    "tool calls": "wywołania narzędzi",
+    "tool name": "nazwa narzędzia",
+    "total price": "cena całkowita",
+    "until": "do",
+    "valid from": "ważna od",
+    "valid until": "ważna do",
+    "voice enabled": "głos włączony",
+    "voice name (English)": "nazwa głosu (angielska)",
+    "voice name (Polish)": "nazwa głosu (polska)",
+    "weekdays %(days)s": "dni tygodnia %(days)s",
+}

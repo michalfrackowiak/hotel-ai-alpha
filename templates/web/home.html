@@ -1,0 +1,164 @@
+{% extends "web/base.html" %}
+{% load i18n humanize static %}
+
+{% block title %}{{ hotel.name }} · {% trans "Rooms & reservations" %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__backdrop" aria-hidden="true"></div>
+  <div class="shell hero__inner">
+    <div class="hero__copy">
+      <p class="eyebrow">{% trans "Boutique stays · AI concierge" %}</p>
+      <h1>{% blocktrans with name=hotel.name %}A warmer welcome at {{ name }}{% endblocktrans %}</h1>
+      <p class="hero__lede">{{ hotel.tagline }}</p>
+      <div class="hero__actions">
+        {% if assistant.chat_enabled %}
+          <a class="btn btn--primary" href="{% url 'web:chat' %}">{% trans "Chat with the concierge" %}</a>
+        {% endif %}
+        {% if assistant.voice_enabled %}
+          <a class="btn btn--ghost" href="{% url 'web:voice' %}">{% trans "Start a voice call" %}</a>
+        {% endif %}
+      </div>
+      <p class="hero__note">
+        {% blocktrans %}Ask in English or Polish. The assistant checks live availability and can hold your room in under a minute.{% endblocktrans %}
+      </p>
+    </div>
+
+    <form class="availability-card" id="availability-form"
+          data-endpoint="/api/v1/availability/"
+          data-currency="{{ hotel.currency }}"
+          data-chat-url="{% url 'web:chat' %}"
+          data-voice-url="{% url 'web:voice' %}"
+          data-msg-searching="{% trans 'Checking availability…' %}"
+          data-msg-empty="{% trans 'No rooms are available for those dates. Try different dates or ask the concierge.' %}"
+          data-msg-error="{% trans 'Something went wrong. Please try again.' %}"
+          data-msg-night="{% trans 'night' %}"
+          data-msg-nights="{% trans 'nights' %}"
+          data-msg-total="{% trans 'Total' %}"
+          data-msg-available="{% trans 'available' %}"
+          data-msg-book="{% trans 'Book with chat' %}"
+          data-msg-call="{% trans 'Call' %}">
+      <h2>{% trans "Check availability" %}</h2>
+      <div class="field-row">
+        <label class="field">
+          <span>{% trans "Check-in" %}</span>
+          <input type="date" name="check_in" value="{{ default_check_in }}" min="{{ today|date:'Y-m-d' }}" required>
+        </label>
+        <label class="field">
+          <span>{% trans "Check-out" %}</span>
+          <input type="date" name="check_out" value="{{ default_check_out }}" min="{{ today|date:'Y-m-d' }}" required>
+        </label>
+      </div>
+      <label class="field">
+        <span>{% trans "Guests" %}</span>
+        <select name="guests">
+          <option value="1">1 {% trans "guest" %}</option>
+          <option value="2" selected>2 {% trans "guests" %}</option>
+          <option value="3">3 {% trans "guests" %}</option>
+          <option value="4">4 {% trans "guests" %}</option>
+        </select>
+      </label>
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Show rooms" %}</button>
+      <p class="form-status" id="availability-status" role="status" aria-live="polite"></p>
+      <div class="availability-results" id="availability-results"></div>
+    </form>
+  </div>
+</section>
+
+<section class="section" id="rooms">
+  <div class="shell">
+    <div class="section-heading">
+      <p class="eyebrow">{% trans "Stay with us" %}</p>
+      <h2>{% trans "Two ways to settle in" %}</h2>
+      <p>{% trans "Both room types include breakfast on request, fast Wi-Fi and a quiet night's sleep." %}</p>
+    </div>
+
+    <div class="room-grid">
+      {% for room_type in room_types %}
+        <article class="room-card">
+          <div class="room-card__visual room-card__visual--{{ forloop.counter }}" aria-hidden="true">
+            <span>{{ room_type.name|slice:":1" }}</span>
+            <small>{% trans "from" %} {{ room_type.base_price|floatformat:0 }} {{ room_type.currency }}</small>
+          </div>
+          <div class="room-card__body">
+            <div class="room-card__title">
+              <h3>{{ room_type.name }}</h3>
+              <span class="pill">{{ room_type.capacity }} {% trans "guests" %}</span>
+            </div>
+            <p>{{ room_type.short_description }}</p>
+            <p class="room-card__price">
+              {{ room_type.base_price|floatformat:0 }} {{ room_type.currency }}
+              <span>/ {% trans "night" %}</span>
+            </p>
+            {% if room_type.amenities %}
+              <ul class="amenity-list">
+                {% for amenity in room_type.amenities|slice:":5" %}
+                  <li>{{ amenity }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="room-card__actions">
+              {% if assistant.chat_enabled %}
+                <a class="btn btn--small btn--primary"
+                   href="{% url 'web:chat' %}?room_type={{ room_type.slug }}">{% trans "Ask about this room" %}</a>
+              {% endif %}
+              {% if assistant.voice_enabled %}
+                <a class="btn btn--small btn--ghost" href="{% url 'web:voice' %}?room_type={{ room_type.slug }}">{% trans "Call" %}</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <p class="empty-state">{% trans "Rooms are being prepared. Please check back shortly." %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--muted">
+  <div class="shell">
+    <div class="section-heading">
+      <p class="eyebrow">{% trans "How it works" %}</p>
+      <h2>{% trans "A reservation in three short steps" %}</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <span class="steps__number">01</span>
+        <h3>{% trans "Say hello" %}</h3>
+        <p>{% trans "Tell the concierge your dates and how many people are travelling, in English or Polish." %}</p>
+      </li>
+      <li>
+        <span class="steps__number">02</span>
+        <h3>{% trans "See real availability" %}</h3>
+        <p>{% trans "Availability and prices come from the hotel's booking engine, never from guesswork." %}</p>
+      </li>
+      <li>
+        <span class="steps__number">03</span>
+        <h3>{% trans "Confirm with confidence" %}</h3>
+        <p>{% trans "Review the summary, confirm, and receive a booking reference you can look up any time." %}</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="shell cta-band__inner">
+    <div>
+      <h2>{% trans "Prefer to talk it through?" %}</h2>
+      <p>{% trans "Open the voice concierge and simply speak. It can check rooms, prices and confirm your stay." %}</p>
+    </div>
+    <div class="cta-band__actions">
+      {% if assistant.voice_enabled %}
+        <a class="btn btn--primary" href="{% url 'web:voice' %}">{% trans "Start a call" %}</a>
+      {% endif %}
+      {% if assistant.chat_enabled %}
+        <a class="btn btn--ghost" href="{% url 'web:chat' %}">{% trans "Open chat" %}</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/home.js' %}" defer></script>
+{% endblock %}
