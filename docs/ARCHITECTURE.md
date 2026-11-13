@@ -19,6 +19,8 @@ flowchart LR
     Calendar --> Fake[Fake calendar<br/>demo/tests]
     Hotel --> Mail[Confirmation email<br/>SMTP / console]
     Scheduler[Hold cleanup scheduler] --> Hotel
+    Staff[Reception staff] --> Ops[Ops dashboard / admin]
+    Ops --> Hotel
 ```
 
 The browser talks to the Django app. Chat and voice both create a `Conversation` and send user text to `POST /api/v1/chat/sessions/<key>/messages/`. The engine calls an LLM, executes tools against the hotel domain, and returns a reply plus any booking state. The web UI never decides availability or prices itself.
@@ -27,13 +29,13 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, bookings, availability, transactional booking service, signed access tokens, confirmation email, admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, confirmation email, admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
 | `apps.voice` | Speech-to-text / text-to-speech provider abstraction and browser client config |
 | `apps.calendar_sync` | Calendar connections, per-room mappings, event records, fake/Google adapters, sync service |
-| `apps.web` | Public Django templates and page views |
+| `apps.web` | Public Django templates, the staff operations dashboard and page views |
 
 `apps.providers` is a plain Python package rather than a Django app: it has no models or migrations.
 
@@ -43,8 +45,10 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 erDiagram
     RoomType ||--o{ Room : has
     RoomType ||--o{ PricingRule : applies
+    RoomType ||--o{ DailyRate : prices
     Client ||--o{ Booking : makes
     Room ||--o{ Booking : hosts
+    Booking ||--o{ BookingEvent : audits
     Booking ||--o{ BookingCalendarEvent : syncs
     CalendarConnection ||--o{ RoomCalendar : owns
     Room ||--o{ RoomCalendar : mapped
@@ -74,6 +78,14 @@ All amounts are **gross and VAT-inclusive**. `tax_included` is informational, de
 tax_included = subtotal * rate / (1 + rate)
 ```
 
+### DailyRate (rate calendar)
+
+`DailyRate` is one explicit row per room type and date: a nightly `rate` and an optional `min_nights`.
+
+- A row replaces the calculated rate for that night; pricing rules are skipped for that night.
+- The strictest `min_nights` across the requested nights is enforced by `quote()`. `search_availability()` omits a room type that fails the minimum stay, so the guest sees only bookable options.
+- Reception edits the month grid at **Admin → Daily rates → Rate calendar**; the same model is available as ordinary rows for bulk import or API-style automation.
+
 ### Booking state machine
 
 ```mermaid
@@ -97,7 +109,19 @@ stateDiagram-v2
 - The booking reference is human-friendly (`HA-7KQ2M4`) and generated without ambiguous characters.
 - Each booking also has a random `access_token`; guest-facing links are signed `TimestampSigner` payloads containing the reference and that token.
 
-`apps.hotel.booking_service` is the only write path. It locks the room type row (`select_for_update`), checks capacity and availability, prices the stay, deduplicates/creates the client, validates and saves the booking, and schedules calendar sync and the confirmation email with `transaction.on_commit`.
+`apps.hotel.booking_service` is the only write path. It locks the room type row (`select_for_update`), checks capacity and availability, prices the stay, deduplicates/creates the client, validates and saves the booking, and schedules calendar sync and the confirmation email with `transaction.on_commit`. `modify_booking()` reuses the same availability and pricing code with `exclude_booking`, so a guest can move dates or room type without double-booking themselves.
+
+Every transition appends a `BookingEvent` with the actor (`guest`, `staff`, `agent`, `system`), channel, a summary and JSON before/after data. The model rejects updates, and the admin is read-only, so the trail is append-only by construction.
+
+### Cancellation policy
+
+`apps.hotel.cancellation` is the single source of truth for fees:
+
+- a pending hold is always free to release;
+- a confirmed booking is free while `today <= check_in - HOTEL["cancellation_free_days"]`;
+- a late cancellation charges the first `HOTEL["cancellation_fee_nights"]` stored nightly rates, capped at the booking total.
+
+`cancellation_preview()` returns the amount, currency, free-until date, reason code and a translated policy sentence. The booking page, the API preview endpoint, the agent tools and `cancel_booking()` all read that same preview; `cancel_booking()` records the fee and reason on the booking and in the audit event. `CANCELLATION_FREE_DAYS` and `CANCELLATION_FEE_NIGHTS` are environment settings.
 
 ### Booking access and notifications
 
@@ -115,7 +139,11 @@ stateDiagram-v2
 booking.check_in < requested.check_out AND booking.check_out > requested.check_in
 ```
 
-A pending booking counts only while `hold_expires_at` is null or in the future. `search_availability()` returns one entry per eligible room type with remaining rooms, room numbers and a full quote.
+A pending booking counts only while `hold_expires_at` is null or in the future. `search_availability()` returns one entry per eligible room type with remaining rooms, room numbers and a full quote. A rate-calendar minimum stay longer than the requested range removes that room type from the result instead of raising for the whole search.
+
+### Operations dashboard
+
+`/ops/` is a staff-only page (`staff_member_required`) that answers "what needs attention at the start of the shift?" in one view: today's arrivals and departures, active holds, expired holds waiting for cleanup, failed calendar syncs, confirmed bookings whose confirmation email has no delivery marker, and the most recent `BookingEvent` rows. It reads the same domain tables as the admin; it does not introduce another write path.
 
 ## AI conversation layer
 
@@ -168,7 +196,7 @@ The model can only affect the world through these tools:
 | `create_booking` | Create a pending hold and attach it to the conversation |
 | `confirm_booking` | Confirm a hold |
 | `get_booking` | Read a booking by reference |
-| `cancel_booking` | Cancel a booking |
+| `cancel_booking` | Cancel a booking, with an optional reason and note |
 
 Tool handlers are defensive: invalid arguments and domain errors become `{"ok": false, "error": ...}` results instead of exceptions, so the model can recover in the next turn.
 
@@ -237,9 +265,9 @@ Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise ser
 
 ### Security posture
 
-Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, encrypted provider keys, no card data collection.
+Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, encrypted provider keys, append-only booking audit events, no card data collection.
 
-Deliberately out of scope for the alpha: guest accounts, payment, audit trail, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
+Deliberately out of scope for the alpha: guest accounts, payment, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
 
 ## Extension points
 

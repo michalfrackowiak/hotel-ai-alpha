@@ -1421,6 +1421,85 @@ button { cursor: pointer; }
   margin-top: 1.3rem;
 }
 
+.booking-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  padding: 0.9rem 1rem;
+}
+
+.booking-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--forest);
+}
+
+.booking-form {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+
+.booking-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.booking-form input,
+.booking-form select,
+.booking-form textarea {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.booking-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.7rem;
+}
+
+/* --------------------------------------------------------------- operations */
+
+.ops-shell { padding-block: clamp(1.5rem, 4vw, 3rem); }
+
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.9rem;
+  margin: 1.4rem 0;
+}
+
+.ops-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+}
+
+.ops-card__value {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.ops-card__label { font-size: 0.8rem; color: var(--muted); }
+
+.ops-section { margin-top: 1.8rem; }
+
+.ops-section h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+
+.ops-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.ops-table th, .ops-table td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--line); }
+.ops-table th { color: var(--muted); font-weight: 600; }
+.ops-empty { color: var(--muted); font-size: 0.86rem; }
+
 /* ----------------------------------------------------------------- lookup */
 
 .lookup-card {

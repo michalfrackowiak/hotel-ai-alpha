@@ -12,13 +12,18 @@ An alpha of an AI hotel receptionist that takes reservations by **chat and voice
 - **Voice concierge** at `/voice/` using the browser Web Speech API (Chrome/Edge), with optional server-side OpenAI Whisper/TTS.
 - **Real availability and pricing** from Django models, not model guesswork.
 - **Booking lifecycle**: pending hold (30 minutes by default) → explicit guest confirmation → confirmed booking.
+- **Guest self-service**: change dates, room type or occupancy, and cancel with a reason through the signed link. A configurable policy previews the fee before the guest commits.
+- **Cancellation policy**: pending holds are free; confirmed bookings are free until `check_in - CANCELLATION_FREE_DAYS`; late cancellations charge the first `CANCELLATION_FEE_NIGHTS` nightly rates, capped at the total.
+- **Append-only audit log**: every create, confirm, modify, cancel and expiry records the actor, channel and before/after state.
+- **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails and recent booking events.
+- **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Per-room calendar sync** through a provider interface: a deterministic fake adapter for demos and a Google Calendar adapter for real calendars.
 - **Calendar reconciliation** (`reconcile_calendars`) that reports and repairs events deleted or edited outside the app.
 - **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
-- **Django admin** for rooms, pricing rules, clients, bookings, providers, prompts and calendars.
+- **Django admin** for rooms, pricing rules, clients, bookings, audit events, daily rates, providers, prompts and calendars.
 - **English/Polish UI** with a language switcher and compiled Polish gettext catalogue.
 - **Persistent throttling** through the database cache, shared by every gunicorn worker.
 - **Dockerised deployment** with SQLite on a named volume, WhiteNoise static files, gunicorn and a hold-cleanup scheduler sidecar.
@@ -61,8 +66,9 @@ These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` an
 | `/chat/` | Chat concierge |
 | `/voice/` | Voice concierge |
 | `/booking/` | Look up a reservation by reference and email/phone |
-| `/booking/<REFERENCE>/?token=…` | Reservation detail, confirm/cancel through a signed link |
-| `/admin/` | Django admin |
+| `/booking/<REFERENCE>/?token=…` | Reservation detail, confirm/modify/cancel through a signed link |
+| `/ops/` | Staff operations dashboard (sign in first) |
+| `/admin/` | Django admin, including the rate calendar |
 | `/api/v1/` | REST API (see [docs/API.md](docs/API.md)) |
 | `/healthz` | Liveness + database check |
 
@@ -259,6 +265,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - [REST API](docs/API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Branching and releases](docs/BRANCHING.md)
+- [Release notes v0.3.0](docs/releases/v0.3.0.md)
 - [Release notes v0.2.0](docs/releases/v0.2.0.md)
 - [Release notes v0.1.0](docs/releases/v0.1.0.md)
 - [Project memory](docs/PROJECT_MEMORY.md)

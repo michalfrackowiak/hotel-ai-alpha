@@ -217,6 +217,39 @@ class PricingRule(TimeStampedModel):
         return price + self.amount
 
 
+class DailyRate(TimeStampedModel):
+    """An explicit nightly rate and minimum stay for one room type and date.
+
+    A row here overrides the calculated rate for that night and is the source
+    of truth for the reception's rate calendar.
+    """
+
+    room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name="daily_rates")
+    date = models.DateField(_("date"), db_index=True)
+    rate = models.DecimalField(
+        _("rate"),
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    min_nights = models.PositiveSmallIntegerField(
+        _("minimum nights"),
+        default=0,
+        help_text=_("Minimum stay required for a booking that includes this night. 0 means no minimum."),
+    )
+
+    class Meta:
+        ordering = ["date", "room_type"]
+        verbose_name = _("daily rate")
+        verbose_name_plural = _("daily rates")
+        constraints = [
+            models.UniqueConstraint(fields=["room_type", "date"], name="daily_rate_room_type_date_uniq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.room_type} · {self.date} · {self.rate}"
+
+
 class Booking(TimeStampedModel):
     class Status(models.TextChoices):
         PENDING = "pending", _("Pending")
@@ -233,6 +266,20 @@ class Booking(TimeStampedModel):
         VOICE = "voice", _("Voice agent")
         ADMIN = "admin", _("Reception")
         API = "api", _("API")
+
+    class CancellationReason(models.TextChoices):
+        GUEST_REQUEST = "guest_request", _("Guest request")
+        PLANS_CHANGED = "plans_changed", _("Plans changed")
+        FOUND_ALTERNATIVE = "found_alternative", _("Found another option")
+        PRICE = "price", _("Price")
+        EMERGENCY = "emergency", _("Emergency")
+        OTHER = "other", _("Other")
+
+    class CancelledBy(models.TextChoices):
+        GUEST = "guest", _("Guest")
+        STAFF = "staff", _("Reception")
+        AGENT = "agent", _("AI concierge")
+        SYSTEM = "system", _("System")
 
     ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED, Status.CHECKED_IN)
     BLOCKING_STATUSES = (Status.CONFIRMED, Status.CHECKED_IN)
@@ -259,6 +306,25 @@ class Booking(TimeStampedModel):
     hold_expires_at = models.DateTimeField(_("hold expires at"), null=True, blank=True)
     confirmed_at = models.DateTimeField(_("confirmed at"), null=True, blank=True)
     cancelled_at = models.DateTimeField(_("cancelled at"), null=True, blank=True)
+    cancellation_reason = models.CharField(
+        _("cancellation reason"),
+        max_length=32,
+        choices=CancellationReason.choices,
+        blank=True,
+    )
+    cancellation_note = models.TextField(_("cancellation note"), blank=True)
+    cancellation_fee = models.DecimalField(
+        _("cancellation fee"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0"),
+    )
+    cancelled_by = models.CharField(
+        _("cancelled by"),
+        max_length=20,
+        choices=CancelledBy.choices,
+        blank=True,
+    )
     confirmation_email_sent_at = models.DateTimeField(_("confirmation email sent at"), null=True, blank=True)
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 
@@ -293,6 +359,18 @@ class Booking(TimeStampedModel):
     @property
     def is_confirmed(self) -> bool:
         return self.status in (self.Status.CONFIRMED, self.Status.CHECKED_IN, self.Status.CHECKED_OUT)
+
+    @property
+    def can_confirm(self) -> bool:
+        return self.status == self.Status.PENDING and not self.is_hold_expired
+
+    @property
+    def can_cancel(self) -> bool:
+        return self.status in (self.Status.PENDING, self.Status.CONFIRMED, self.Status.CHECKED_IN)
+
+    @property
+    def can_modify(self) -> bool:
+        return self.status in (self.Status.PENDING, self.Status.CONFIRMED)
 
     @property
     def guest_count(self) -> int:
@@ -339,3 +417,48 @@ class Booking(TimeStampedModel):
             )
             if overlapping.exists():
                 raise ValidationError(_("This room is already booked for the selected dates."))
+
+
+class BookingEvent(models.Model):
+    """Append-only audit record for every booking transition."""
+
+    class Type(models.TextChoices):
+        CREATED = "created", _("Created")
+        CONFIRMED = "confirmed", _("Confirmed")
+        MODIFIED = "modified", _("Modified")
+        CANCELLED = "cancelled", _("Cancelled")
+        EXPIRED = "expired", _("Expired")
+        CHECKED_IN = "checked_in", _("Checked in")
+        CHECKED_OUT = "checked_out", _("Checked out")
+        NO_SHOW = "no_show", _("No show")
+        EMAIL_SENT = "email_sent", _("Email sent")
+        CALENDAR_SYNCED = "calendar_synced", _("Calendar synced")
+
+    class Actor(models.TextChoices):
+        GUEST = "guest", _("Guest")
+        STAFF = "staff", _("Reception")
+        AGENT = "agent", _("AI concierge")
+        SYSTEM = "system", _("System")
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="events")
+    event_type = models.CharField(_("event type"), max_length=32, choices=Type.choices)
+    actor = models.CharField(_("actor"), max_length=20, choices=Actor.choices, default=Actor.SYSTEM)
+    channel = models.CharField(_("channel"), max_length=20, blank=True)
+    summary = models.CharField(_("summary"), max_length=255, blank=True)
+    data = models.JSONField(_("data"), default=dict, blank=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        verbose_name = _("booking event")
+        verbose_name_plural = _("booking events")
+        indexes = [models.Index(fields=["booking", "-created_at"], name="booking_event_booking_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.booking.reference} · {self.get_event_type_display()} · {self.created_at:%Y-%m-%d %H:%M}"
+
+    def save(self, *args, **kwargs):
+        if self.pk and not self._state.adding:
+            raise ValueError("Booking events are append-only.")
+        return super().save(*args, **kwargs)
+

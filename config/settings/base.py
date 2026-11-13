@@ -176,6 +176,8 @@ HOTEL = {
     "check_out_time": "11:00",
     "max_booking_nights": int(os.getenv("BOOKING_MAX_NIGHTS", "30")),
     "advance_booking_days": int(os.getenv("BOOKING_ADVANCE_DAYS", "365")),
+    "cancellation_free_days": int(os.getenv("CANCELLATION_FREE_DAYS", "3")),
+    "cancellation_fee_nights": int(os.getenv("CANCELLATION_FEE_NIGHTS", "1")),
     "contact_email": os.getenv("HOTEL_CONTACT_EMAIL", "reception@example.com"),
     "contact_phone": os.getenv("HOTEL_CONTACT_PHONE", "+48 22 000 00 00"),
     "address": os.getenv("HOTEL_ADDRESS", "ul. Przykładowa 1, 00-001 Warszawa"),

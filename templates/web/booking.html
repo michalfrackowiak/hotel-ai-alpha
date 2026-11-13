@@ -8,13 +8,16 @@
   <div class="booking-card" id="booking-card"
        data-cancel-url="/api/v1/bookings/{{ booking.reference }}/cancel/"
        data-confirm-url="/api/v1/bookings/{{ booking.reference }}/confirm/"
+       data-modify-url="/api/v1/bookings/{{ booking.reference }}/"
        data-reference="{{ booking.reference }}"
        data-access-token="{{ access_token }}"
-       data-msg-cancel-confirm="{% trans 'Cancel this reservation? This cannot be undone.' %}"
+       data-msg-cancel-confirm="{% trans 'Cancel this reservation? This cannot be undone.' %} {{ cancellation.policy_text }}"
        data-msg-confirm="{% trans 'Confirm this reservation now?' %}"
+       data-msg-modify-confirm="{% trans 'Apply these changes to your reservation?' %}"
        data-msg-working="{% trans 'Updating your reservation…' %}"
        data-msg-cancelled="{% trans 'Reservation cancelled.' %}"
        data-msg-confirmed="{% trans 'Reservation confirmed. See you soon!' %}"
+       data-msg-modified="{% trans 'Reservation updated.' %}"
        data-msg-error="{% trans 'Something went wrong. Please try again.' %}">
     <header class="booking-card__header">
       <div>
@@ -37,6 +40,31 @@
       <p class="notice notice--muted">{% trans "This reservation has been cancelled." %}</p>
     {% elif booking.status == "expired" %}
       <p class="notice notice--muted">{% trans "The hold on this reservation expired before it was confirmed." %}</p>
+    {% endif %}
+
+    {% if cancellation.is_cancellable %}
+      <p class="notice notice--muted" id="cancellation-policy">{{ cancellation.policy_text }}</p>
+    {% endif %}
+
+    {% if booking.status == "cancelled" %}
+      <div class="detail-grid">
+        <div class="detail">
+          <span class="detail__label">{% trans "Cancellation reason" %}</span>
+          <span class="detail__value">{{ booking.get_cancellation_reason_display|default:"—" }}</span>
+        </div>
+        <div class="detail">
+          <span class="detail__label">{% trans "Cancellation fee" %}</span>
+          <span class="detail__value">{{ booking.cancellation_fee }} {{ booking.currency }}</span>
+        </div>
+        <div class="detail">
+          <span class="detail__label">{% trans "Cancelled by" %}</span>
+          <span class="detail__value">{{ booking.get_cancelled_by_display|default:"—" }}</span>
+        </div>
+      </div>
+      {% if booking.cancellation_note %}
+        <h2 class="booking-card__section-title">{% trans "Cancellation note" %}</h2>
+        <p>{{ booking.cancellation_note }}</p>
+      {% endif %}
     {% endif %}
 
     <div class="detail-grid">
@@ -109,11 +137,61 @@
       {% if booking.status == "pending" %}
         <button class="btn btn--primary" type="button" id="confirm-booking">{% trans "Confirm booking" %}</button>
       {% endif %}
-      {% if booking.status == "pending" or booking.status == "confirmed" %}
-        <button class="btn btn--danger" type="button" id="cancel-booking">{% trans "Cancel reservation" %}</button>
-      {% endif %}
       <a class="btn btn--primary" href="{% url 'web:chat' %}">{% trans "Ask the concierge" %}</a>
     </div>
+
+    {% if cancellation.is_cancellable %}
+      <details class="booking-panel">
+        <summary>{% trans "Cancel reservation" %}</summary>
+        <form id="cancel-form" class="booking-form">
+          <p class="muted">{{ cancellation.policy_text }}</p>
+          <label for="cancel-reason">{% trans "Cancellation reason" %}</label>
+          <select id="cancel-reason" name="reason">
+            <option value="guest_request">{% trans "Guest request" %}</option>
+            <option value="plans_changed">{% trans "Plans changed" %}</option>
+            <option value="found_alternative">{% trans "Found another option" %}</option>
+            <option value="price">{% trans "Price" %}</option>
+            <option value="emergency">{% trans "Emergency" %}</option>
+            <option value="other">{% trans "Other" %}</option>
+          </select>
+          <label for="cancel-note">{% trans "Cancellation note" %}</label>
+          <textarea id="cancel-note" name="note" rows="2" maxlength="1000"></textarea>
+          <button class="btn btn--danger" type="submit">{% trans "Cancel reservation" %}</button>
+        </form>
+      </details>
+    {% endif %}
+
+    {% if booking.can_modify %}
+      <details class="booking-panel">
+        <summary>{% trans "Change reservation" %}</summary>
+        <form id="modify-form" class="booking-form">
+          <div class="booking-form__row">
+            <label for="modify-check-in">{% trans "Check-in" %}
+              <input id="modify-check-in" type="date" name="check_in" value="{{ booking.check_in|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}" required>
+            </label>
+            <label for="modify-check-out">{% trans "Check-out" %}
+              <input id="modify-check-out" type="date" name="check_out" value="{{ booking.check_out|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}" required>
+            </label>
+          </div>
+          <label for="modify-room-type">{% trans "Room type" %}</label>
+          <select id="modify-room-type" name="room_type">
+            {% for type in room_types %}
+              <option value="{{ type.slug }}"{% if type.pk == booking.room.room_type_id %} selected{% endif %}>{{ type.name }} · {{ type.base_price }} {{ type.currency }}</option>
+            {% endfor %}
+          </select>
+          <div class="booking-form__row">
+            <label for="modify-adults">{% trans "Adults" %}
+              <input id="modify-adults" type="number" name="adults" min="1" max="8" value="{{ booking.adults }}" required>
+            </label>
+            <label for="modify-children">{% trans "Children" %}
+              <input id="modify-children" type="number" name="children" min="0" max="6" value="{{ booking.children }}" required>
+            </label>
+          </div>
+          <button class="btn btn--primary" type="submit">{% trans "Save changes" %}</button>
+        </form>
+      </details>
+    {% endif %}
+
     <p class="form-status" id="booking-status" role="status" aria-live="polite"></p>
   </div>
 </section>
