@@ -150,6 +150,7 @@ def availability_for_agent(check_in: date, check_out: date, guests: int = 2) -> 
                 "nightly_from": item["quote"]["nightly"][0]["rate"] if item["quote"]["nightly"] else None,
                 "total": item["quote"]["total"],
                 "currency": item["quote"]["currency"],
+                "rate_plans": item.get("rate_plans", []),
             }
             for item in results
         ],

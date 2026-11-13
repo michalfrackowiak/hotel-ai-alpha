@@ -89,6 +89,10 @@ TOOL_SPECS: list[dict[str, Any]] = [
                 "adults": {"type": "integer", "minimum": 1, "maximum": 8},
                 "children": {"type": "integer", "minimum": 0, "maximum": 6},
                 "special_requests": {"type": "string"},
+                "rate_plan": {
+                    "type": "string",
+                    "description": "Optional rate plan slug chosen from the availability results' rate_plans list.",
+                },
             },
             "required": ["room_type", "check_in", "check_out", "first_name"],
         },
@@ -157,6 +161,7 @@ def booking_payload(booking) -> dict:
         "room": booking.room.number,
         "room_type": booking.room_type.slug,
         "room_type_name": booking.room_type.name,
+        "rate_plan": booking.rate_plan.slug if booking.rate_plan else None,
         "check_in": booking.check_in.isoformat(),
         "check_out": booking.check_out.isoformat(),
         "nights": booking.nights,
@@ -232,6 +237,7 @@ class ToolExecutor:
                             else None,
                             "total": item["quote"]["total"],
                             "currency": item["quote"]["currency"],
+                            "rate_plans": item.get("rate_plans", []),
                         }
                         for item in options
                     ],
@@ -278,6 +284,7 @@ class ToolExecutor:
         adults: int = 2,
         children: int = 0,
         special_requests: str = "",
+        rate_plan: str | None = None,
     ) -> dict:
         start = self._date(check_in, "check_in")
         end = self._date(check_out, "check_out")
@@ -296,6 +303,7 @@ class ToolExecutor:
             source=self.conversation.channel,
             language=self.conversation.language,
             special_requests=special_requests,
+            rate_plan=rate_plan,
             hold_minutes=self.settings.booking_hold_minutes,
         )
         self.conversation.booking = booking
