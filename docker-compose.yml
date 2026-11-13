@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    image: hotel-ai-alpha:local
+    container_name: hotel-ai-alpha
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    ports:
+      - "8000:8000"
+    volumes:
+      - hotel_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  hotel_data:
