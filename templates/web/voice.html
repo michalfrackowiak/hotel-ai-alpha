@@ -28,6 +28,13 @@
         <span id="call-status">{% trans "Ready when you are" %}</span>
       </div>
 
+      <div class="voice-sphere" id="voice-sphere" aria-hidden="true">
+        <span class="voice-sphere__core"></span>
+        <span class="voice-sphere__ring voice-sphere__ring--1"></span>
+        <span class="voice-sphere__ring voice-sphere__ring--2"></span>
+        <span class="voice-sphere__ring voice-sphere__ring--3"></span>
+      </div>
+
       <button class="call-button" id="call-button" type="button" aria-label="{% trans 'Start voice call' %}">
         <span class="call-button__icon" aria-hidden="true"></span>
         <span class="call-button__label" id="call-button-label">{% trans "Start call" %}</span>
