@@ -31,6 +31,10 @@
       <span class="ops-card__label">{% trans "Calendar drift (failed, stale, unsynced)" %}</span>
     </div>
     <div class="ops-card">
+      <span class="ops-card__value">{{ dirty_room_count }}</span>
+      <span class="ops-card__label">{% trans "Dirty rooms" %}</span>
+    </div>
+    <div class="ops-card">
       <span class="ops-card__value">{{ stale_holds }}</span>
       <span class="ops-card__label">{% trans "Expired holds to clean up" %}</span>
     </div>
@@ -143,6 +147,25 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No booking events yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Housekeeping" %}</h2>
+    {% if dirty_rooms or out_of_order_rooms %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Room" %}</th><th>{% trans "Type" %}</th><th>{% trans "Status" %}</th></tr></thead>
+        <tbody>
+          {% for room in dirty_rooms %}
+            <tr><td>{{ room.number }}</td><td>{{ room.room_type.name }}</td><td>{{ room.get_housekeeping_status_display }}</td></tr>
+          {% endfor %}
+          {% for room in out_of_order_rooms %}
+            <tr><td>{{ room.number }}</td><td>{{ room.room_type.name }}</td><td>{{ room.get_housekeeping_status_display }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "All rooms are clean." %}</p>
     {% endif %}
   </section>
 </section>
