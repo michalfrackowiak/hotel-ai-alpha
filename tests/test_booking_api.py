@@ -85,20 +85,56 @@ def test_booking_lifecycle(client, room_type, rooms, stay_dates):
     assert create.status_code == 201
     booking = create.json()
     reference = booking["reference"]
+    token = booking["manage_token"]
     assert booking["status"] == "pending"
     assert booking["hold_expires_at"]
+    assert booking["manage_url"].startswith("http")
+    assert f"/bookings/{reference}/" not in booking["manage_url"]
+    assert f"/booking/{reference}/" in booking["manage_url"]
 
-    detail = client.get(f"/api/v1/bookings/{reference}/")
+    detail = client.get(f"/api/v1/bookings/{reference}/", {"token": token})
     assert detail.status_code == 200
     assert detail.json()["reference"] == reference
 
-    confirm = client.post(f"/api/v1/bookings/{reference}/confirm/")
+    confirm = client.post(f"/api/v1/bookings/{reference}/confirm/", HTTP_X_BOOKING_TOKEN=token)
     assert confirm.status_code == 200
     assert confirm.json()["status"] == "confirmed"
 
-    cancel = client.post(f"/api/v1/bookings/{reference}/cancel/")
+    cancel = client.post(
+        f"/api/v1/bookings/{reference}/cancel/",
+        HTTP_AUTHORIZATION=f"Bearer {token}",
+    )
     assert cancel.status_code == 200
     assert cancel.json()["status"] == "cancelled"
+
+
+@pytest.mark.django_db
+def test_booking_access_requires_token(client, room_type, rooms, stay_dates):
+    create = client.post("/api/v1/bookings/", _payload(room_type, stay_dates), format="json")
+    reference = create.json()["reference"]
+
+    detail = client.get(f"/api/v1/bookings/{reference}/")
+    confirm = client.post(f"/api/v1/bookings/{reference}/confirm/")
+    cancel = client.post(f"/api/v1/bookings/{reference}/cancel/")
+
+    assert detail.status_code == 403
+    assert confirm.status_code == 403
+    assert cancel.status_code == 403
+    assert detail.json()["error"]["code"] == "booking_access_denied"
+
+
+@pytest.mark.django_db
+def test_booking_token_is_scoped_to_one_booking(client, room_type, rooms, stay_dates):
+    first = client.post("/api/v1/bookings/", _payload(room_type, stay_dates), format="json").json()
+    second = client.post(
+        "/api/v1/bookings/",
+        _payload(room_type, stay_dates, email="other@example.com"),
+        format="json",
+    ).json()
+
+    response = client.get(f"/api/v1/bookings/{second['reference']}/", {"token": first["manage_token"]})
+
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db

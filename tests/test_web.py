@@ -56,7 +56,9 @@ def test_booking_lookup_page_renders(client):
     response = client.get("/booking/")
 
     assert response.status_code == 200
-    assert "Find my booking" in response.content.decode()
+    content = response.content.decode()
+    assert "Find my booking" in content
+    assert "Email or phone" in content
 
 
 @pytest.mark.django_db
@@ -68,7 +70,7 @@ def test_unknown_booking_shows_not_found(client):
 
 
 @pytest.mark.django_db
-def test_booking_detail_renders_seeded_booking(client):
+def test_booking_detail_requires_a_token(client):
     from django.core.management import call_command
 
     call_command("seed_demo")
@@ -77,10 +79,67 @@ def test_booking_detail_renders_seeded_booking(client):
     booking = Booking.objects.get()
     response = client.get(f"/booking/{booking.reference}/")
 
+    assert response.status_code == 403
+    assert "invalid or has expired" in response.content.decode().lower()
+
+
+@pytest.mark.django_db
+def test_booking_detail_renders_seeded_booking(client):
+    from django.core.management import call_command
+
+    call_command("seed_demo")
+    from apps.hotel.access import booking_manage_path
+    from apps.hotel.models import Booking
+
+    booking = Booking.objects.get()
+    response = client.get(booking_manage_path(booking))
+
     assert response.status_code == 200
     content = response.content.decode()
     assert booking.reference in content
     assert "Confirmed" in content
+    assert 'data-access-token="' in content
+
+
+@pytest.mark.django_db
+def test_booking_lookup_requires_matching_contact(client):
+    from django.core.management import call_command
+
+    call_command("seed_demo")
+    from apps.hotel.models import Booking
+
+    booking = Booking.objects.get()
+
+    missing = client.get("/booking/", {"reference": booking.reference})
+    wrong = client.get(
+        "/booking/", {"reference": booking.reference, "contact": "someone@example.com"}
+    )
+    right = client.get(
+        "/booking/", {"reference": booking.reference, "contact": "anna.kowalska@example.com"}
+    )
+
+    assert missing.status_code == 200
+    assert "protect your reservation" in missing.content.decode().lower()
+    assert wrong.status_code == 200
+    assert "could not match" in wrong.content.decode().lower()
+    assert right.status_code == 302
+    assert f"/booking/{booking.reference}/" in right["Location"]
+    assert "token=" in right["Location"]
+
+
+@pytest.mark.django_db
+def test_booking_lookup_accepts_phone_number(client):
+    from django.core.management import call_command
+
+    call_command("seed_demo")
+    from apps.hotel.models import Booking
+
+    booking = Booking.objects.get()
+    response = client.get(
+        "/booking/", {"reference": booking.reference, "contact": "+48 600 100 200"}
+    )
+
+    assert response.status_code == 302
 
 
 @pytest.mark.django_db

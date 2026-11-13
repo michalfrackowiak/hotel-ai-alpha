@@ -34,6 +34,9 @@ class BaseCalendarProvider(ABC):
     @abstractmethod
     def delete_event(self, calendar_id: str, event_id: str) -> None: ...
 
+    @abstractmethod
+    def get_event(self, calendar_id: str, event_id: str) -> dict[str, Any] | None: ...
+
     def health_check(self) -> tuple[bool, str]:
         try:
             self.create_event(self.connection.calendar_id or "primary", {"summary": "Hotel AI health check"})
@@ -43,16 +46,35 @@ class BaseCalendarProvider(ABC):
 
 
 class FakeCalendarProvider(BaseCalendarProvider):
-    """In-memory provider used by the demo and the test suite."""
+    """In-memory provider used by the demo and the test suite.
+
+    The store is class-level so a later request sees events created by an
+    earlier one. Tests reset it through the ``fake_calendar`` fixture.
+    """
+
+    _events: dict[tuple[str, str], dict[str, Any]] = {}
+
+    @classmethod
+    def reset(cls) -> None:
+        cls._events.clear()
 
     def create_event(self, calendar_id: str, event: dict[str, Any]) -> str:
-        return f"fake-{uuid.uuid4().hex[:12]}"
+        event_id = f"fake-{uuid.uuid4().hex[:12]}"
+        self._events[(calendar_id, event_id)] = dict(event)
+        return event_id
 
     def update_event(self, calendar_id: str, event_id: str, event: dict[str, Any]) -> str:
+        if (calendar_id, event_id) not in self._events:
+            raise CalendarError(f"Fake calendar event {event_id!r} no longer exists.")
+        self._events[(calendar_id, event_id)] = dict(event)
         return event_id
 
     def delete_event(self, calendar_id: str, event_id: str) -> None:
-        return None
+        self._events.pop((calendar_id, event_id), None)
+
+    def get_event(self, calendar_id: str, event_id: str) -> dict[str, Any] | None:
+        event = self._events.get((calendar_id, event_id))
+        return dict(event) if event is not None else None
 
     def health_check(self) -> tuple[bool, str]:
         return True, "Fake calendar ready"
@@ -131,6 +153,22 @@ class GoogleCalendarProvider(BaseCalendarProvider):
 
     def delete_event(self, calendar_id: str, event_id: str) -> None:
         self._delete(calendar_id, event_id)
+
+    def get_event(self, calendar_id: str, event_id: str) -> dict[str, Any] | None:
+        try:
+            return (
+                self._service()
+                .events()
+                .get(calendarId=calendar_id, eventId=event_id)
+                .execute()
+            )
+        except CalendarError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            status = getattr(getattr(exc, "resp", None), "status", None)
+            if status in (404, 410):
+                return None
+            raise CalendarError(f"Google Calendar fetch failed: {_http_message(exc)}") from exc
 
     def health_check(self) -> tuple[bool, str]:
         try:

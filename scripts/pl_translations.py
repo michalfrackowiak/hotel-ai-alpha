@@ -463,4 +463,44 @@ TRANSLATIONS: dict[str, str] = {
     "voice name (English)": "nazwa głosu (angielska)",
     "voice name (Polish)": "nazwa głosu (polska)",
     "weekdays %(days)s": "dni tygodnia %(days)s",
+    "Booking %(reference)s": "Rezerwacja %(reference)s",
+    "Booking confirmed · %(reference)s": "Rezerwacja potwierdzona · %(reference)s",
+    "Dear %(name)s, your stay is confirmed. We look forward to welcoming you.": (
+        "Drogi %(name)s, Twoja rezerwacja jest potwierdzona. Czekamy na Ciebie."
+    ),
+    "Dear %(name)s, Your stay at %(hotel)s is confirmed. We look forward to welcoming you.": (
+        "Drogi %(name)s, Twój pobyt w %(hotel)s jest potwierdzony. Czekamy na Ciebie."
+    ),
+    "Email or phone": "E-mail lub telefon",
+    "Encrypted in the database. Leave empty to keep the current key.": (
+        "Zaszyfrowany w bazie danych. Pozostaw puste, aby zachować obecny klucz."
+    ),
+    "Enter the email address or phone number you booked with to protect your reservation.": (
+        "Podaj adres e-mail lub numer telefonu użyty przy rezerwacji, aby chronić swoją rezerwację."
+    ),
+    "Enter your reference and the email address or phone number you booked with. We will open a private link to your reservation.": (
+        "Podaj numer rezerwacji oraz adres e-mail lub numer telefonu użyty przy rezerwacji. "
+        "Otworzymy prywatny link do Twojej rezerwacji."
+    ),
+    "Guest: %(name)s": "Gość: %(name)s",
+    "If you need to change or cancel your reservation, use the link above or contact reception.": (
+        "Jeśli chcesz zmienić lub anulować rezerwację, użyj powyższego linku lub skontaktuj się z recepcją."
+    ),
+    "Manage your booking": "Zarządzaj rezerwacją",
+    "Provide the booking access link or token from your confirmation.": (
+        "Podaj link dostępu do rezerwacji lub token z potwierdzenia."
+    ),
+    "Room: %(room)s · %(type)s": "Pokój: %(room)s · %(type)s",
+    "Stay at %(hotel)s · %(reference)s": "Pobyt w %(hotel)s · %(reference)s",
+    "That link is invalid or has expired. Enter your reference and contact details to get a fresh link.": (
+        "Ten link jest nieprawidłowy lub wygasł. Podaj numer rezerwacji i dane kontaktowe, "
+        "aby otrzymać nowy link."
+    ),
+    "Total: %(total)s %(currency)s": "Razem: %(total)s %(currency)s",
+    "We could not match that reference and contact. Check both and try again, or call reception.": (
+        "Nie udało się dopasować numeru rezerwacji i danych kontaktowych. "
+        "Sprawdź je i spróbuj ponownie lub zadzwoń na recepcję."
+    ),
+    "access token": "token dostępu",
+    "confirmation email sent at": "wysłano e-mail potwierdzający",
 }

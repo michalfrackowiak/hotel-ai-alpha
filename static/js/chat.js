@@ -40,6 +40,10 @@
     return bookingUrlTemplate.replace("__REF__", encodeURIComponent(reference));
   }
 
+  function bookingLink(booking) {
+    return (booking && booking.manage_url) || bookingUrl(booking.reference);
+  }
+
   function authorFor(role) {
     return role === "user" ? i18n.you || "You" : i18n.assistant || "Aurora";
   }
@@ -139,7 +143,7 @@
       "</div>" +
       rows.join("") +
       '<a href="' +
-      App.escapeHtml(bookingUrl(booking.reference)) +
+      App.escapeHtml(bookingLink(booking)) +
       '">' +
       App.escapeHtml(i18n.viewBooking || "View booking") +
       "</a>" +

@@ -1,6 +1,6 @@
 # Hotel Aurora · AI Reception Alpha
 
-An alpha of an AI hotel receptionist that takes reservations by **chat and voice**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking and mirrors it into a per-room Google Calendar.
+An alpha of an AI hotel receptionist that takes reservations by **chat and voice**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, emails a bilingual confirmation and mirrors it into a per-room Google Calendar.
 
 > **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing, no channel manager and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
@@ -12,12 +12,16 @@ An alpha of an AI hotel receptionist that takes reservations by **chat and voice
 - **Voice concierge** at `/voice/` using the browser Web Speech API (Chrome/Edge), with optional server-side OpenAI Whisper/TTS.
 - **Real availability and pricing** from Django models, not model guesswork.
 - **Booking lifecycle**: pending hold (30 minutes by default) → explicit guest confirmation → confirmed booking.
+- **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment.
+- **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Per-room calendar sync** through a provider interface: a deterministic fake adapter for demos and a Google Calendar adapter for real calendars.
-- **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key.
+- **Calendar reconciliation** (`reconcile_calendars`) that reports and repairs events deleted or edited outside the app.
+- **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
 - **Django admin** for rooms, pricing rules, clients, bookings, providers, prompts and calendars.
 - **English/Polish UI** with a language switcher and compiled Polish gettext catalogue.
-- **Dockerised deployment** with SQLite on a named volume, WhiteNoise static files and gunicorn.
+- **Persistent throttling** through the database cache, shared by every gunicorn worker.
+- **Dockerised deployment** with SQLite on a named volume, WhiteNoise static files, gunicorn and a hold-cleanup scheduler sidecar.
 
 ---
 
@@ -56,8 +60,8 @@ These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` an
 | `/` | Landing page, availability search and room types |
 | `/chat/` | Chat concierge |
 | `/voice/` | Voice concierge |
-| `/booking/` | Look up a reservation by reference |
-| `/booking/<REFERENCE>/` | Reservation detail, confirm/cancel |
+| `/booking/` | Look up a reservation by reference and email/phone |
+| `/booking/<REFERENCE>/?token=…` | Reservation detail, confirm/cancel through a signed link |
 | `/admin/` | Django admin |
 | `/api/v1/` | REST API (see [docs/API.md](docs/API.md)) |
 | `/healthz` | Liveness + database check |
@@ -74,13 +78,20 @@ docker compose up --build
 
 Then open <http://localhost:8000/>.
 
-What the container does on boot (`docker/entrypoint.sh`):
+What the web container does on boot (`docker/entrypoint.sh`):
 
 1. applies migrations;
-2. collects static files for WhiteNoise;
-3. seeds demo data when `SEED_DEMO_DATA=true` (idempotent);
-4. creates the superuser from `DJANGO_SUPERUSER_*`;
-5. starts gunicorn on port 8000.
+2. creates the database cache table used by throttling;
+3. collects static files for WhiteNoise;
+4. seeds demo data when `SEED_DEMO_DATA=true` (idempotent);
+5. creates the superuser from `DJANGO_SUPERUSER_*`;
+6. starts gunicorn on port 8000.
+
+A second `scheduler` container waits for the web container to become healthy, then runs `expire_holds` every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300). It shares the same SQLite volume. On a host without Docker, run the same command from cron or a systemd timer:
+
+```cron
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
+```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
 
@@ -105,6 +116,12 @@ Providers are records in **Admin → AI providers**. The seed command creates fo
 | `ollama` | `llama3.1` | Reachable `OLLAMA_BASE_URL` and the provider enabled |
 
 The first active default is used for new conversations. To switch, edit a provider in the admin and tick **default provider**; the model saves exclusively.
+
+API keys are encrypted at rest with Fernet. Set `FIELD_ENCRYPTION_KEY` to a long random value in production; when unset, a key is derived from `DJANGO_SECRET_KEY`. To rotate the key without downtime, set `FIELD_ENCRYPTION_KEY_OLD` to the current value, set the new `FIELD_ENCRYPTION_KEY`, then run:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py rotate_provider_keys
+```
 
 The agent is provider-agnostic: `apps/providers/` converts the internal `ChatMessage` / `ToolCall` / `LLMResponse` shapes to each vendor's API. The same tool loop powers chat and voice.
 
@@ -158,6 +175,13 @@ Confirmed bookings are pushed on commit (`transaction.on_commit`), so a calendar
 .\.venv\Scripts\python.exe manage.py sync_calendars --reference HA-7KQ2M4
 ```
 
+Events edited or deleted directly in Google Calendar are found by the reconciliation command. It is a read-only dry run unless you pass `--apply`:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py reconcile_calendars
+.\.venv\Scripts\python.exe manage.py reconcile_calendars --apply --reference HA-7KQ2M4
+```
+
 ---
 
 ## Development
@@ -185,8 +209,11 @@ The translation scripts exist because GNU gettext is not guaranteed on Windows. 
 | --- | --- |
 | `seed_demo` | Idempotent demo rooms, pricing, providers, calendars and one confirmed booking |
 | `bootstrap_superuser` | Create/promote the superuser from `DJANGO_SUPERUSER_*` |
-| `expire_holds` | Release pending holds whose deadline passed (run from cron) |
+| `expire_holds` | Release pending holds whose deadline passed (run from the scheduler/cron) |
+| `send_booking_emails` | Retry confirmation emails that have no delivery marker (`--force` resends) |
 | `sync_calendars` | Sync bookings, retry failures or sync one reference |
+| `reconcile_calendars` | Report calendar drift; `--apply` repairs it |
+| `rotate_provider_keys` | Re-encrypt provider API keys after an encryption-key rotation |
 | `google_calendar_authorize` | Produce an OAuth token for an authorised user |
 
 ---
@@ -217,11 +244,11 @@ docs/             architecture, API, roadmap, branching, release notes
 
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
 - No payment, deposit, invoice or channel-manager integration.
-- Public booking lookup uses the reference only; there is no guest authentication.
-- Throttling is in-memory per process.
+- Booking access is protected by a signed link, but there is no guest account or password.
+- Email delivery uses SMTP/console backends; there is no bounce handling or delivery webhook.
 - The browser speech stack depends on vendor support and microphone permissions.
-- Google Calendar sync is one-way (hotel → calendar); external calendar edits are not imported.
-- Email/SMS confirmations are not sent yet.
+- Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
+- SMS notifications are not sent.
 - The demo policy is intentionally rule-based; use a real provider for open-ended conversation.
 
 ---
@@ -232,6 +259,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - [REST API](docs/API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Branching and releases](docs/BRANCHING.md)
+- [Release notes v0.2.0](docs/releases/v0.2.0.md)
 - [Release notes v0.1.0](docs/releases/v0.1.0.md)
 - [Project memory](docs/PROJECT_MEMORY.md)
 - [Agent working notes](AGENTS.md)
