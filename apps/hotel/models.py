@@ -1,0 +1,332 @@
+"""Domain models: rooms, clients, pricing and bookings."""
+
+from __future__ import annotations
+
+import secrets
+from datetime import date
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
+from django.utils.text import format_lazy
+from django.utils.translation import gettext_lazy as _
+
+REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def generate_reference() -> str:
+    """Human friendly, unambiguous booking reference, e.g. ``HA-7KQ2M4``."""
+    token = "".join(secrets.choice(REFERENCE_ALPHABET) for _ in range(6))
+    return f"HA-{token}"
+
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class RoomType(TimeStampedModel):
+    name = models.CharField(_("name"), max_length=120)
+    slug = models.SlugField(_("slug"), max_length=120, unique=True)
+    short_description = models.CharField(_("short description"), max_length=200, blank=True)
+    description = models.TextField(_("description"), blank=True)
+    capacity = models.PositiveSmallIntegerField(
+        _("capacity"), default=2, validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
+    base_price = models.DecimalField(
+        _("base price per night"),
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    currency = models.CharField(_("currency"), max_length=3, default="PLN")
+    size_sqm = models.PositiveSmallIntegerField(_("size (m²)"), null=True, blank=True)
+    bed_configuration = models.CharField(_("beds"), max_length=120, blank=True)
+    amenities = models.JSONField(_("amenities"), default=list, blank=True)
+    is_active = models.BooleanField(_("active"), default=True)
+    sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
+
+    class Meta:
+        ordering = ["sort_order", "base_price", "name"]
+        verbose_name = _("room type")
+        verbose_name_plural = _("room types")
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def active_rooms(self):
+        return self.rooms.filter(is_active=True)
+
+
+class Room(TimeStampedModel):
+    number = models.CharField(_("number"), max_length=20, unique=True)
+    name = models.CharField(_("name"), max_length=120, blank=True)
+    room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT, related_name="rooms")
+    floor = models.SmallIntegerField(_("floor"), default=0)
+    is_active = models.BooleanField(_("active"), default=True)
+    notes = models.TextField(_("notes"), blank=True)
+
+    class Meta:
+        ordering = ["number"]
+        verbose_name = _("room")
+        verbose_name_plural = _("rooms")
+
+    def __str__(self) -> str:
+        return f"{self.number} · {self.room_type.name}"
+
+    @property
+    def display_name(self) -> str:
+        return f"{self.number} {self.name}".strip()
+
+
+class Client(TimeStampedModel):
+    class Language(models.TextChoices):
+        ENGLISH = "en", _("English")
+        POLISH = "pl", _("Polish")
+
+    first_name = models.CharField(_("first name"), max_length=80)
+    last_name = models.CharField(_("last name"), max_length=80)
+    email = models.EmailField(_("email"), blank=True)
+    phone = models.CharField(_("phone"), max_length=40, blank=True)
+    language = models.CharField(_("language"), max_length=2, choices=Language.choices, default="en")
+    country = models.CharField(_("country"), max_length=2, blank=True)
+    marketing_consent = models.BooleanField(_("marketing consent"), default=False)
+    notes = models.TextField(_("notes"), blank=True)
+
+    class Meta:
+        ordering = ["last_name", "first_name"]
+        verbose_name = _("client")
+        verbose_name_plural = _("clients")
+
+    def __str__(self) -> str:
+        return self.full_name
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def display_contact(self) -> str:
+        return self.email or self.phone or "—"
+
+    def clean(self) -> None:
+        super().clean()
+        if not self.email and not self.phone:
+            raise ValidationError(_("Provide at least an email address or a phone number."))
+
+
+class PricingRule(TimeStampedModel):
+    class Kind(models.TextChoices):
+        SEASONAL = "seasonal", _("Seasonal")
+        WEEKEND = "weekend", _("Weekend")
+        LAST_MINUTE = "last_minute", _("Last minute")
+        LONG_STAY = "long_stay", _("Long stay")
+
+    class AdjustmentType(models.TextChoices):
+        PERCENT = "percent", _("Percent")
+        FIXED = "fixed", _("Fixed amount per night")
+
+    name = models.CharField(_("name"), max_length=120)
+    room_type = models.ForeignKey(
+        RoomType,
+        on_delete=models.CASCADE,
+        related_name="pricing_rules",
+        null=True,
+        blank=True,
+        help_text=_("Leave empty to apply to every room type."),
+    )
+    kind = models.CharField(_("kind"), max_length=20, choices=Kind.choices, default=Kind.SEASONAL)
+    start_date = models.DateField(_("valid from"), null=True, blank=True)
+    end_date = models.DateField(_("valid until"), null=True, blank=True)
+    days_of_week = models.CharField(
+        _("days of week"),
+        max_length=20,
+        blank=True,
+        help_text=_("Comma separated weekday numbers, Monday=0. Example: 4,5 for Friday and Saturday nights."),
+    )
+    min_nights = models.PositiveSmallIntegerField(_("minimum nights"), default=0)
+    adjustment_type = models.CharField(
+        _("adjustment type"), max_length=10, choices=AdjustmentType.choices, default=AdjustmentType.PERCENT
+    )
+    amount = models.DecimalField(
+        _("amount"),
+        max_digits=10,
+        decimal_places=2,
+        help_text=_("Percent (e.g. 15 = +15%) or a fixed amount per night."),
+    )
+    priority = models.SmallIntegerField(_("priority"), default=0)
+    is_active = models.BooleanField(_("active"), default=True)
+
+    class Meta:
+        ordering = ["-priority", "name"]
+        verbose_name = _("pricing rule")
+        verbose_name_plural = _("pricing rules")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def clean(self) -> None:
+        super().clean()
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError({"end_date": _("The end date must be after the start date.")})
+        if self.days_of_week:
+            try:
+                days = [int(part) for part in self.days_of_week.split(",") if part.strip()]
+            except ValueError as exc:
+                raise ValidationError({"days_of_week": _("Use comma separated numbers between 0 and 6.")}) from exc
+            if any(day < 0 or day > 6 for day in days):
+                raise ValidationError({"days_of_week": _("Weekday numbers must be between 0 and 6.")})
+        if self.adjustment_type == self.AdjustmentType.PERCENT and self.amount < Decimal("-100"):
+            raise ValidationError({"amount": _("A percentage cannot be lower than -100.")})
+
+    @property
+    def weekdays(self) -> set[int]:
+        if not self.days_of_week:
+            return set()
+        return {int(part) for part in self.days_of_week.split(",") if part.strip()}
+
+    def applies_to(self, night: date, check_in: date, nights: int) -> bool:
+        if not self.is_active:
+            return False
+        if self.start_date and night < self.start_date:
+            return False
+        if self.end_date and night > self.end_date:
+            return False
+        weekdays = self.weekdays
+        if weekdays and night.weekday() not in weekdays:
+            return False
+        if self.min_nights and nights < self.min_nights:
+            return False
+        return True
+
+    def adjust(self, price: Decimal) -> Decimal:
+        if self.adjustment_type == self.AdjustmentType.PERCENT:
+            return (price * (Decimal("1") + self.amount / Decimal("100"))).quantize(Decimal("0.01"))
+        return price + self.amount
+
+
+class Booking(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        CONFIRMED = "confirmed", _("Confirmed")
+        CHECKED_IN = "checked_in", _("Checked in")
+        CHECKED_OUT = "checked_out", _("Checked out")
+        CANCELLED = "cancelled", _("Cancelled")
+        EXPIRED = "expired", _("Expired")
+        NO_SHOW = "no_show", _("No show")
+
+    class Source(models.TextChoices):
+        WEB = "web", _("Website")
+        CHAT = "chat", _("Chat agent")
+        VOICE = "voice", _("Voice agent")
+        ADMIN = "admin", _("Reception")
+        API = "api", _("API")
+
+    ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED, Status.CHECKED_IN)
+    BLOCKING_STATUSES = (Status.CONFIRMED, Status.CHECKED_IN)
+
+    reference = models.CharField(
+        _("reference"), max_length=12, unique=True, editable=False, default=generate_reference
+    )
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="bookings")
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="bookings")
+    check_in = models.DateField(_("check-in"), db_index=True)
+    check_out = models.DateField(_("check-out"), db_index=True)
+    adults = models.PositiveSmallIntegerField(_("adults"), default=2)
+    children = models.PositiveSmallIntegerField(_("children"), default=0)
+    status = models.CharField(_("status"), max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    source = models.CharField(_("source"), max_length=20, choices=Source.choices, default=Source.WEB)
+    language = models.CharField(_("language"), max_length=2, default="en")
+    currency = models.CharField(_("currency"), max_length=3, default="PLN")
+    total_price = models.DecimalField(_("total price"), max_digits=10, decimal_places=2, default=Decimal("0"))
+    price_breakdown = models.JSONField(_("price breakdown"), default=dict, blank=True)
+    special_requests = models.TextField(_("special requests"), blank=True)
+    hold_expires_at = models.DateTimeField(_("hold expires at"), null=True, blank=True)
+    confirmed_at = models.DateTimeField(_("confirmed at"), null=True, blank=True)
+    cancelled_at = models.DateTimeField(_("cancelled at"), null=True, blank=True)
+    external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("booking")
+        verbose_name_plural = _("bookings")
+        indexes = [
+            models.Index(fields=["room", "check_in", "check_out"], name="booking_room_dates_idx"),
+            models.Index(fields=["status", "hold_expires_at"], name="booking_status_hold_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} · {self.client} · {self.check_in} → {self.check_out}"
+
+    @property
+    def nights(self) -> int:
+        return max((self.check_out - self.check_in).days, 0)
+
+    @property
+    def is_hold_expired(self) -> bool:
+        return (
+            self.status == self.Status.PENDING
+            and self.hold_expires_at is not None
+            and self.hold_expires_at <= timezone.now()
+        )
+
+    @property
+    def is_active(self) -> bool:
+        return self.status in self.ACTIVE_STATUSES and not self.is_hold_expired
+
+    @property
+    def is_confirmed(self) -> bool:
+        return self.status in (self.Status.CONFIRMED, self.Status.CHECKED_IN, self.Status.CHECKED_OUT)
+
+    @property
+    def guest_count(self) -> int:
+        return self.adults + self.children
+
+    @property
+    def room_type(self) -> RoomType:
+        return self.room.room_type
+
+    def clean(self) -> None:
+        super().clean()
+        if self.check_in and self.check_out and self.check_out <= self.check_in:
+            raise ValidationError({"check_out": _("Check-out must be after check-in.")})
+        if self.adults < 1:
+            raise ValidationError({"adults": _("At least one adult is required.")})
+        if self.room_id and self.adults + self.children > self.room.room_type.capacity:
+            raise ValidationError({"adults": _("The room capacity is exceeded.")})
+        if self.check_in and self.check_out:
+            nights = (self.check_out - self.check_in).days
+            if nights > settings.HOTEL["max_booking_nights"]:
+                raise ValidationError(
+                    {
+                        "check_out": format_lazy(
+                            _("Stays longer than {nights} nights are not supported."),
+                            nights=settings.HOTEL["max_booking_nights"],
+                        )
+                    }
+                )
+        if self.room_id and self.check_in and self.check_out and self.status in self.ACTIVE_STATUSES:
+            overlapping = (
+                Booking.objects.filter(
+                    room_id=self.room_id,
+                    check_in__lt=self.check_out,
+                    check_out__gt=self.check_in,
+                )
+                .exclude(pk=self.pk)
+                .filter(
+                    models.Q(status__in=self.BLOCKING_STATUSES)
+                    | models.Q(
+                        status=self.Status.PENDING,
+                        hold_expires_at__gt=timezone.now(),
+                    )
+                )
+            )
+            if overlapping.exists():
+                raise ValidationError(_("This room is already booked for the selected dates."))
