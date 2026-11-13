@@ -28,11 +28,31 @@
         <span id="call-status">{% trans "Ready when you are" %}</span>
       </div>
 
-      <div class="voice-sphere" id="voice-sphere" aria-hidden="true">
-        <span class="voice-sphere__core"></span>
-        <span class="voice-sphere__ring voice-sphere__ring--1"></span>
-        <span class="voice-sphere__ring voice-sphere__ring--2"></span>
-        <span class="voice-sphere__ring voice-sphere__ring--3"></span>
+      <div class="voice-avatar" id="voice-avatar" aria-hidden="true">
+        <div class="voice-avatar__glow"></div>
+        <svg class="voice-avatar__face" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="avatarSkin" cx="50%" cy="42%" r="62%">
+              <stop offset="0%" stop-color="#f2e3c4"/>
+              <stop offset="100%" stop-color="#c9a66b"/>
+            </radialGradient>
+            <radialGradient id="avatarHair" cx="50%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#3a2a1a"/>
+              <stop offset="100%" stop-color="#1a120a"/>
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="56" fill="url(#avatarSkin)"/>
+          <path d="M14 46 Q60 4 106 46 Q100 28 88 18 Q60 -2 32 18 Q20 28 14 46 Z" fill="url(#avatarHair)"/>
+          <ellipse class="avatar-eye avatar-eye--left" cx="42" cy="56" rx="6" ry="7" fill="#2a1f14"/>
+          <ellipse class="avatar-eye avatar-eye--right" cx="78" cy="56" rx="6" ry="7" fill="#2a1f14"/>
+          <circle class="avatar-highlight avatar-highlight--left" cx="40" cy="54" r="2" fill="#fff" opacity="0.7"/>
+          <circle class="avatar-highlight avatar-highlight--right" cx="76" cy="54" r="2" fill="#fff" opacity="0.7"/>
+          <path class="avatar-brow avatar-brow--left" d="M34 46 Q42 42 50 46" stroke="#2a1f14" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path class="avatar-brow avatar-brow--right" d="M70 46 Q78 42 86 46" stroke="#2a1f14" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path class="avatar-mouth" d="M46 78 Q60 84 74 78" stroke="#7a3a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <circle cx="30" cy="74" r="5" fill="#e8a89a" opacity="0.35"/>
+          <circle cx="90" cy="74" r="5" fill="#e8a89a" opacity="0.35"/>
+        </svg>
       </div>
 
       <button class="call-button" id="call-button" type="button" aria-label="{% trans 'Start voice call' %}">
