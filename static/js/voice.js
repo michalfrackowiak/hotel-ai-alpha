@@ -18,6 +18,7 @@
   const interim = document.getElementById("transcript-interim");
   const bookingContainer = document.getElementById("voice-booking");
   const clearButton = document.getElementById("transcript-clear");
+const sphere = document.getElementById("voice-sphere");
 
   const createUrl = root.dataset.createUrl;
   const messageUrlTemplate = root.dataset.messageUrl;
@@ -85,6 +86,24 @@
     if (callButton) callButton.classList.toggle("is-active", active);
     if (callPulse) callPulse.classList.toggle("is-active", active);
     if (languageSelect) languageSelect.disabled = active;
+    if (sphere) sphere.classList.toggle("is-active", active);
+  }
+
+  function setSphereState(state) {
+    if (!sphere) return;
+    sphere.classList.remove("is-speaking", "is-listening", "is-thinking", "is-pulse");
+    if (state) sphere.classList.add("is-" + state);
+  }
+
+  function pulseSphere() {
+    if (!sphere) return;
+    sphere.classList.remove("is-pulse");
+    // Force reflow so the pulse animation restarts.
+    void sphere.offsetWidth;
+    sphere.classList.add("is-pulse");
+    window.setTimeout(function () {
+      if (sphere) sphere.classList.remove("is-pulse");
+    }, 220);
   }
 
   function appendTranscript(role, text) {
@@ -171,6 +190,7 @@
 
       speaking = true;
       setStatus("statusSpeaking");
+      setSphereState("speaking");
 
       try {
         window.speechSynthesis.cancel();
@@ -202,9 +222,13 @@
         finished = true;
         if (timer) window.clearTimeout(timer);
         speaking = false;
+        setSphereState(null);
         resolve();
       };
 
+      utterance.onboundary = function () {
+        pulseSphere();
+      };
       utterance.onend = finish;
       utterance.onerror = finish;
       timer = window.setTimeout(finish, Math.max(5000, String(text).length * 95));
@@ -252,6 +276,7 @@
     recognition.onstart = function () {
       listening = true;
       setStatus("statusListening");
+      setSphereState("listening");
     };
 
     recognition.onresult = function (event) {
@@ -310,6 +335,7 @@
     if (!text || !sessionKey) return;
     processing = true;
     setStatus("statusThinking");
+    setSphereState("thinking");
     appendTranscript("user", text);
 
     try {
@@ -338,6 +364,7 @@
     processing = false;
     speaking = false;
     stopRecognition();
+    setSphereState(null);
     if ("speechSynthesis" in window) {
       try {
         window.speechSynthesis.cancel();
