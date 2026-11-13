@@ -156,6 +156,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-13 | v0.3.0 | Docker rate calendar | month grid rendered; saving a row wrote `DailyRate` (rate + min_nights); one-night search omitted the room type; two-night search showed the override rate |
 | 2026-11-13 | v0.3.0 | Docker ops dashboard | `/ops/` rendered arrivals/departures/holds/failed syncs/email gaps/recent events; staff login required |
 | 2026-11-13 | v0.3.0 | Docker pages EN/PL | home, booking detail and `/ops/` rendered in both languages; cancellation policy and modify form translated |
+| 2026-11-13 | v0.3.0 | GitHub Actions CI | green on `main` and `develop` (tests + Docker build) |
 
 Update this table when the release gate is re-run.
 
