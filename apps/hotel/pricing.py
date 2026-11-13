@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .models import PricingRule, Room, RoomType
+from .models import DailyRate, PricingRule, Room, RoomType
 
 MONEY = Decimal("0.01")
 
@@ -117,6 +117,12 @@ def applicable_rules(room_type: RoomType) -> list[PricingRule]:
     )
 
 
+def daily_rate_overrides(room_type: RoomType, check_in: date, check_out: date) -> dict[date, DailyRate]:
+    """Explicit rate-calendar rows for every night of a stay."""
+    rows = DailyRate.objects.filter(room_type=room_type, date__gte=check_in, date__lt=check_out)
+    return {row.date: row for row in rows}
+
+
 def quote(
     room_type: RoomType,
     check_in: date,
@@ -138,11 +144,32 @@ def quote(
         )
 
     rule_list = rules if rules is not None else applicable_rules(room_type)
+    overrides = daily_rate_overrides(room_type, check_in, check_out)
+    required_nights = max((row.min_nights for row in overrides.values()), default=0)
+    if required_nights and nights < required_nights:
+        raise StayError(
+            _("This date range requires a minimum stay of %(nights)s nights.") % {"nights": required_nights},
+            "min_nights",
+        )
+
     base_price = room_type.base_price.quantize(MONEY)
     nightly: list[NightlyRate] = []
 
     for offset in range(nights):
         night = check_in + timedelta(days=offset)
+        override = overrides.get(night)
+        if override is not None:
+            rate = max(override.rate, Decimal("0")).quantize(MONEY)
+            nightly.append(
+                NightlyRate(
+                    night=night,
+                    base_rate=rate,
+                    rate=rate,
+                    rules=[str(_("Rate calendar"))],
+                )
+            )
+            continue
+
         matching = [rule for rule in rule_list if rule.applies_to(night, check_in, nights)]
         percent = sum(
             (rule.amount for rule in matching if rule.adjustment_type == PricingRule.AdjustmentType.PERCENT),

@@ -6,7 +6,7 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat or voice in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.2.0**, 98 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.3.0**, 123 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 
@@ -37,6 +37,10 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 
 - **Bookings have one write path:** `apps/hotel/booking_service.py`. Views, tools and admin call it; they never write booking state themselves.
 - **Availability is per physical room.** Overlapping blocking bookings for the same room must be rejected; pending holds block only until `hold_expires_at`.
+- **Cancellation fees come from `apps/hotel/cancellation.py`.** `cancellation_preview()` is the single source of truth; the page, API, agent tools and `cancel_booking()` must read it. Do not re-implement the free window or fee arithmetic elsewhere.
+- **`BookingEvent` is append-only.** `save()` rejects updates and the admin is read-only with no add/delete. Add a new event instead of editing history.
+- **Rate calendar rows are explicit.** A `DailyRate` replaces the calculated nightly rate and skips pricing rules; `min_nights` is enforced in `quote()` and availability search omits room types that violate it.
+- **The ops dashboard is `/ops/`.** It is staff-only and read-only; do not introduce another write path there.
 - **Calendar sync runs after commit.** Keep `transaction.on_commit`; a calendar failure must never roll back a reservation. Pending bookings are skipped before an event record is created.
 - **Confirmation email also runs after commit.** Keep the `confirmation_email_sent_at` marker so retries are idempotent; never send from inside the booking transaction.
 - **A booking reference is not a secret.** Guest-facing read/confirm/cancel paths go through `apps/hotel/access.py`. The API accepts `token`, `X-Booking-Token` or Bearer; the web lookup requires reference + email/phone.

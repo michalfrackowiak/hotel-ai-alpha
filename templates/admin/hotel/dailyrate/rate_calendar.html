@@ -1,0 +1,81 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:hotel_dailyrate_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; {% trans "Rate calendar" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <div class="module" style="margin-bottom:1.2rem; padding:0.8rem 1rem; display:flex; align-items:center; gap:1rem;">
+      <a class="button" href="?year={{ prev_year }}&amp;month={{ prev_month }}">&larr; {% trans "Previous month" %}</a>
+      <strong style="font-size:1.1rem;">{{ month_label }}</strong>
+      <a class="button" href="?year={{ next_year }}&amp;month={{ next_month }}">{% trans "Next month" %} &rarr;</a>
+    </div>
+
+    <p class="help">
+      {% blocktrans %}
+        Leave a rate empty to use the calculated price. A rate replaces every pricing rule
+        for that night. Minimum nights applies to any booking that includes the night; 0 means no minimum.
+      {% endblocktrans %}
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="month" value="{{ month }}">
+      <div style="overflow-x:auto;">
+        <table id="rate-calendar" style="border-collapse:collapse; min-width:100%;">
+          <thead>
+            <tr>
+              <th style="position:sticky; left:0; background:var(--body-bg); text-align:left; padding:0.4rem 0.5rem;">
+                {% trans "Room type" %}
+              </th>
+              {% for day in days %}
+                <th style="padding:0.3rem 0.25rem; font-size:0.75rem; text-align:center;">{{ day|date:"d" }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <th style="position:sticky; left:0; background:var(--body-bg); text-align:left; padding:0.4rem 0.5rem; white-space:nowrap;">
+                  {{ row.room_type.name }}
+                </th>
+                {% for cell in row.cells %}
+                  <td style="padding:0.2rem; border-left:1px solid var(--hairline-color); vertical-align:top;">
+                    <input type="number" step="0.01" min="0.01"
+                           name="rate_{{ row.room_type.pk }}_{{ cell.iso }}"
+                           value="{% if cell.rate %}{{ cell.rate }}{% endif %}"
+                           aria-label="{% blocktrans with room=row.room_type.name date=cell.iso %}Rate for {{ room }} on {{ date }}{% endblocktrans %}"
+                           style="width:5.5rem;">
+                    <input type="number" min="0" step="1"
+                           name="min_{{ row.room_type.pk }}_{{ cell.iso }}"
+                           value="{% if cell.min_nights %}{{ cell.min_nights }}{% endif %}"
+                           placeholder="—"
+                           title="{% trans 'Minimum nights' %}"
+                           aria-label="{% blocktrans with room=row.room_type.name date=cell.iso %}Minimum nights for {{ room }} on {{ date }}{% endblocktrans %}"
+                           style="width:2.8rem;">
+                  </td>
+                {% endfor %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{{ days|length|add:1 }}">{% trans "No active room types." %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="submit-row" style="margin-top:1rem;">
+        <input type="submit" value="{% trans 'Save rate calendar' %}" class="default">
+      </div>
+    </form>
+  </div>
+{% endblock %}

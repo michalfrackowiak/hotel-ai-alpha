@@ -21,12 +21,12 @@ Errors use a stable envelope:
 | `400` | Validation or domain error |
 | `403` | Missing or invalid booking token |
 | `404` | Unknown room type, booking or session |
-| `409` | Booking state conflict (expired hold, not confirmable) |
+| `409` | Booking state conflict (expired hold, not confirmable/cancellable/modifiable) |
 | `429` | Throttled |
 | `502` | Speech provider failure |
 | `503` | Assistant disabled |
 
-Common error codes: `validation_error`, `invalid_stay`, `capacity_exceeded`, `room_type_not_found`, `no_availability`, `invalid_room`, `contact_required`, `booking_not_found`, `booking_access_denied`, `hold_expired`, `not_confirmable`, `not_cancellable`, `agent_disabled`, `stt_failed`, `tts_failed`.
+Common error codes: `validation_error`, `invalid_stay`, `min_nights`, `capacity_exceeded`, `room_type_not_found`, `no_availability`, `invalid_room`, `contact_required`, `booking_not_found`, `booking_access_denied`, `hold_expired`, `not_confirmable`, `not_cancellable`, `not_modifiable`, `invalid_reason`, `agent_disabled`, `stt_failed`, `tts_failed`.
 
 Rate limits (`anon`, `user`, `chat`) are stored in the configured cache. Production uses the database cache, so limits survive restarts and are shared by all gunicorn workers; tests use an in-memory cache.
 
@@ -123,7 +123,7 @@ Query parameters:
 }
 ```
 
-Results are sorted by total price, then name.
+Results are sorted by total price, then name. A rate-calendar row for a night replaces the calculated rate. If a row sets a minimum stay longer than the requested range, that room type is omitted from availability and pricing returns `400` with `min_nights`.
 
 ## Pricing
 
@@ -204,7 +204,25 @@ Response `201`:
   "special_requests": "High floor please.",
   "hold_expires_at": "2026-11-13T10:45:00+01:00",
   "can_confirm": true,
+  "can_cancel": true,
+  "can_modify": true,
   "calendar": null,
+  "cancellation": {
+    "is_cancellable": true,
+    "is_free": true,
+    "fee": "0.00",
+    "currency": "PLN",
+    "free_until": "2026-12-09",
+    "fee_nights": 1,
+    "reason": "pending_hold",
+    "policy_text": "This is a temporary hold. Cancelling it is free."
+  },
+  "cancellation_fee": "0.00",
+  "cancellation_reason": "",
+  "cancellation_reason_display": "",
+  "cancellation_note": "",
+  "cancelled_by": "",
+  "cancelled_by_display": "",
   "manage_token": "eyJzYWx0Ijoi...",
   "manage_url": "http://localhost:8000/booking/HA-7KQ2M4/?token=eyJzYWx0Ijoi...",
   "created_at": "2026-11-13T10:15:00+01:00",
@@ -217,7 +235,7 @@ Store `manage_token`/`manage_url` with the booking. The token is signed, scoped 
 
 ### Booking access
 
-`GET /api/v1/bookings/<REFERENCE>/`, `.../confirm/` and `.../cancel/` require the token in one of three forms:
+`GET /api/v1/bookings/<REFERENCE>/`, `.../confirm/`, `.../cancel/`, `.../cancellation-preview/` and `PATCH` require the token in one of three forms:
 
 | Transport | Example |
 | --- | --- |
@@ -237,7 +255,50 @@ Confirms a pending hold. Idempotent for an already confirmed booking. Returns `4
 
 ### `POST /api/v1/bookings/<REFERENCE>/cancel/`
 
-Cancels a pending or confirmed booking. Idempotent for already cancelled/expired bookings. Returns `409` with `not_cancellable` after check-out or no-show.
+Cancels a pending or confirmed booking. The body is optional:
+
+```json
+{ "reason": "plans_changed", "note": "Flights moved." }
+```
+
+`reason` is one of `guest_request`, `plans_changed`, `found_alternative`, `price`, `emergency`, `other`. The response records `cancellation_reason`, `cancellation_note`, `cancellation_fee` and `cancelled_by`. A pending hold is always free. A confirmed booking is free until `check_in - CANCELLATION_FREE_DAYS`; later cancellations charge the first `CANCELLATION_FEE_NIGHTS` stored nightly rates, capped at the booking total. Idempotent for already cancelled/expired bookings. Returns `409` with `not_cancellable` after check-out or no-show.
+
+### `GET /api/v1/bookings/<REFERENCE>/cancellation-preview/`
+
+Returns the policy preview without changing anything:
+
+```json
+{
+  "preview": {
+    "is_cancellable": true,
+    "is_free": false,
+    "fee": "420.00",
+    "currency": "PLN",
+    "free_until": "2026-12-09",
+    "fee_nights": 1,
+    "reason": "late_cancellation",
+    "policy_text": "The free cancellation window ended on 09 Dec 2026. Cancelling now costs 420.00 PLN (1 night(s))."
+  }
+}
+```
+
+The booking page, the agent tools and the cancel endpoint all use this same preview, so the quoted fee and the recorded fee cannot diverge.
+
+### `PATCH /api/v1/bookings/<REFERENCE>/`
+
+Changes dates, room type or occupancy through the single booking write path. At least one field is required:
+
+```json
+{
+  "check_in": "2026-12-14",
+  "check_out": "2026-12-17",
+  "room_type": "deluxe-suite",
+  "adults": 2,
+  "children": 0
+}
+```
+
+Availability and the price are re-checked in one transaction, excluding the booking itself. The response is the updated booking. Only pending and confirmed bookings can be modified; terminal states return `409` with `not_modifiable`. A rate-calendar minimum stay returns `400` with `min_nights`.
 
 ## Chat
 
@@ -362,6 +423,14 @@ curl -X POST http://localhost:8000/api/v1/bookings/ \
 curl "http://localhost:8000/api/v1/bookings/HA-XXXXXX/?token=<manage_token>"
 curl -X POST "http://localhost:8000/api/v1/bookings/HA-XXXXXX/confirm/" \
   -H "X-Booking-Token: <manage_token>"
+
+# Change the dates, or cancel with a reason
+curl -X PATCH "http://localhost:8000/api/v1/bookings/HA-XXXXXX/" \
+  -H "Content-Type: application/json" -H "X-Booking-Token: <manage_token>" \
+  -d '{"check_out":"2026-12-16"}'
+curl -X POST "http://localhost:8000/api/v1/bookings/HA-XXXXXX/cancel/" \
+  -H "Content-Type: application/json" -H "X-Booking-Token: <manage_token>" \
+  -d '{"reason":"plans_changed"}'
 
 # Start a chat and send a message
 curl -X POST http://localhost:8000/api/v1/chat/sessions/ \

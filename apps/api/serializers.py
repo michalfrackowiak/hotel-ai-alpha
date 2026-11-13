@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from apps.agents.models import Conversation
 from apps.hotel.access import booking_manage_url, make_booking_token
+from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.models import Booking, Client, RoomType
 from apps.hotel.pricing import StayError, validate_stay
 
@@ -81,8 +82,13 @@ class BookingSerializer(serializers.ModelSerializer):
     room_type_name = serializers.CharField(source="room.room_type.name", read_only=True)
     nights = serializers.IntegerField(read_only=True)
     can_confirm = serializers.BooleanField(read_only=True)
+    can_cancel = serializers.BooleanField(read_only=True)
+    can_modify = serializers.BooleanField(read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     source_display = serializers.CharField(source="get_source_display", read_only=True)
+    cancellation_reason_display = serializers.CharField(source="get_cancellation_reason_display", read_only=True)
+    cancelled_by_display = serializers.CharField(source="get_cancelled_by_display", read_only=True)
+    cancellation = serializers.SerializerMethodField()
     calendar = serializers.SerializerMethodField()
     manage_token = serializers.SerializerMethodField()
     manage_url = serializers.SerializerMethodField()
@@ -111,7 +117,16 @@ class BookingSerializer(serializers.ModelSerializer):
             "special_requests",
             "hold_expires_at",
             "can_confirm",
+            "can_cancel",
+            "can_modify",
             "calendar",
+            "cancellation",
+            "cancellation_fee",
+            "cancellation_reason",
+            "cancellation_reason_display",
+            "cancellation_note",
+            "cancelled_by",
+            "cancelled_by_display",
             "manage_token",
             "manage_url",
             "created_at",
@@ -124,6 +139,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def get_manage_url(self, obj: Booking) -> str:
         return booking_manage_url(obj)
+
+    def get_cancellation(self, obj: Booking):
+        return cancellation_preview(obj).as_dict()
 
     def get_calendar(self, obj: Booking):
         record = obj.calendar_events.order_by("-created_at").first()
@@ -164,6 +182,29 @@ class BookingCreateSerializer(serializers.Serializer):
                 {"email": "Provide an email address or a phone number."}
             )
         return attrs
+
+
+class BookingModifySerializer(serializers.Serializer):
+    check_in = serializers.DateField(required=False)
+    check_out = serializers.DateField(required=False)
+    room_type = serializers.SlugField(required=False)
+    adults = serializers.IntegerField(min_value=1, max_value=8, required=False)
+    children = serializers.IntegerField(min_value=0, max_value=6, required=False)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError("Provide at least one field to change.")
+        return attrs
+
+
+class BookingCancelSerializer(serializers.Serializer):
+    reason = serializers.ChoiceField(
+        choices=Booking.CancellationReason.values,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    note = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
 
 
 class ChatSessionCreateSerializer(serializers.Serializer):

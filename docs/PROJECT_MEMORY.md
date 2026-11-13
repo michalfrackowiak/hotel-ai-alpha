@@ -2,13 +2,15 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 13 November 2026 · **Version:** v0.2.0 · **Tests:** 98 passing
+**Last updated:** 13 November 2026 · **Version:** v0.3.0 · **Tests:** 123 passing
 
 ## Current state
 
-- Phases 0–8 are complete. The app books a room end-to-end by chat and voice in English and Polish, emails a bilingual confirmation and keeps per-room calendars in sync.
+- Phases 0–9 are complete. The app books a room end-to-end by chat and voice in English and Polish, emails a bilingual confirmation and keeps per-room calendars in sync.
+- Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
+- Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; `v0.1.0` is tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. The `v0.2.0` release branch is `feature/v0.2.0-operational-confidence`.
+- Git is initialised with `main` and `develop`; `v0.1.0` and `v0.2.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. The `v0.3.0` release branch is `feature/v0.3.0-guest-self-service`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -38,6 +40,16 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Database cache for throttling | No Redis dependency for the pilot; the cache table survives restarts and is shared by gunicorn workers. |
 | Email after commit, with an idempotency marker | A mail outage must not roll back a booking, and retries must not spam the guest. |
 | Reconciliation compares payload fields | Event-id-only checks miss edits made in Google Calendar; summary/location/dates/status catch real drift. |
+| Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
+| Policy is hotel-wide, not per rate plan | v0.3.0 has no rate plans yet; a single window and fee-night count matches the pilot's contract and stays explainable. |
+| Fee = first N stored nightly rates, capped at the total | Uses the actual quote (including daily-rate overrides) instead of a fresh calculation, and can never exceed what the guest agreed to pay. |
+| Pending holds are always free to release | The hold is not a commitment; charging for it would make the confirm step meaningless. |
+| Modify in place through `modify_booking()` | Reuses `available_rooms(exclude_booking=...)` and `quote()` in one transaction, so availability stays per physical room and the audit trail stays on one reference. |
+| `BookingEvent` is append-only in the model | `save()` rejects updates and the admin has no add/delete, so the trail cannot be rewritten even from the admin. |
+| Ops dashboard is `/ops/`, not a custom admin index | `staff_member_required` gives the right access control without fighting the admin index; the page is read-only and reuses domain querysets. |
+| `DailyRate` replaces the calculated rate and skips rules | One explicit row per room type/night is easier for reception to reason about than layering another rule type; the rate is the price. |
+| Minimum stay is enforced in `quote()` | Keeps direct pricing, creation and modification honest; availability catches `StayError` and omits the room type so search never shows an unbookable option. |
+| Rate calendar is an admin month grid | Reception already works in the admin; a grid over ordinary `DailyRate` rows avoids a parallel UI and keeps bulk import possible. |
 
 ## Runbook
 
@@ -81,7 +93,13 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 
 ## Traps and invariants
 
-- **One write path.** `apps.hotel.booking_service` owns create/confirm/cancel/expire. Do not write bookings from views, tools or admin actions directly.
+- **One write path.** `apps.hotel.booking_service` owns create/confirm/modify/cancel/expire. Do not write bookings from views, tools or admin actions directly.
+- **Cancellation fees come from `cancellation_preview()`.** The page, API preview, agent tools and `cancel_booking()` must read that function; never re-implement the free window or fee arithmetic in a view or template.
+- **Refresh a stale booking before previewing.** `confirm_booking()` and `cancel_booking()` return fresh objects; an in-memory instance from before the transition still says `pending` and previews the wrong reason/fee.
+- **`BookingEvent` is append-only.** `save()` raises on an existing pk and the admin is read-only. Add a new event instead of editing history; do not add admin add/delete permissions.
+- **Modification reuses `exclude_booking`.** Omitting it makes the booking block itself and every date change fails with `no_availability`.
+- **`DailyRate.min_nights` can fail a quote.** `search_availability()` catches `StayError` and skips the room type; direct pricing, creation and modification surface `min_nights` instead. Do not swallow that error in the write path.
+- **A `DailyRate` row skips pricing rules for that night.** Do not "apply rules on top" of an explicit rate; that changes the meaning of the calendar.
 - **Availability is per physical room**, not per room type. Two holds for the same room with overlapping nights must be rejected.
 - **Pending holds block only until `hold_expires_at`.** Null or future deadlines block; past deadlines do not. `expire_holds` runs in the compose `scheduler` sidecar (or host cron).
 - **Calendar sync and confirmation email must stay after commit.** Calling either inside the transaction reintroduces rollback coupling and can email a guest about a booking that then rolls back.
@@ -127,21 +145,32 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-13 | v0.2.0 | Docker email retry | first `send_booking_emails` sent 4 undelivered confirmations; second run sent 0 |
 | 2026-11-13 | v0.2.0 | Polish page in Docker | `/` with `Accept-Language: pl` renders `Sprawdzam dostępność…` |
 | 2026-11-13 | v0.2.0 | GitHub Actions CI | green on `main` and `develop` (tests + Docker build) |
+| 2026-11-13 | v0.3.0 | `pytest` | 123 passed |
+| 2026-11-13 | v0.3.0 | `manage.py check` | 0 issues |
+| 2026-11-13 | v0.3.0 | `makemigrations --check` | no changes detected |
+| 2026-11-13 | v0.3.0 | `ruff check .` | clean |
+| 2026-11-13 | v0.3.0 | Polish catalogue | 468 strings extracted, 0 missing |
+| 2026-11-13 | v0.3.0 | Docker `docker compose up --build -d` | image built; `web` healthy, `scheduler` started, `/healthz` returns `{"status": "ok"}` |
+| 2026-11-13 | v0.3.0 | Docker scheduler sidecar | logs `Hold cleanup scheduler started (every 300s)` then `Expired 0 booking hold(s).` |
+| 2026-11-13 | v0.3.0 | Docker API booking flow | create → 403 without token → 200 with token; confirm; modify dates (price recalculated); cancel with reason recorded; audit events created/confirmed/modified/cancelled |
+| 2026-11-13 | v0.3.0 | Docker rate calendar | month grid rendered; saving a row wrote `DailyRate` (rate + min_nights); one-night search omitted the room type; two-night search showed the override rate |
+| 2026-11-13 | v0.3.0 | Docker ops dashboard | `/ops/` rendered arrivals/departures/holds/failed syncs/email gaps/recent events; staff login required |
+| 2026-11-13 | v0.3.0 | Docker pages EN/PL | home, booking detail and `/ops/` rendered in both languages; cancellation policy and modify form translated |
 
 Update this table when the release gate is re-run.
 
-## Open questions for v0.3.0
+## Open questions for v0.4.0
 
-- Cancellation policy: hotel-wide free-cancellation window, or per rate/pricing rule?
-- Reservation modification: edit in place, or cancel + create a new hold so availability logic stays untouched?
-- Audit log: a dedicated append-only table, or structured JSON logs with an admin viewer?
-- Operations dashboard: a custom admin index or a separate staff-only page?
-- Email delivery: keep SMTP, or add a transactional API with bounce handling?
-- Reconciliation schedule: run `--apply` nightly from the scheduler sidecar, or keep it manual with alerts?
+- Rate plans: named plans with derived nightly rates, or keep one explicit rate per room type/night?
+- Restrictions: closed-to-arrival and length-of-stay on top of the rate calendar, or a separate restriction model?
+- Email delivery: keep SMTP, or add a transactional API (SES/Postmark) with bounce/complaint handling?
+- Reconciliation schedule: run `reconcile_calendars --apply` nightly from the scheduler sidecar, or keep it manual with alerts?
+- Exports: CSV of bookings/cancellations/fees with a date range, or a broader reporting API?
+- Backup/restore: documented SQLite backup/restore/verify commands, or an automated nightly job?
 
 ## Next move
 
-Start v0.3.0 on `develop` from the `v0.2.0` tag. Recommended order:
+Release v0.3.0: commit on `feature/v0.3.0-guest-self-service`, merge to `develop`, then `main`, tag `v0.3.0`, publish the GitHub release. Then start v0.4.0 on `develop` with `feature/v0.4.0-*`. Recommended first slices:
 
 1. Cancellation policy and reason capture (guest-facing value, small domain change).
 2. Reservation modification through the signed link (reuses availability and pricing).

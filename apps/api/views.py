@@ -22,7 +22,9 @@ from apps.hotel.booking_service import (
     confirm_booking,
     create_booking,
     get_booking,
+    modify_booking,
 )
+from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.models import RoomType
 from apps.hotel.pricing import StayError, quote
 from apps.voice.providers import (
@@ -35,7 +37,9 @@ from apps.voice.providers import (
 from .exceptions import ApiError
 from .serializers import (
     AvailabilityQuerySerializer,
+    BookingCancelSerializer,
     BookingCreateSerializer,
+    BookingModifySerializer,
     BookingSerializer,
     ChatMessageCreateSerializer,
     ChatSessionCreateSerializer,
@@ -183,6 +187,37 @@ class BookingDetailView(APIView):
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)
 
+    def patch(self, request, reference: str):
+        serializer = BookingModifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            booking = _authorized_booking(request, reference)
+            booking = modify_booking(
+                booking.reference,
+                check_in=data.get("check_in"),
+                check_out=data.get("check_out"),
+                room_type=data.get("room_type"),
+                adults=data.get("adults"),
+                children=data.get("children"),
+                actor="guest",
+                channel=booking.source,
+            )
+        except BookingError as exc:
+            _raise_booking_error(exc)
+        return Response(BookingSerializer(booking).data)
+
+
+class BookingCancellationPreviewView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, reference: str):
+        try:
+            booking = _authorized_booking(request, reference)
+        except BookingError as exc:
+            _raise_booking_error(exc)
+        return Response({"preview": cancellation_preview(booking).as_dict()})
+
 
 class BookingConfirmView(APIView):
     permission_classes = [AllowAny]
@@ -190,7 +225,7 @@ class BookingConfirmView(APIView):
     def post(self, request, reference: str):
         try:
             booking = _authorized_booking(request, reference)
-            booking = confirm_booking(booking.reference)
+            booking = confirm_booking(booking.reference, actor="guest", channel=booking.source)
         except BookingError as exc:
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)
@@ -200,9 +235,18 @@ class BookingCancelView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, reference: str):
+        serializer = BookingCancelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         try:
             booking = _authorized_booking(request, reference)
-            booking = cancel_booking(booking.reference)
+            booking = cancel_booking(
+                booking.reference,
+                reason=data.get("reason", ""),
+                note=data.get("note", ""),
+                actor="guest",
+                channel=booking.source,
+            )
         except BookingError as exc:
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)

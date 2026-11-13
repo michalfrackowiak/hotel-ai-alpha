@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 19:21+0100\n"
+"POT-Creation-Date: 2026-11-13 19:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -30,6 +30,10 @@ msgstr "Potwierdzono rezerwacje: %(count)s."
 #, python-format
 msgid "%(count)s booking(s) synced."
 msgstr "Zsynchronizowano rezerwacje: %(count)s."
+
+#, python-format
+msgid "%(count)s daily rate(s) saved."
+msgstr "Zapisano stawki dzienne: %(count)s."
 
 #, python-format
 msgid "%(count)s event(s) retried."
@@ -60,6 +64,9 @@ msgstr "Rezerwacja w trzech krótkich krokach"
 msgid "A warmer welcome at %(name)s"
 msgstr "Cieplejsze powitanie w %(name)s"
 
+msgid "AI concierge"
+msgstr "Konsjerż AI"
+
 msgid "AI concierge · online"
 msgstr "Konsjerż AI · online"
 
@@ -84,14 +91,35 @@ msgstr "Bazowy adres API"
 msgid "API key"
 msgstr "Klucz API"
 
+msgid "Active holds"
+msgstr "Aktywne rezerwacje wstępne"
+
+msgid "Actor"
+msgstr "Wykonawca"
+
 msgid "Adjustment"
 msgstr "Korekta"
 
 msgid "Admin"
 msgstr "Administracja"
 
+msgid "Adults"
+msgstr "Dorośli"
+
+msgid "All mapped calendars are in sync."
+msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
+
 msgid "Anthropic"
 msgstr "Anthropic"
+
+msgid "Apply these changes to your reservation?"
+msgstr "Zastosować te zmiany do rezerwacji?"
+
+msgid "Arrivals"
+msgstr "Przyjazdy"
+
+msgid "Arrivals today"
+msgstr "Dzisiejsze przyjazdy"
 
 msgid "Ask about this room"
 msgstr "Zapytaj o ten pokój"
@@ -146,9 +174,23 @@ msgstr "Zarezerwowano przez"
 msgid "Booking %(reference)s"
 msgstr "Rezerwacja %(reference)s"
 
+msgid "Booking cancelled."
+msgstr "Rezerwacja anulowana."
+
+#, python-format
+msgid "Booking changed to %(check_in)s → %(check_out)s."
+msgstr "Zmieniono rezerwację na %(check_in)s → %(check_out)s."
+
 #, python-format
 msgid "Booking confirmed · %(reference)s"
 msgstr "Rezerwacja potwierdzona · %(reference)s"
+
+msgid "Booking confirmed."
+msgstr "Rezerwacja potwierdzona."
+
+#, python-format
+msgid "Booking created for %(check_in)s → %(check_out)s."
+msgstr "Utworzono rezerwację na %(check_in)s → %(check_out)s."
 
 msgid "Booking not found"
 msgstr "Nie znaleziono rezerwacji"
@@ -175,6 +217,12 @@ msgstr "Butikowe pobyty · konsjerż AI"
 msgid "Calendar"
 msgstr "Kalendarz"
 
+msgid "Calendar sync failures"
+msgstr "Błędy synchronizacji kalendarza"
+
+msgid "Calendar synced"
+msgstr "Kalendarz zsynchronizowany"
+
 msgid "Calendars"
 msgstr "Kalendarze"
 
@@ -193,14 +241,38 @@ msgstr "Anuluj wybrane rezerwacje"
 msgid "Cancel this reservation? This cannot be undone."
 msgstr "Anulować tę rezerwację? Tej operacji nie można cofnąć."
 
+msgid "Cancellation"
+msgstr "Anulowanie"
+
+msgid "Cancellation fee"
+msgstr "Opłata za anulowanie"
+
+msgid "Cancellation note"
+msgstr "Notatka do anulowania"
+
+msgid "Cancellation reason"
+msgstr "Powód anulowania"
+
 msgid "Cancelled"
 msgstr "Anulowana"
+
+msgid "Cancelled by"
+msgstr "Anulowane przez"
+
+msgid "Cancelled from the reception admin."
+msgstr "Anulowane z panelu recepcji."
 
 msgid "Cannot find your reference?"
 msgstr "Nie możesz znaleźć numeru rezerwacji?"
 
 msgid "Capacity & price"
 msgstr "Pojemność i cena"
+
+msgid "Change reservation"
+msgstr "Zmień rezerwację"
+
+msgid "Channel"
+msgstr "Kanał"
 
 msgid "Chat"
 msgstr "Czat"
@@ -242,6 +314,12 @@ msgstr "Wymeldowany"
 msgid "Checking availability…"
 msgstr "Sprawdzam dostępność…"
 
+msgid "Children"
+msgstr "Dzieci"
+
+msgid "Choose a valid cancellation reason."
+msgstr "Wybierz prawidłowy powód anulowania."
+
 msgid "Clear"
 msgstr "Wyczyść"
 
@@ -263,6 +341,9 @@ msgstr "Potwierdzić tę rezerwację teraz?"
 
 msgid "Confirm with confidence"
 msgstr "Potwierdź z pewnością"
+
+msgid "Confirmations without email"
+msgstr "Potwierdzenia bez e-maila"
 
 msgid "Confirmed"
 msgstr "Potwierdzona"
@@ -308,6 +389,12 @@ msgstr "Cena apartamentu Deluxe"
 msgid "Demo policy (offline)"
 msgstr "Polityka demo (offline)"
 
+msgid "Departures"
+msgstr "Wyjazdy"
+
+msgid "Departures today"
+msgstr "Dzisiejsze wyjazdy"
+
 msgid "Disable selected providers"
 msgstr "Wyłącz wybranych dostawców"
 
@@ -319,6 +406,12 @@ msgstr "E-mail lub telefon"
 
 msgid "Email or phone is required."
 msgstr "Wymagany jest adres e-mail lub numer telefonu."
+
+msgid "Email sent"
+msgstr "Wysłano e-mail"
+
+msgid "Emergency"
+msgstr "Nagła sytuacja"
 
 msgid "Enable selected providers"
 msgstr "Włącz wybranych dostawców"
@@ -347,8 +440,17 @@ msgstr ""
 "Podaj numer rezerwacji oraz adres e-mail lub numer telefonu użyty przy rezerwacji. "
 "Otworzymy prywatny link do Twojej rezerwacji."
 
+msgid "Error"
+msgstr "Błąd"
+
+msgid "Event"
+msgstr "Zdarzenie"
+
 msgid "Expired"
 msgstr "Wygasła"
+
+msgid "Expired holds to clean up"
+msgstr "Wygasłe rezerwacje wstępne do uprzątnięcia"
 
 msgid "Extras"
 msgstr "Dodatki"
@@ -368,6 +470,15 @@ msgstr "Znajdź moją rezerwację"
 msgid "Fixed amount per night"
 msgstr "Stała kwota za noc"
 
+msgid "Found another option"
+msgstr "Znaleziono inną opcję"
+
+#, python-format
+msgid "Free cancellation until %(date)s. After that, %(nights)s night(s) will be charged."
+msgstr ""
+"Bezpłatne anulowanie do %(date)s. Po tym terminie zostanie naliczona opłata za "
+"%(nights)s noc(y)."
+
 msgid "Generation"
 msgstr "Generowanie"
 
@@ -379,6 +490,9 @@ msgstr "Google Calendar"
 
 msgid "Guest"
 msgstr "Gość"
+
+msgid "Guest request"
+msgstr "Prośba gościa"
 
 #, python-format
 msgid "Guest: %(name)s"
@@ -392,6 +506,18 @@ msgstr "Zablokowane do"
 
 msgid "Hold"
 msgstr "Blokada"
+
+msgid "Hold expired before confirmation."
+msgstr "Rezerwacja wstępna wygasła przed potwierdzeniem."
+
+msgid "Hold expired before modification."
+msgstr "Rezerwacja wstępna wygasła przed zmianą."
+
+msgid "Hold expired without confirmation."
+msgstr "Rezerwacja wstępna wygasła bez potwierdzenia."
+
+msgid "Home"
+msgstr "Strona główna"
 
 msgid "How it works"
 msgstr "Jak to działa"
@@ -415,11 +541,27 @@ msgstr ""
 "Jeśli chcesz zmienić lub anulować rezerwację, użyj powyższego linku lub skontaktuj "
 "się z recepcją."
 
+#, python-format
+msgid "Ignored an invalid rate for %(room)s on %(date)s."
+msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
+
 msgid "Language"
 msgstr "Język"
 
 msgid "Last minute"
 msgstr "Ostatnia chwila"
+
+msgid "Last synced at"
+msgstr "Ostatnia synchronizacja"
+
+msgid ""
+"Leave a rate empty to use the calculated price. A rate replaces every pricing rule "
+"for that night. Minimum nights applies to any booking that includes the night; 0 "
+"means no minimum."
+msgstr ""
+"Pozostaw stawkę pustą, aby użyć wyliczonej ceny. Stawka zastępuje wszystkie reguły "
+"cenowe dla danej nocy. Minimalna liczba nocy dotyczy każdej rezerwacji obejmującej tę"
+" noc; 0 oznacza brak minimum."
 
 msgid "Leave empty to apply to every room type."
 msgstr "Pozostaw puste, aby zastosować do wszystkich typów pokoi."
@@ -454,8 +596,21 @@ msgstr "Metadane"
 msgid "Microphone access was blocked. Allow the microphone and try again."
 msgstr "Dostęp do mikrofonu został zablokowany. Zezwól na mikrofon i spróbuj ponownie."
 
+msgid "Minimum nights"
+msgstr "Minimalna liczba nocy"
+
+#, python-format
+msgid "Minimum nights for %(room)s on %(date)s"
+msgstr "Minimalna liczba nocy dla %(room)s w dniu %(date)s"
+
+msgid "Minimum stay required for a booking that includes this night. 0 means no minimum."
+msgstr "Minimalny pobyt wymagany dla rezerwacji obejmującej tę noc. 0 oznacza brak minimum."
+
 msgid "Model"
 msgstr "Model"
+
+msgid "Modified"
+msgstr "Zmieniono"
 
 msgid "My booking"
 msgstr "Moja rezerwacja"
@@ -471,14 +626,32 @@ msgstr "Potrzebujesz człowieka?"
 msgid "New conversation started."
 msgstr "Rozpoczęto nową rozmowę."
 
+msgid "Next month"
+msgstr "Następny miesiąc"
+
 msgid "Night"
 msgstr "Noc"
+
+msgid "No active holds."
+msgstr "Brak aktywnych rezerwacji wstępnych."
+
+msgid "No active room types."
+msgstr "Brak aktywnych typów pokoi."
+
+msgid "No arrivals scheduled for today."
+msgstr "Brak zaplanowanych przyjazdów na dziś."
+
+msgid "No booking events yet."
+msgstr "Brak zdarzeń rezerwacji."
 
 msgid "No booking yet. Share your dates to get started."
 msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
 
 msgid "No card details are needed in the chat."
 msgstr "W czacie nie są potrzebne dane karty."
+
+msgid "No departures scheduled for today."
+msgstr "Brak zaplanowanych wyjazdów na dziś."
 
 msgid "No rooms are available for those dates. Try different dates or ask the concierge."
 msgstr "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
@@ -512,6 +685,12 @@ msgstr "Otwórz konsjerża głosowego i po prostu mów. Sprawdzi pokoje, ceny i 
 msgid "OpenAI"
 msgstr "OpenAI"
 
+msgid "Operations"
+msgstr "Operacje"
+
+msgid "Other"
+msgstr "Inny"
+
 msgid "Pending"
 msgstr "Oczekująca"
 
@@ -520,6 +699,9 @@ msgstr "Procent"
 
 msgid "Percent (e.g. 15 = +15%) or a fixed amount per night."
 msgstr "Procent (np. 15 = +15%) lub stała kwota za noc."
+
+msgid "Plans changed"
+msgstr "Zmiana planów"
 
 msgid "Please provide an email address or a phone number."
 msgstr "Podaj adres e-mail lub numer telefonu."
@@ -546,6 +728,9 @@ msgstr ""
 "Naciśnij przycisk połączenia i mów naturalnie. Aurora słucha, sprawdza rzeczywistą "
 "dostępność i potwierdza pokój — po angielsku lub polsku."
 
+msgid "Previous month"
+msgstr "Poprzedni miesiąc"
+
 msgid "Price"
 msgstr "Cena"
 
@@ -567,11 +752,21 @@ msgstr "Podaj link dostępu do rezerwacji lub token z potwierdzenia."
 msgid "Rate"
 msgstr "Stawka"
 
+msgid "Rate calendar"
+msgstr "Kalendarz stawek"
+
+#, python-format
+msgid "Rate for %(room)s on %(date)s"
+msgstr "Stawka dla %(room)s w dniu %(date)s"
+
 msgid "Ready"
 msgstr "Gotowe"
 
 msgid "Ready when you are"
 msgstr "Gotowe, kiedy chcesz"
+
+msgid "Recent booking events"
+msgstr "Ostatnie zdarzenia rezerwacji"
 
 msgid "Reception"
 msgstr "Recepcja"
@@ -588,6 +783,9 @@ msgstr "Rezerwacja anulowana."
 msgid "Reservation confirmed. See you soon!"
 msgstr "Rezerwacja potwierdzona. Do zobaczenia!"
 
+msgid "Reservation updated."
+msgstr "Rezerwacja zaktualizowana."
+
 msgid "Retry calendar sync"
 msgstr "Ponów synchronizację kalendarza"
 
@@ -601,6 +799,9 @@ msgstr "Pokój"
 
 msgid "Room for two this weekend"
 msgstr "Pokój dla dwóch osób w ten weekend"
+
+msgid "Room type"
+msgstr "Typ pokoju"
 
 #, python-format
 msgid "Room: %(room)s · %(type)s"
@@ -617,6 +818,12 @@ msgstr "Pokoje są przygotowywane. Zajrzyj wkrótce."
 
 msgid "Rules"
 msgstr "Zasady"
+
+msgid "Save changes"
+msgstr "Zapisz zmiany"
+
+msgid "Save rate calendar"
+msgstr "Zapisz kalendarz stawek"
 
 msgid "Say hello"
 msgstr "Przywitaj się"
@@ -677,6 +884,9 @@ msgstr "Rozpocznij połączenie"
 msgid "Start voice call"
 msgstr "Rozpocznij rozmowę głosową"
 
+msgid "Status"
+msgstr "Status"
+
 msgid "Stay"
 msgstr "Pobyt"
 
@@ -734,6 +944,14 @@ msgstr "Rezerwacja jest nieprawidłowa."
 msgid "The end date must be after the start date."
 msgstr "Data końcowa musi być późniejsza niż początkowa."
 
+#, python-format
+msgid ""
+"The free cancellation window ended on %(date)s. Cancelling now costs %(fee)s "
+"%(currency)s (%(nights)s night(s))."
+msgstr ""
+"Okres bezpłatnego anulowania zakończył się %(date)s. Anulowanie kosztuje teraz "
+"%(fee)s %(currency)s (%(nights)s noc(y))."
+
 msgid "The hold on this reservation expired before it was confirmed."
 msgstr "Blokada tej rezerwacji wygasła przed potwierdzeniem."
 
@@ -755,6 +973,10 @@ msgstr "Wybrany pokój jest niedostępny."
 msgid "The selected room type is not available."
 msgstr "Wybrany typ pokoju jest niedostępny."
 
+#, python-format
+msgid "The shift at a glance for %(date)s."
+msgstr "Zmiana w skrócie na %(date)s."
+
 msgid "The voice concierge is unavailable right now. Please use chat instead."
 msgstr "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
 
@@ -770,6 +992,9 @@ msgstr "Tej rezerwacji nie można już anulować."
 msgid "This booking can no longer be confirmed."
 msgstr "Tej rezerwacji nie można już potwierdzić."
 
+msgid "This booking can no longer be modified."
+msgstr "Tej rezerwacji nie można już zmienić."
+
 msgid ""
 "This browser does not support speech recognition. Please use Chrome or Edge, or "
 "switch to chat."
@@ -777,8 +1002,21 @@ msgstr ""
 "Ta przeglądarka nie obsługuje rozpoznawania mowy. Użyj Chrome lub Edge albo przejdź "
 "do czatu."
 
+#, python-format
+msgid "This date range requires a minimum stay of %(nights)s nights."
+msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
+
+msgid "This is a temporary hold. Cancelling it is free."
+msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
+
+msgid "This reservation can no longer be cancelled."
+msgstr "Tej rezerwacji nie można już anulować."
+
 msgid "This reservation has been cancelled."
 msgstr "Ta rezerwacja została anulowana."
+
+msgid "This reservation is already cancelled."
+msgstr "Ta rezerwacja jest już anulowana."
 
 msgid "This room is already booked for the selected dates."
 msgstr "Ten pokój jest już zarezerwowany w wybranych terminach."
@@ -853,6 +1091,9 @@ msgstr "Weekendowa"
 msgid "What does the Deluxe Suite cost for three nights?"
 msgstr "Ile kosztuje apartament Deluxe na trzy noce?"
 
+msgid "When"
+msgstr "Kiedy"
+
 msgid "Window"
 msgstr "Okno"
 
@@ -891,6 +1132,9 @@ msgstr "token dostępu"
 msgid "active"
 msgstr "aktywny"
 
+msgid "actor"
+msgstr "wykonawca"
+
 msgid "adjustment type"
 msgstr "typ korekty"
 
@@ -924,6 +1168,12 @@ msgstr "łóżka"
 msgid "booking"
 msgstr "rezerwacja"
 
+msgid "booking event"
+msgstr "zdarzenie rezerwacji"
+
+msgid "booking events"
+msgstr "zdarzenia rezerwacji"
+
 msgid "booking hold (minutes)"
 msgstr "blokada rezerwacji (minuty)"
 
@@ -948,8 +1198,20 @@ msgstr "zdarzenia kalendarza"
 msgid "calendar id"
 msgstr "identyfikator kalendarza"
 
+msgid "cancellation fee"
+msgstr "opłata za anulowanie"
+
+msgid "cancellation note"
+msgstr "notatka do anulowania"
+
+msgid "cancellation reason"
+msgstr "powód anulowania"
+
 msgid "cancelled at"
 msgstr "anulowano o"
+
+msgid "cancelled by"
+msgstr "anulowane przez"
 
 msgid "capacity"
 msgstr "pojemność"
@@ -993,11 +1255,26 @@ msgstr "rozmowy"
 msgid "country"
 msgstr "kraj"
 
+msgid "created at"
+msgstr "utworzono"
+
 msgid "credentials JSON"
 msgstr "dane uwierzytelniające JSON"
 
 msgid "currency"
 msgstr "waluta"
+
+msgid "daily rate"
+msgstr "stawka dzienna"
+
+msgid "daily rates"
+msgstr "stawki dzienne"
+
+msgid "data"
+msgstr "dane"
+
+msgid "date"
+msgstr "data"
 
 msgid "days of week"
 msgstr "dni tygodnia"
@@ -1028,6 +1305,9 @@ msgstr "identyfikator zdarzenia"
 
 msgid "event payload"
 msgstr "dane zdarzenia"
+
+msgid "event type"
+msgstr "typ zdarzenia"
 
 msgid "expired"
 msgstr "wygasła"
@@ -1137,6 +1417,9 @@ msgstr "dostawca"
 msgid "provider type"
 msgstr "typ dostawcy"
 
+msgid "rate"
+msgstr "stawka"
+
 msgid "reference"
 msgstr "numer"
 
@@ -1187,6 +1470,9 @@ msgstr "stan"
 
 msgid "status"
 msgstr "status"
+
+msgid "summary"
+msgstr "podsumowanie"
 
 msgid "sync enabled"
 msgstr "synchronizacja włączona"
