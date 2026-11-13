@@ -71,11 +71,24 @@ class RoomType(TimeStampedModel):
 
 
 class Room(TimeStampedModel):
+    class HousekeepingStatus(models.TextChoices):
+        CLEAN = "clean", _("Clean")
+        DIRTY = "dirty", _("Dirty")
+        INSPECTED = "inspected", _("Inspected")
+        OUT_OF_ORDER = "out_of_order", _("Out of order")
+
     number = models.CharField(_("number"), max_length=20, unique=True)
     name = models.CharField(_("name"), max_length=120, blank=True)
     room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT, related_name="rooms")
     floor = models.SmallIntegerField(_("floor"), default=0)
     is_active = models.BooleanField(_("active"), default=True)
+    housekeeping_status = models.CharField(
+        _("housekeeping status"),
+        max_length=20,
+        choices=HousekeepingStatus.choices,
+        default=HousekeepingStatus.CLEAN,
+        db_index=True,
+    )
     notes = models.TextField(_("notes"), blank=True)
 
     class Meta:
