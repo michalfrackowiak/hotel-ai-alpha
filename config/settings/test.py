@@ -19,5 +19,11 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []  # noqa: F405
 REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = ["rest_framework.renderers.JSONRenderer"]  # noqa: F405
 
+# Tests render templates without running collectstatic; the manifest storage
+# would raise for every {% static %} tag when staticfiles/ is absent.
+STORAGES["staticfiles"] = {  # noqa: F405
+    "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+}
+
 # Deterministic calendar behaviour in tests unless a test overrides it.
 CALENDAR_PROVIDER = "fake"
