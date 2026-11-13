@@ -44,6 +44,8 @@ AFFIRMATIVE = re.compile(
     r"tak|potwierdzam|zgoda|rezerwuj|proszę|dobrze)\b",
     re.IGNORECASE,
 )
+CANCEL_INTENT = re.compile(r"\b(cancel|cancelled|anuluj|anulować|odwołaj|odwołać)\b", re.IGNORECASE)
+REFERENCE = re.compile(r"\bHA-[A-Z0-9]{6}\b", re.IGNORECASE)
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
 PHONE = re.compile(r"(?<![\d])(\+?\d[\d\s()\-]{7,}\d)(?![\d])")
 GUESTS = re.compile(
@@ -97,6 +99,12 @@ class DemoProvider(BaseLLMProvider):
         availability = results.get("check_availability")
         created = results.get("create_booking")
         confirmed = results.get("confirm_booking")
+        cancelled = results.get("cancel_booking")
+
+        if cancelled:
+            if cancelled.get("ok"):
+                return self._text(self._cancelled(language, cancelled.get("booking", {})), language)
+            return self._text(self._error(language, cancelled), language)
 
         if confirmed:
             if confirmed.get("ok"):
@@ -110,6 +118,14 @@ class DemoProvider(BaseLLMProvider):
             if self._last_is_tool(messages) or not self._is_affirmative(last_user):
                 return self._text(self._ask_confirm(language, booking), language)
             return self._tool("confirm_booking", {"reference": booking.get("reference")}, language)
+
+        reference_match = REFERENCE.search(history)
+        if reference_match and CANCEL_INTENT.search(last_user):
+            return self._tool(
+                "cancel_booking",
+                {"reference": reference_match.group(0).upper(), "reason": "guest_request"},
+                language,
+            )
 
         availability_data = self._fresh_availability(availability, slots)
         options = (availability_data or {}).get("options") or []
@@ -411,6 +427,15 @@ class DemoProvider(BaseLLMProvider):
             "Rezerwacja potwierdzona. Numer {reference}: {room}, od {check_in} do {check_out}, "
             "razem {total} {currency}. Do zobaczenia w hotelu.",
         ).format(**self._booking_fields(booking, language))
+
+    def _cancelled(self, language: str, booking: dict) -> str:
+        fee = booking.get("cancellation_fee") or "0"
+        currency = booking.get("currency", "")
+        return self._t(
+            language,
+            "Your booking {reference} has been cancelled. Cancellation fee: {fee} {currency}.",
+            "Rezerwacja {reference} została anulowana. Opłata za anulowanie: {fee} {currency}.",
+        ).format(reference=booking.get("reference", ""), fee=fee, currency=currency)
 
     def _booking_fields(self, booking: dict, language: str) -> dict:
         return {

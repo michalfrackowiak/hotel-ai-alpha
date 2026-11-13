@@ -10,4 +10,5 @@ urlpatterns = [
     path("voice/", views.voice_page, name="voice"),
     path("booking/", views.booking_lookup, name="booking-lookup"),
     path("booking/<str:reference>/", views.booking_detail, name="booking-detail"),
+    path("ops/", views.ops_dashboard, name="ops"),
 ]

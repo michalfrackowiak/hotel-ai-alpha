@@ -13,8 +13,9 @@ Status as of **13 November 2026**.
 | 6 | Admin, seed data and operations | ✅ Complete |
 | 7 | Bilingual UI, hardening and release | ✅ Complete (v0.1.0) |
 | 8 | Operational confidence | ✅ Complete (v0.2.0) |
+| 9 | Guest self-service | ✅ Complete (v0.3.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md).
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md).
 
 ---
 
@@ -170,32 +171,49 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.3.0 (planning)
+## Phase 9 — Guest self-service (v0.3.0)
 
-Theme: **guest self-service**. The pilot is now operationally safe; v0.3 should reduce reception workload and give guests more control.
+**Goal:** reduce reception workload and give guests control without weakening the booking invariants.
+
+- [x] Configurable cancellation policy with a single preview used by the page, API, agent and write path
+- [x] Cancellation reasons and notes recorded on the booking
+- [x] Reservation modification (dates, room type, occupancy) through the signed link and API
+- [x] Append-only `BookingEvent` audit log with actor, channel and before/after state
+- [x] Staff operations dashboard at `/ops/` (arrivals, departures, holds, failed syncs, email gaps, recent events)
+- [x] Rate calendar with nightly `DailyRate` overrides and minimum-stay rules
+- [x] Admin month grid for daily rates and read-only audit views
+- [x] Tests for policy windows, fees, modification, audit, ops access and rate-calendar pricing
+- [x] Updated API docs, README, architecture notes, release notes and Polish catalogue
+
+**Exit criteria:** a guest can change or cancel within policy without contacting reception; every booking transition is attributable to a channel and timestamp; reception can start the day from one dashboard page.
+
+---
+
+## Next milestone — v0.4.0 (planning)
+
+Theme: **revenue and delivery hardening**. The guest can now self-serve; the next step is to make pricing and operations less manual and to close the remaining delivery gaps.
 
 ### Must have
 
-1. **Guest cancellation policy** — configurable free-cancellation window, cancellation reasons and a fee preview before the guest confirms.
-2. **Reservation modification** — change dates or room type through the signed link, with availability and price re-checked in one transaction.
-3. **Audit log** — append-only record of booking transitions (actor, channel, before/after state) visible in the admin.
-4. **Structured operations dashboard** — today's arrivals/departures, pending holds, failed calendar syncs and email delivery status on one admin page.
-5. **Rate calendar** — nightly rates and minimum-stay rules editable in a month view.
+1. **Rate plans and restrictions** — named plans with derived nightly rates, closed-to-arrival dates and length-of-stay restrictions on top of the rate calendar.
+2. **Nightly reconciliation and alerts** — run `reconcile_calendars --apply` from the scheduler and surface non-repairable drift on `/ops/`.
+3. **Email delivery provider** — transactional API (SES/Postmark) with bounce/complaint handling and a resend action.
+4. **Booking and revenue export** — CSV export of bookings, cancellations and fees with a date range.
+5. **Backup/restore drill** — documented SQLite backup, restore and verification commands.
 
 ### Should have
 
-- Nightly `reconcile_calendars --apply` in the scheduler and an alert on non-repairable drift.
-- Email delivery provider integration (SES/Postmark) with bounce handling.
 - Demo-policy coverage for more date formats (`12/15/2026`, `15.12.2026`, relative dates).
-- Export of bookings and revenue to CSV.
-- Docker smoke-test script and a documented backup/restore drill.
+- Per-room housekeeping status on the operations dashboard.
+- Guest-visible rate breakdown explaining each nightly rate source.
+- Docker smoke-test script that exercises booking, cancellation and modification end to end.
 
 ### Exit criteria
 
-- A guest can change or cancel within policy without contacting reception.
-- Every booking transition is attributable to a channel and a timestamp.
-- Reception can start the day from one dashboard page.
+- Reception can change prices and restrictions without touching code or raw rows.
+- Calendar drift and email delivery failures are visible without reading logs.
+- A backup can be restored into a clean container and verified with the test suite.
 
 ### Release process
 
-Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.3.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.3.0`.
+Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.4.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.4.0`.

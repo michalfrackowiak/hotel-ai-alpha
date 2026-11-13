@@ -503,4 +503,114 @@ TRANSLATIONS: dict[str, str] = {
     ),
     "access token": "token dostępu",
     "confirmation email sent at": "wysłano e-mail potwierdzający",
+    "%(count)s daily rate(s) saved.": "Zapisano stawki dzienne: %(count)s.",
+    "AI concierge": "Konsjerż AI",
+    "Active holds": "Aktywne rezerwacje wstępne",
+    "Actor": "Wykonawca",
+    "Adults": "Dorośli",
+    "All mapped calendars are in sync.": "Wszystkie przypisane kalendarze są zsynchronizowane.",
+    "Apply these changes to your reservation?": "Zastosować te zmiany do rezerwacji?",
+    "Arrivals": "Przyjazdy",
+    "Arrivals today": "Dzisiejsze przyjazdy",
+    "Booking cancelled.": "Rezerwacja anulowana.",
+    "Booking changed to %(check_in)s → %(check_out)s.": (
+        "Zmieniono rezerwację na %(check_in)s → %(check_out)s."
+    ),
+    "Booking confirmed.": "Rezerwacja potwierdzona.",
+    "Booking created for %(check_in)s → %(check_out)s.": (
+        "Utworzono rezerwację na %(check_in)s → %(check_out)s."
+    ),
+    "Calendar sync failures": "Błędy synchronizacji kalendarza",
+    "Calendar synced": "Kalendarz zsynchronizowany",
+    "Cancellation": "Anulowanie",
+    "Cancellation fee": "Opłata za anulowanie",
+    "Cancellation note": "Notatka do anulowania",
+    "Cancellation reason": "Powód anulowania",
+    "Cancelled by": "Anulowane przez",
+    "Cancelled from the reception admin.": "Anulowane z panelu recepcji.",
+    "Change reservation": "Zmień rezerwację",
+    "Channel": "Kanał",
+    "Children": "Dzieci",
+    "Choose a valid cancellation reason.": "Wybierz prawidłowy powód anulowania.",
+    "Confirmations without email": "Potwierdzenia bez e-maila",
+    "Departures": "Wyjazdy",
+    "Departures today": "Dzisiejsze wyjazdy",
+    "Email sent": "Wysłano e-mail",
+    "Emergency": "Nagła sytuacja",
+    "Error": "Błąd",
+    "Event": "Zdarzenie",
+    "Expired holds to clean up": "Wygasłe rezerwacje wstępne do uprzątnięcia",
+    "Found another option": "Znaleziono inną opcję",
+    "Free cancellation until %(date)s. After that, %(nights)s night(s) will be charged.": (
+        "Bezpłatne anulowanie do %(date)s. Po tym terminie zostanie naliczona opłata "
+        "za %(nights)s noc(y)."
+    ),
+    "Guest request": "Prośba gościa",
+    "Hold expired before confirmation.": "Rezerwacja wstępna wygasła przed potwierdzeniem.",
+    "Hold expired before modification.": "Rezerwacja wstępna wygasła przed zmianą.",
+    "Hold expired without confirmation.": "Rezerwacja wstępna wygasła bez potwierdzenia.",
+    "Home": "Strona główna",
+    "Ignored an invalid rate for %(room)s on %(date)s.": (
+        "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
+    ),
+    "Last synced at": "Ostatnia synchronizacja",
+    "Leave a rate empty to use the calculated price. A rate replaces every pricing rule for that night. Minimum nights applies to any booking that includes the night; 0 means no minimum.": (
+        "Pozostaw stawkę pustą, aby użyć wyliczonej ceny. Stawka zastępuje wszystkie reguły "
+        "cenowe dla danej nocy. Minimalna liczba nocy dotyczy każdej rezerwacji obejmującej "
+        "tę noc; 0 oznacza brak minimum."
+    ),
+    "Minimum nights": "Minimalna liczba nocy",
+    "Minimum nights for %(room)s on %(date)s": "Minimalna liczba nocy dla %(room)s w dniu %(date)s",
+    "Minimum stay required for a booking that includes this night. 0 means no minimum.": (
+        "Minimalny pobyt wymagany dla rezerwacji obejmującej tę noc. 0 oznacza brak minimum."
+    ),
+    "Modified": "Zmieniono",
+    "Next month": "Następny miesiąc",
+    "No active holds.": "Brak aktywnych rezerwacji wstępnych.",
+    "No active room types.": "Brak aktywnych typów pokoi.",
+    "No arrivals scheduled for today.": "Brak zaplanowanych przyjazdów na dziś.",
+    "No booking events yet.": "Brak zdarzeń rezerwacji.",
+    "No departures scheduled for today.": "Brak zaplanowanych wyjazdów na dziś.",
+    "Operations": "Operacje",
+    "Other": "Inny",
+    "Plans changed": "Zmiana planów",
+    "Previous month": "Poprzedni miesiąc",
+    "Rate calendar": "Kalendarz stawek",
+    "Rate for %(room)s on %(date)s": "Stawka dla %(room)s w dniu %(date)s",
+    "Recent booking events": "Ostatnie zdarzenia rezerwacji",
+    "Reservation updated.": "Rezerwacja zaktualizowana.",
+    "Room type": "Typ pokoju",
+    "Save changes": "Zapisz zmiany",
+    "Save rate calendar": "Zapisz kalendarz stawek",
+    "Status": "Status",
+    "The free cancellation window ended on %(date)s. Cancelling now costs %(fee)s %(currency)s (%(nights)s night(s)).": (
+        "Okres bezpłatnego anulowania zakończył się %(date)s. Anulowanie kosztuje teraz "
+        "%(fee)s %(currency)s (%(nights)s noc(y))."
+    ),
+    "The shift at a glance for %(date)s.": "Zmiana w skrócie na %(date)s.",
+    "This booking can no longer be modified.": "Tej rezerwacji nie można już zmienić.",
+    "This date range requires a minimum stay of %(nights)s nights.": (
+        "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
+    ),
+    "This is a temporary hold. Cancelling it is free.": (
+        "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
+    ),
+    "This reservation can no longer be cancelled.": "Tej rezerwacji nie można już anulować.",
+    "This reservation is already cancelled.": "Ta rezerwacja jest już anulowana.",
+    "When": "Kiedy",
+    "actor": "wykonawca",
+    "booking event": "zdarzenie rezerwacji",
+    "booking events": "zdarzenia rezerwacji",
+    "cancellation fee": "opłata za anulowanie",
+    "cancellation note": "notatka do anulowania",
+    "cancellation reason": "powód anulowania",
+    "cancelled by": "anulowane przez",
+    "created at": "utworzono",
+    "daily rate": "stawka dzienna",
+    "daily rates": "stawki dzienne",
+    "data": "dane",
+    "date": "data",
+    "event type": "typ zdarzenia",
+    "rate": "stawka",
+    "summary": "podsumowanie",
 }

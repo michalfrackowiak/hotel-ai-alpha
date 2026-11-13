@@ -1,0 +1,145 @@
+{% extends "web/base.html" %}
+{% load i18n humanize %}
+
+{% block title %}{% trans "Operations" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell ops-shell">
+  <p class="eyebrow">{% trans "Reception" %}</p>
+  <h1>{% trans "Operations" %}</h1>
+  <p class="muted">{% blocktrans with date=today|date:"D, d M Y" %}The shift at a glance for {{ date }}.{% endblocktrans %}</p>
+
+  <div class="ops-grid">
+    <div class="ops-card">
+      <span class="ops-card__value">{{ arrival_count }}</span>
+      <span class="ops-card__label">{% trans "Arrivals today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ departure_count }}</span>
+      <span class="ops-card__label">{% trans "Departures today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ pending_count }}</span>
+      <span class="ops-card__label">{% trans "Active holds" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ failed_calendar_count }}</span>
+      <span class="ops-card__label">{% trans "Calendar sync failures" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ stale_holds }}</span>
+      <span class="ops-card__label">{% trans "Expired holds to clean up" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ missing_email }}</span>
+      <span class="ops-card__label">{% trans "Confirmations without email" %}</span>
+    </div>
+  </div>
+
+  <section class="ops-section">
+    <h2>{% trans "Arrivals" %}</h2>
+    {% if arrivals %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Room" %}</th><th>{% trans "Status" %}</th></tr></thead>
+        <tbody>
+          {% for booking in arrivals %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.full_name }}</td>
+              <td>{{ booking.room.number }} · {{ booking.room.room_type.name }}</td>
+              <td>{{ booking.get_status_display }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No arrivals scheduled for today." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Departures" %}</h2>
+    {% if departures %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Room" %}</th><th>{% trans "Status" %}</th></tr></thead>
+        <tbody>
+          {% for booking in departures %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.full_name }}</td>
+              <td>{{ booking.room.number }}</td>
+              <td>{{ booking.get_status_display }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No departures scheduled for today." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Active holds" %}</h2>
+    {% if pending_holds %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Check-in" %}</th><th>{% trans "Held until" %}</th></tr></thead>
+        <tbody>
+          {% for booking in pending_holds %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.full_name }}</td>
+              <td>{{ booking.check_in|date:"d M Y" }}</td>
+              <td>{{ booking.hold_expires_at|date:"H:i" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No active holds." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Calendar sync failures" %}</h2>
+    {% if failed_calendar %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Error" %}</th><th>{% trans "Last synced at" %}</th></tr></thead>
+        <tbody>
+          {% for event in failed_calendar %}
+            <tr>
+              <td>{{ event.booking.reference }}</td>
+              <td>{{ event.booking.client.full_name }}</td>
+              <td>{{ event.error_message|default:"—" }}</td>
+              <td>{{ event.last_synced_at|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "All mapped calendars are in sync." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Recent booking events" %}</h2>
+    {% if recent_events %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "When" %}</th><th>{% trans "Reference" %}</th><th>{% trans "Event" %}</th><th>{% trans "Actor" %}</th><th>{% trans "Channel" %}</th></tr></thead>
+        <tbody>
+          {% for event in recent_events %}
+            <tr>
+              <td>{{ event.created_at|date:"d M H:i" }}</td>
+              <td>{{ event.booking.reference }}</td>
+              <td>{{ event.get_event_type_display }}</td>
+              <td>{{ event.get_actor_display }}</td>
+              <td>{{ event.channel|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No booking events yet." %}</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

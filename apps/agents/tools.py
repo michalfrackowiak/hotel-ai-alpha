@@ -21,6 +21,7 @@ from apps.hotel.booking_service import (
     get_booking,
     resolve_room_type,
 )
+from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.pricing import StayError, quote
 
 from .models import AgentSettings, Conversation
@@ -117,10 +118,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
     },
     {
         "name": "cancel_booking",
-        "description": "Cancel a booking by reference after the guest explicitly asks to cancel it.",
+        "description": (
+            "Cancel a booking by reference after the guest explicitly asks to cancel it. "
+            "Returns the cancellation fee calculated by the hotel policy."
+        ),
         "parameters": {
             "type": "object",
-            "properties": {"reference": {"type": "string"}},
+            "properties": {
+                "reference": {"type": "string"},
+                "reason": {
+                    "type": "string",
+                    "enum": ["guest_request", "plans_changed", "found_alternative", "price", "emergency", "other"],
+                    "description": "Optional cancellation reason supplied by the guest.",
+                },
+                "note": {"type": "string", "description": "Optional free-text note."},
+            },
             "required": ["reference"],
         },
     },
@@ -138,6 +150,7 @@ def error_payload(code: str, message: str, details: dict | None = None) -> dict:
 
 
 def booking_payload(booking) -> dict:
+    preview = cancellation_preview(booking)
     return {
         "reference": booking.reference,
         "status": booking.status,
@@ -156,7 +169,13 @@ def booking_payload(booking) -> dict:
         "guest_email": booking.client.email,
         "guest_phone": booking.client.phone,
         "source": booking.source,
-        "can_confirm": booking.status == booking.Status.PENDING and not booking.is_hold_expired,
+        "can_confirm": booking.can_confirm,
+        "can_cancel": booking.can_cancel,
+        "can_modify": booking.can_modify,
+        "cancellation": preview.as_dict(),
+        "cancellation_fee": str(booking.cancellation_fee),
+        "cancellation_reason": booking.cancellation_reason,
+        "cancelled_by": booking.cancelled_by,
     }
 
 
@@ -286,7 +305,11 @@ class ToolExecutor:
         return {"ok": True, "booking": booking_payload(booking)}
 
     def _tool_confirm_booking(self, reference: str) -> dict:
-        booking = confirm_booking(reference)
+        booking = confirm_booking(
+            reference,
+            actor="agent",
+            channel=self.conversation.channel,
+        )
         self.conversation.booking = booking
         self.conversation.state["last_booking"] = booking_payload(booking)
         self.conversation.save(update_fields=["booking", "state", "updated_at"])
@@ -296,8 +319,14 @@ class ToolExecutor:
         booking = get_booking(reference)
         return {"ok": True, "booking": booking_payload(booking)}
 
-    def _tool_cancel_booking(self, reference: str) -> dict:
-        booking = cancel_booking(reference)
+    def _tool_cancel_booking(self, reference: str, reason: str = "", note: str = "") -> dict:
+        booking = cancel_booking(
+            reference,
+            reason=reason,
+            note=note,
+            actor="agent",
+            channel=self.conversation.channel,
+        )
         self.conversation.state["last_booking"] = booking_payload(booking)
         self.conversation.save(update_fields=["state", "updated_at"])
         return {"ok": True, "booking": booking_payload(booking)}

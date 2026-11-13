@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .models import Booking, Room, RoomType
-from .pricing import Quote, quote, validate_stay
+from .pricing import Quote, StayError, quote, validate_stay
 
 
 def _blocking_filter():
@@ -83,7 +83,12 @@ def search_availability(
         rooms = available_rooms(room_type, check_in, check_out)
         if not rooms:
             continue
-        price: Quote = quote(room_type, check_in, check_out, adults=guests, room=rooms[0])
+        try:
+            price: Quote = quote(room_type, check_in, check_out, adults=guests, room=rooms[0])
+        except StayError:
+            # A rate-calendar minimum stay makes this room type unavailable for
+            # the requested range; other room types may still be bookable.
+            continue
         results.append(
             {
                 "room_type": {

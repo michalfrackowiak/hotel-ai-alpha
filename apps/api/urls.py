@@ -15,6 +15,11 @@ urlpatterns = [
     path("bookings/<str:reference>/", views.BookingDetailView.as_view(), name="booking-detail"),
     path("bookings/<str:reference>/confirm/", views.BookingConfirmView.as_view(), name="booking-confirm"),
     path("bookings/<str:reference>/cancel/", views.BookingCancelView.as_view(), name="booking-cancel"),
+    path(
+        "bookings/<str:reference>/cancellation-preview/",
+        views.BookingCancellationPreviewView.as_view(),
+        name="booking-cancellation-preview",
+    ),
     path("chat/sessions/", views.ChatSessionCreateView.as_view(), name="chat-session-create"),
     path("chat/sessions/<str:session_key>/", views.ChatSessionDetailView.as_view(), name="chat-session"),
     path(
