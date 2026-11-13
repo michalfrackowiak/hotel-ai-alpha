@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-12 23:03+0100\n"
+"POT-Creation-Date: 2026-11-13 19:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -141,6 +141,14 @@ msgstr "Zarezerwuj przez czat"
 
 msgid "Booked via"
 msgstr "Zarezerwowano przez"
+
+#, python-format
+msgid "Booking %(reference)s"
+msgstr "Rezerwacja %(reference)s"
+
+#, python-format
+msgid "Booking confirmed · %(reference)s"
+msgstr "Rezerwacja potwierdzona · %(reference)s"
 
 msgid "Booking not found"
 msgstr "Nie znaleziono rezerwacji"
@@ -283,6 +291,14 @@ msgstr "Dane uwierzytelniające"
 msgid "Dates"
 msgstr "Terminy"
 
+#, python-format
+msgid "Dear %(name)s, Your stay at %(hotel)s is confirmed. We look forward to welcoming you."
+msgstr "Drogi %(name)s, Twój pobyt w %(hotel)s jest potwierdzony. Czekamy na Ciebie."
+
+#, python-format
+msgid "Dear %(name)s, your stay is confirmed. We look forward to welcoming you."
+msgstr "Drogi %(name)s, Twoja rezerwacja jest potwierdzona. Czekamy na Ciebie."
+
 msgid "Deleted"
 msgstr "Usunięte"
 
@@ -298,11 +314,17 @@ msgstr "Wyłącz wybranych dostawców"
 msgid "Do you have a room for two this weekend?"
 msgstr "Czy macie pokój dla dwóch osób w ten weekend?"
 
+msgid "Email or phone"
+msgstr "E-mail lub telefon"
+
 msgid "Email or phone is required."
 msgstr "Wymagany jest adres e-mail lub numer telefonu."
 
 msgid "Enable selected providers"
 msgstr "Włącz wybranych dostawców"
+
+msgid "Encrypted in the database. Leave empty to keep the current key."
+msgstr "Zaszyfrowany w bazie danych. Pozostaw puste, aby zachować obecny klucz."
 
 msgid "End call"
 msgstr "Zakończ połączenie"
@@ -313,12 +335,17 @@ msgstr "Angielski"
 msgid "English prompts"
 msgstr "Podpowiedzi angielskie"
 
-msgid ""
-"Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, "
-"confirm a hold or cancel."
+msgid "Enter the email address or phone number you booked with to protect your reservation."
 msgstr ""
-"Wpisz numer, który otrzymałeś, np. HA-7KQ2M4, aby zobaczyć rezerwację, potwierdzić "
-"blokadę lub ją anulować."
+"Podaj adres e-mail lub numer telefonu użyty przy rezerwacji, aby chronić swoją "
+"rezerwację."
+
+msgid ""
+"Enter your reference and the email address or phone number you booked with. We will "
+"open a private link to your reservation."
+msgstr ""
+"Podaj numer rezerwacji oraz adres e-mail lub numer telefonu użyty przy rezerwacji. "
+"Otworzymy prywatny link do Twojej rezerwacji."
 
 msgid "Expired"
 msgstr "Wygasła"
@@ -353,6 +380,10 @@ msgstr "Google Calendar"
 msgid "Guest"
 msgstr "Gość"
 
+#, python-format
+msgid "Guest: %(name)s"
+msgstr "Gość: %(name)s"
+
 msgid "Guests"
 msgstr "Goście"
 
@@ -376,6 +407,13 @@ msgstr "Chciałbym zarezerwować pokój"
 
 msgid "I would like to book a room from the 12th to the 15th of December."
 msgstr "Chciałbym zarezerwować pokój od 12 do 15 grudnia."
+
+msgid ""
+"If you need to change or cancel your reservation, use the link above or contact "
+"reception."
+msgstr ""
+"Jeśli chcesz zmienić lub anulować rezerwację, użyj powyższego linku lub skontaktuj "
+"się z recepcją."
 
 msgid "Language"
 msgstr "Język"
@@ -403,6 +441,9 @@ msgstr "Nawigacja główna"
 
 msgid "Make default"
 msgstr "Ustaw jako domyślnego"
+
+msgid "Manage your booking"
+msgstr "Zarządzaj rezerwacją"
 
 msgid "Messages"
 msgstr "Wiadomości"
@@ -520,6 +561,9 @@ msgstr "Drukuj"
 msgid "Provide at least an email address or a phone number."
 msgstr "Podaj co najmniej adres e-mail lub numer telefonu."
 
+msgid "Provide the booking access link or token from your confirmation."
+msgstr "Podaj link dostępu do rezerwacji lub token z potwierdzenia."
+
 msgid "Rate"
 msgstr "Stawka"
 
@@ -557,6 +601,10 @@ msgstr "Pokój"
 
 msgid "Room for two this weekend"
 msgstr "Pokój dla dwóch osób w ten weekend"
+
+#, python-format
+msgid "Room: %(room)s · %(type)s"
+msgstr "Pokój: %(room)s · %(type)s"
 
 msgid "Rooms"
 msgstr "Pokoje"
@@ -632,6 +680,10 @@ msgstr "Rozpocznij rozmowę głosową"
 msgid "Stay"
 msgstr "Pobyt"
 
+#, python-format
+msgid "Stay at %(hotel)s · %(reference)s"
+msgstr "Pobyt w %(hotel)s · %(reference)s"
+
 msgid "Stay with us"
 msgstr "Zatrzymaj się u nas"
 
@@ -642,9 +694,6 @@ msgstr "Pobyty dłuższe niż %(nights)s nocy nie są obsługiwane."
 #, python-brace-format
 msgid "Stays longer than {nights} nights are not supported."
 msgstr "Pobyty dłuższe niż {nights} nocy nie są obsługiwane."
-
-msgid "Stored in the database. Leave empty to keep the current key."
-msgstr "Przechowywane w bazie danych. Pozostaw puste, aby zachować obecny klucz."
 
 msgid "Sync selected bookings to calendars"
 msgstr "Synchronizuj wybrane rezerwacje z kalendarzami"
@@ -665,6 +714,13 @@ msgstr "Testuj połączenie z kalendarzem"
 
 msgid "Test connection"
 msgstr "Testuj połączenie"
+
+msgid ""
+"That link is invalid or has expired. Enter your reference and contact details to get "
+"a fresh link."
+msgstr ""
+"Ten link jest nieprawidłowy lub wygasł. Podaj numer rezerwacji i dane kontaktowe, aby"
+" otrzymać nowy link."
 
 msgid "The Google Calendar id dedicated to this room."
 msgstr "Identyfikator kalendarza Google przypisanego do tego pokoju."
@@ -744,6 +800,10 @@ msgstr "Razem"
 msgid "Total (VAT included)"
 msgstr "Razem (z VAT)"
 
+#, python-format
+msgid "Total: %(total)s %(currency)s"
+msgstr "Razem: %(total)s %(currency)s"
+
 msgid "Try another reference"
 msgstr "Spróbuj innego numeru"
 
@@ -773,6 +833,13 @@ msgstr "Konsjerż głosowy"
 
 msgid "We could not find that booking"
 msgstr "Nie znaleźliśmy tej rezerwacji"
+
+msgid ""
+"We could not match that reference and contact. Check both and try again, or call "
+"reception."
+msgstr ""
+"Nie udało się dopasować numeru rezerwacji i danych kontaktowych. Sprawdź je i spróbuj"
+" ponownie lub zadzwoń na recepcję."
 
 msgid "Website"
 msgstr "Strona internetowa"
@@ -817,6 +884,9 @@ msgstr "Twoja wiadomość"
 
 msgid "Your reservation"
 msgstr "Twoja rezerwacja"
+
+msgid "access token"
+msgstr "token dostępu"
 
 msgid "active"
 msgstr "aktywny"
@@ -904,6 +974,9 @@ msgstr "klient"
 
 msgid "clients"
 msgstr "klienci"
+
+msgid "confirmation email sent at"
+msgstr "wysłano e-mail potwierdzający"
 
 msgid "confirmed at"
 msgstr "potwierdzono o"

@@ -273,6 +273,7 @@ def confirm_booking(reference: str) -> Booking:
 
     logger.info("Confirmed booking %s", booking.reference)
     _schedule_calendar_sync(booking)
+    _schedule_confirmation_email(booking)
     return booking
 
 
@@ -341,5 +342,19 @@ def _schedule_calendar_sync(booking: Booking) -> None:
             sync_booking(booking)
         except Exception:  # noqa: BLE001 - calendar failures must never break a booking
             logger.exception("Calendar sync failed for booking %s", booking.reference)
+
+    transaction.on_commit(_run)
+
+
+def _schedule_confirmation_email(booking: Booking) -> None:
+    """Send the guest confirmation after commit, never inside the transaction."""
+
+    def _run() -> None:
+        try:
+            from .notifications import send_booking_confirmation
+
+            send_booking_confirmation(booking)
+        except Exception:  # noqa: BLE001 - email failures must never break a booking
+            logger.exception("Confirmation email failed for booking %s", booking.reference)
 
     transaction.on_commit(_run)

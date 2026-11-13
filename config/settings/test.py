@@ -16,6 +16,15 @@ DATABASES = {
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# Keep throttling state in memory: the database cache table is a deployment
+# concern and is exercised explicitly by the throttling tests.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "hotel-tests",
+    }
+}
+
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []  # noqa: F405
 REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = ["rest_framework.renderers.JSONRenderer"]  # noqa: F405
 

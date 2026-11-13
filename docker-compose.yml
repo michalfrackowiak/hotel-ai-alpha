@@ -13,5 +13,24 @@ services:
       - hotel_data:/app/data
     restart: unless-stopped
 
+  scheduler:
+    image: hotel-ai-alpha:local
+    container_name: hotel-ai-alpha-scheduler
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    volumes:
+      - hotel_data:/app/data
+    entrypoint: ["/bin/sh", "/app/docker/scheduler.sh"]
+    # The scheduler runs management commands, not HTTP; the image healthcheck
+    # (curl /healthz) does not apply to it.
+    healthcheck:
+      disable: true
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   hotel_data:

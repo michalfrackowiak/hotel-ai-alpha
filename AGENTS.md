@@ -6,7 +6,7 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat or voice in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.1.0**, 62 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.2.0**, 98 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 
@@ -38,6 +38,12 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 - **Bookings have one write path:** `apps/hotel/booking_service.py`. Views, tools and admin call it; they never write booking state themselves.
 - **Availability is per physical room.** Overlapping blocking bookings for the same room must be rejected; pending holds block only until `hold_expires_at`.
 - **Calendar sync runs after commit.** Keep `transaction.on_commit`; a calendar failure must never roll back a reservation. Pending bookings are skipped before an event record is created.
+- **Confirmation email also runs after commit.** Keep the `confirmation_email_sent_at` marker so retries are idempotent; never send from inside the booking transaction.
+- **A booking reference is not a secret.** Guest-facing read/confirm/cancel paths go through `apps/hotel/access.py`. The API accepts `token`, `X-Booking-Token` or Bearer; the web lookup requires reference + email/phone.
+- **Provider keys are encrypted at rest.** Write `AIProvider.api_key` through the model/admin, never with raw SQL. Key rotation uses `FIELD_ENCRYPTION_KEY_OLD` and `manage.py rotate_provider_keys`.
+- **Throttling uses the configured cache.** Production is the database cache and needs `createcachetable`; tests use locmem. Do not silently fall back to per-process memory in production.
+- **The fake calendar store is class-level.** Reset it between tests (the autouse `fake_calendar` fixture does this).
+- **Reconciliation is dry-run by default.** `reconcile_calendars --apply` is the only path that mutates calendars; keep the report fields stable.
 - **The agent affects the world only through tools.** Tool handlers return `{"ok": false, "error": ...}` on bad input or domain errors instead of raising.
 - **The demo provider is the offline fallback.** It must keep working without API keys and must stay in sync with the tool schemas. It takes no `language` tool argument.
 - **Chat and voice share one conversation engine.** Add behaviour to the engine/tools, not to a channel-specific path.

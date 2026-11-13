@@ -23,6 +23,11 @@ def generate_reference() -> str:
     return f"HA-{token}"
 
 
+def generate_access_token() -> str:
+    """Unguessable second secret used by signed booking management links."""
+    return secrets.token_urlsafe(24)
+
+
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -235,6 +240,9 @@ class Booking(TimeStampedModel):
     reference = models.CharField(
         _("reference"), max_length=12, unique=True, editable=False, default=generate_reference
     )
+    access_token = models.CharField(
+        _("access token"), max_length=64, unique=True, editable=False, default=generate_access_token
+    )
     client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="bookings")
     room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name="bookings")
     check_in = models.DateField(_("check-in"), db_index=True)
@@ -251,6 +259,7 @@ class Booking(TimeStampedModel):
     hold_expires_at = models.DateTimeField(_("hold expires at"), null=True, blank=True)
     confirmed_at = models.DateTimeField(_("confirmed at"), null=True, blank=True)
     cancelled_at = models.DateTimeField(_("cancelled at"), null=True, blank=True)
+    confirmation_email_sent_at = models.DateTimeField(_("confirmation email sent at"), null=True, blank=True)
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 
     class Meta:

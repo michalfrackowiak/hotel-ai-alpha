@@ -17,6 +17,8 @@ flowchart LR
     Hotel --> Calendar[Calendar sync service]
     Calendar --> Google[Google Calendar<br/>one calendar per room]
     Calendar --> Fake[Fake calendar<br/>demo/tests]
+    Hotel --> Mail[Confirmation email<br/>SMTP / console]
+    Scheduler[Hold cleanup scheduler] --> Hotel
 ```
 
 The browser talks to the Django app. Chat and voice both create a `Conversation` and send user text to `POST /api/v1/chat/sessions/<key>/messages/`. The engine calls an LLM, executes tools against the hotel domain, and returns a reply plus any booking state. The web UI never decides availability or prices itself.
@@ -25,7 +27,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, bookings, availability, transactional booking service, admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, bookings, availability, transactional booking service, signed access tokens, confirmation email, admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
@@ -93,8 +95,17 @@ stateDiagram-v2
 - **Confirmed**, **checked-in** bookings always block the room.
 - **Cancelled**, **expired** and **no-show** bookings never block.
 - The booking reference is human-friendly (`HA-7KQ2M4`) and generated without ambiguous characters.
+- Each booking also has a random `access_token`; guest-facing links are signed `TimestampSigner` payloads containing the reference and that token.
 
-`apps.hotel.booking_service` is the only write path. It locks the room type row (`select_for_update`), checks capacity and availability, prices the stay, deduplicates/creates the client, validates and saves the booking, and schedules calendar sync with `transaction.on_commit`.
+`apps.hotel.booking_service` is the only write path. It locks the room type row (`select_for_update`), checks capacity and availability, prices the stay, deduplicates/creates the client, validates and saves the booking, and schedules calendar sync and the confirmation email with `transaction.on_commit`.
+
+### Booking access and notifications
+
+- `apps.hotel.access` issues and verifies signed booking tokens, builds management URLs, and matches a reference against the email or normalised phone number on the booking.
+- The API returns `manage_token` and `manage_url` on every booking response. Detail/confirm/cancel accept the token as a query parameter, `X-Booking-Token` header or Bearer token.
+- The web lookup never exposes a booking from a reference alone: it redirects to a signed link only when the contact matches. Rotating `Booking.access_token` revokes every link.
+- `apps.hotel.notifications` renders an English or Polish confirmation with `apps.hotel.ics` and sends it after commit. `confirmation_email_sent_at` makes retries idempotent; `send_booking_emails` retries undelivered confirmations.
+- Email and calendar failures are logged and never roll back a reservation.
 
 ### Availability
 
@@ -144,7 +155,7 @@ sequenceDiagram
 - `LLMResponse` (content, tool calls, usage, model, provider)
 - `LLMProvider` (`chat()`, `health_check()`)
 
-Each connector translates to and from its vendor format. `resolve_provider()` selects the active default `AIProvider`, decrypts nothing (the key is stored as-is in SQLite for the alpha), and falls back to the demo policy if the configured provider is unusable. This fallback is deliberate: a missing key must not break the reception desk.
+Each connector translates to and from its vendor format. `resolve_provider()` selects the active default `AIProvider` and falls back to the demo policy if the configured provider is unusable. API keys are stored in an `EncryptedCharField`, so the model reads plaintext while SQLite holds Fernet ciphertext. This fallback is deliberate: a missing key must not break the reception desk.
 
 ### Tools
 
@@ -199,8 +210,9 @@ Sync runs after commit:
 4. Confirmed/checked-in bookings are created or updated; cancelled/expired/no-show events are deleted.
 5. Errors are persisted, never raised into the booking flow.
 6. `sync_calendars --retry-failed` retries failed records.
+7. `reconcile_calendars` compares the stored event with the provider (summary, location, dates and status), reports drift and repairs it with `--apply`: recreate missing events, update edited ones, retry failed syncs and delete events for cancelled bookings.
 
-Google credentials can come from the connection's `credentials_json` or from `GOOGLE_CALENDAR_CREDENTIALS_FILE`. Service accounts and authorised-user OAuth tokens are both accepted.
+Google credentials can come from the connection's `credentials_json` or from `GOOGLE_CALENDAR_CREDENTIALS_FILE`. Service accounts and authorised-user OAuth tokens are both accepted. The fake provider keeps events in a class-level store so tests can exercise reconciliation without Google; `tests/conftest.py` resets it between tests.
 
 ## Internationalisation
 
@@ -219,15 +231,15 @@ Google credentials can come from the connection's `credentials_json` or from `GO
 | `config.settings.base` | Shared configuration, env parsing, apps, middleware, DB, i18n, logging |
 | `config.settings.dev` | `DEBUG=True`, permissive hosts, browsable API |
 | `config.settings.prod` | `DEBUG=False`, WhiteNoise compressed manifest storage, optional TLS/HSTS |
-| `config.settings.test` | In-memory SQLite, fast hashing, no throttling, fake calendar |
+| `config.settings.test` | In-memory SQLite, fast hashing, no throttling, fake calendar, locmem email |
 
-Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. The health endpoint checks the database with `SELECT 1`.
+Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. The entrypoint runs migrations, creates the database cache table and collects static files. A `scheduler` sidecar runs `expire_holds` every five minutes. The health endpoint checks the database with `SELECT 1`.
 
 ### Security posture
 
-Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling, no card data collection.
+Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, encrypted provider keys, no card data collection.
 
-Deliberately out of scope for the alpha: guest accounts, payment, encrypted provider keys at rest, per-IP persistent throttling, audit trail, virus scanning of uploads, multi-factor admin, rate limiting at the proxy.
+Deliberately out of scope for the alpha: guest accounts, payment, audit trail, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
 
 ## Extension points
 

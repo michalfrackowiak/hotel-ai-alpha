@@ -52,7 +52,9 @@ def _clean_blocktrans(body: str) -> str:
 def extract_from_templates() -> set[str]:
     found: set[str] = set()
     for directory in TEMPLATE_DIRS:
-        for path in directory.rglob("*.html"):
+        for path in directory.rglob("*"):
+            if path.suffix not in {".html", ".txt"}:
+                continue
             text = path.read_text(encoding="utf-8")
             found.update(match.group("text") for match in TRANS_RE.finditer(text))
             found.update(_clean_blocktrans(match.group("body")) for match in BLOCKTRANS_RE.finditer(text))

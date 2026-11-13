@@ -15,8 +15,8 @@ from .models import AgentSettings, AIProvider, Conversation, Message
 class AIProviderAdminForm(forms.ModelForm):
     api_key = forms.CharField(
         required=False,
-        widget=forms.PasswordInput(render_value=True),
-        help_text=_("Stored in the database. Leave empty to keep the current key."),
+        widget=forms.PasswordInput(render_value=False),
+        help_text=_("Encrypted in the database. Leave empty to keep the current key."),
     )
 
     class Meta:

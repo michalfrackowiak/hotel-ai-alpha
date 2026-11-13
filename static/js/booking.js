@@ -12,6 +12,7 @@
 
   const cancelUrl = card.dataset.cancelUrl;
   const confirmUrl = card.dataset.confirmUrl;
+  const accessToken = card.dataset.accessToken || "";
 
   function msg(name, fallback) {
     return card.dataset[name] || fallback;
@@ -30,7 +31,8 @@
     setStatus(workingMessage, "working");
 
     try {
-      await App.postJSON(url);
+      const headers = accessToken ? { "X-Booking-Token": accessToken } : {};
+      await App.postJSON(url, {}, headers);
       setStatus(successMessage, "success");
       window.setTimeout(function () {
         window.location.reload();

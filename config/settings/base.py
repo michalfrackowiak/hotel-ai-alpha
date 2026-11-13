@@ -126,6 +126,18 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Persistent, database-backed cache. DRF throttling uses the default cache, so
+# rate limits survive process restarts and are shared by every gunicorn worker.
+# Run `manage.py createcachetable` once (the Docker entrypoint does it on boot).
+CACHE_BACKEND = os.getenv("CACHE_BACKEND", "django.core.cache.backends.db.DatabaseCache")
+CACHE_LOCATION = os.getenv("CACHE_LOCATION", "django_cache")
+CACHES = {
+    "default": {
+        "BACKEND": CACHE_BACKEND,
+        "LOCATION": CACHE_LOCATION,
+    }
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         ["rest_framework.renderers.JSONRenderer", "rest_framework.renderers.BrowsableAPIRenderer"]
@@ -154,6 +166,7 @@ REST_FRAMEWORK = {
 HOTEL = {
     "name": os.getenv("HOTEL_NAME", "Hotel Aurora"),
     "tagline": os.getenv("HOTEL_TAGLINE", "Your AI-powered stay in the heart of the city"),
+    "public_url": os.getenv("HOTEL_PUBLIC_URL", "http://localhost:8000").rstrip("/"),
     "currency": os.getenv("HOTEL_CURRENCY", "PLN"),
     "tax_rate": Decimal(os.getenv("HOTEL_TAX_RATE", "0.08")),
     "hold_minutes": int(os.getenv("BOOKING_HOLD_MINUTES", "30")),
@@ -174,6 +187,27 @@ AI = {
     "max_message_length": int(os.getenv("AI_MAX_MESSAGE_LENGTH", "4000")),
     "history_limit": int(os.getenv("AI_HISTORY_LIMIT", "40")),
 }
+
+# Booking confirmation email. The console backend is a safe default for local
+# demos; production sets EMAIL_BACKEND=smtp and the EMAIL_* variables.
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", HOTEL["contact_email"])
+BOOKING_EMAILS_ENABLED = env_bool("BOOKING_EMAILS_ENABLED", True)
+
+# Signed booking management links. Guests can always request a fresh link with
+# their reference and contact details, so expiry is a safety net, not a trap.
+BOOKING_ACCESS_MAX_AGE_DAYS = int(os.getenv("BOOKING_ACCESS_MAX_AGE_DAYS", "180"))
+
+# Encryption material for provider API keys at rest. When unset, a key is
+# derived from DJANGO_SECRET_KEY; set a dedicated value in production.
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")
+FIELD_ENCRYPTION_KEY_OLD = os.getenv("FIELD_ENCRYPTION_KEY_OLD", "")
 
 GOOGLE_CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar"]
 GOOGLE_CALENDAR_CREDENTIALS_FILE = os.getenv("GOOGLE_CALENDAR_CREDENTIALS_FILE", "")

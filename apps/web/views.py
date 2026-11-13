@@ -9,6 +9,11 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from apps.hotel.access import (
+    booking_manage_path,
+    find_booking_for_contact,
+    token_matches,
+)
 from apps.hotel.booking_service import BookingError, get_booking
 from apps.hotel.models import RoomType
 
@@ -37,18 +42,45 @@ def voice_page(request):
 
 
 def booking_lookup(request):
-    reference = (request.GET.get("reference") or "").strip()
+    reference = (request.GET.get("reference") or "").strip().upper()
+    contact = (request.GET.get("contact") or "").strip()
+
+    if reference and contact:
+        booking = find_booking_for_contact(reference, contact)
+        if booking is not None:
+            return redirect(booking_manage_path(booking))
+        return render(
+            request,
+            "web/booking_lookup.html",
+            {"reference": reference, "contact": contact, "lookup_error": True},
+        )
     if reference:
-        return redirect("web:booking-detail", reference=reference.upper())
+        return render(
+            request,
+            "web/booking_lookup.html",
+            {"reference": reference, "missing_contact": True},
+        )
     return render(request, "web/booking_lookup.html")
 
 
 def booking_detail(request, reference: str):
+    reference = reference.upper()
     try:
-        booking = get_booking(reference.upper())
+        booking = get_booking(reference)
     except BookingError:
         return render(request, "web/booking_not_found.html", {"reference": reference}, status=404)
-    return render(request, "web/booking.html", {"booking": booking})
+
+    session_key = f"booking-token-{reference}"
+    token = request.GET.get("token") or request.session.get(session_key)
+    if not token_matches(booking, token):
+        return render(
+            request,
+            "web/booking_lookup.html",
+            {"reference": reference, "access_denied": True},
+            status=403,
+        )
+    request.session[session_key] = token
+    return render(request, "web/booking.html", {"booking": booking, "access_token": token})
 
 
 def healthz(request):

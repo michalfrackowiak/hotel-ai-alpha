@@ -12,8 +12,9 @@ Status as of **13 November 2026**.
 | 5 | Per-room calendar sync | ✅ Complete |
 | 6 | Admin, seed data and operations | ✅ Complete |
 | 7 | Bilingual UI, hardening and release | ✅ Complete (v0.1.0) |
+| 8 | Operational confidence | ✅ Complete (v0.2.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md).
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md).
 
 ---
 
@@ -150,33 +151,51 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.2.0 (planning)
+## Phase 8 — Operational confidence (v0.2.0)
 
-Theme: **operational confidence**. The alpha proves the flow; v0.2 should make it safe to run for a real pilot.
+**Goal:** make the alpha safe to run for a real pilot without a developer watching it.
+
+- [x] Confirmation email in English and Polish with a text body, HTML body and `.ics` attachment
+- [x] Idempotent delivery marker and `send_booking_emails` retry command
+- [x] Signed booking-management links plus reference + contact lookup
+- [x] API detail/confirm/cancel require a booking token (`token`, `X-Booking-Token` or Bearer)
+- [x] `AIProvider.api_key` encrypted at rest with Fernet and a documented rotation command
+- [x] Database-backed cache so DRF throttling survives restarts and multiple workers
+- [x] Docker `scheduler` sidecar that runs `expire_holds` every five minutes
+- [x] `reconcile_calendars` dry run and `--apply` repair for missing, modified, failed and stale events
+- [x] Tests for email, access control, encryption/rotation, persistence and reconciliation
+- [x] Updated API docs, README, architecture notes, release notes and Polish catalogue
+
+**Exit criteria:** a pilot hotel can run a week of real enquiries with email confirmations and no manual hold cleanup; a booking cannot be read or cancelled with a guessed reference; calendar drift is detectable and repairable with one command.
+
+---
+
+## Next milestone — v0.3.0 (planning)
+
+Theme: **guest self-service**. The pilot is now operationally safe; v0.3 should reduce reception workload and give guests more control.
 
 ### Must have
 
-1. **Email confirmations** — send the booking summary and calendar invite to the guest on confirmation, in EN/PL.
-2. **Hold cleanup automation** — document and provide a scheduler (cron/systemd timer or a small worker) for `expire_holds`.
-3. **Persistent throttling** — move DRF throttling to the database or Redis so limits survive restarts and multiple workers.
-4. **Provider key handling** — encrypt `AIProvider.api_key` at rest and add a key-rotation test.
-5. **Calendar reconciliation** — detect and repair events deleted or edited outside the app; add a dry-run report.
-6. **Booking access control** — signed lookup links or a one-time code so a reference alone is not the only secret.
+1. **Guest cancellation policy** — configurable free-cancellation window, cancellation reasons and a fee preview before the guest confirms.
+2. **Reservation modification** — change dates or room type through the signed link, with availability and price re-checked in one transaction.
+3. **Audit log** — append-only record of booking transitions (actor, channel, before/after state) visible in the admin.
+4. **Structured operations dashboard** — today's arrivals/departures, pending holds, failed calendar syncs and email delivery status on one admin page.
+5. **Rate calendar** — nightly rates and minimum-stay rules editable in a month view.
 
 ### Should have
 
-- Guest-facing cancellation policy and a reason field.
-- Nightly rate calendar view in the admin.
-- Structured audit log for booking transitions.
-- Better demo-policy coverage for date formats (`12/15/2026`, `15.12.2026`, relative dates).
-- `docker compose` healthcheck and a smoke-test script.
+- Nightly `reconcile_calendars --apply` in the scheduler and an alert on non-repairable drift.
+- Email delivery provider integration (SES/Postmark) with bounce handling.
+- Demo-policy coverage for more date formats (`12/15/2026`, `15.12.2026`, relative dates).
+- Export of bookings and revenue to CSV.
+- Docker smoke-test script and a documented backup/restore drill.
 
 ### Exit criteria
 
-- A pilot hotel can run a week of real enquiries with email confirmations and no manual hold cleanup.
-- A booking cannot be read or cancelled with a guessed reference.
-- Calendar drift is detectable and repairable with one command.
+- A guest can change or cancel within policy without contacting reception.
+- Every booking transition is attributable to a channel and a timestamp.
+- Reception can start the day from one dashboard page.
 
 ### Release process
 
-Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.2.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.2.0`.
+Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.3.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.3.0`.

@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from rest_framework.views import APIView
 
 from apps.agents.engine import AgentEngine, AgentUnavailableError, conversation_history, start_conversation
 from apps.agents.models import AgentSettings, Conversation
+from apps.hotel.access import token_matches
 from apps.hotel.availability import search_availability
 from apps.hotel.booking_service import (
     BookingError,
@@ -46,6 +48,26 @@ from .serializers import (
 
 def _raise_booking_error(exc: BookingError):
     raise ApiError(exc.code, exc.message, status_code=exc.status, details=exc.details)
+
+
+def _booking_token(request) -> str:
+    token = request.query_params.get("token") or request.headers.get("X-Booking-Token") or ""
+    if not token:
+        authorization = request.headers.get("Authorization", "")
+        if authorization.lower().startswith("bearer "):
+            token = authorization[7:].strip()
+    return token
+
+
+def _authorized_booking(request, reference: str):
+    booking = get_booking(reference.upper())
+    if not token_matches(booking, _booking_token(request)):
+        raise BookingError(
+            "booking_access_denied",
+            _("Provide the booking access link or token from your confirmation."),
+            status=403,
+        )
+    return booking
 
 
 class HealthView(APIView):
@@ -156,7 +178,7 @@ class BookingDetailView(APIView):
 
     def get(self, request, reference: str):
         try:
-            booking = get_booking(reference.upper())
+            booking = _authorized_booking(request, reference)
         except BookingError as exc:
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)
@@ -167,7 +189,8 @@ class BookingConfirmView(APIView):
 
     def post(self, request, reference: str):
         try:
-            booking = confirm_booking(reference.upper())
+            booking = _authorized_booking(request, reference)
+            booking = confirm_booking(booking.reference)
         except BookingError as exc:
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)
@@ -178,7 +201,8 @@ class BookingCancelView(APIView):
 
     def post(self, request, reference: str):
         try:
-            booking = cancel_booking(reference.upper())
+            booking = _authorized_booking(request, reference)
+            booking = cancel_booking(booking.reference)
         except BookingError as exc:
             _raise_booking_error(exc)
         return Response(BookingSerializer(booking).data)

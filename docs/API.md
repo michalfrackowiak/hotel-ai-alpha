@@ -1,6 +1,6 @@
 # REST API
 
-Base URL: `/api/v1/`. All endpoints are public (`AllowAny`) in the alpha; booking references are the only secret. Responses are JSON unless noted.
+Base URL: `/api/v1/`. All endpoints are public (`AllowAny`) in the alpha. Reading, confirming or cancelling an existing booking requires the signed token returned when the booking was created, not just the reference. Responses are JSON unless noted.
 
 Errors use a stable envelope:
 
@@ -19,13 +19,16 @@ Errors use a stable envelope:
 | `200` | Success |
 | `201` | Created |
 | `400` | Validation or domain error |
+| `403` | Missing or invalid booking token |
 | `404` | Unknown room type, booking or session |
 | `409` | Booking state conflict (expired hold, not confirmable) |
 | `429` | Throttled |
 | `502` | Speech provider failure |
 | `503` | Assistant disabled |
 
-Common error codes: `validation_error`, `invalid_stay`, `capacity_exceeded`, `room_type_not_found`, `no_availability`, `invalid_room`, `contact_required`, `booking_not_found`, `hold_expired`, `not_confirmable`, `not_cancellable`, `agent_disabled`, `stt_failed`, `tts_failed`.
+Common error codes: `validation_error`, `invalid_stay`, `capacity_exceeded`, `room_type_not_found`, `no_availability`, `invalid_room`, `contact_required`, `booking_not_found`, `booking_access_denied`, `hold_expired`, `not_confirmable`, `not_cancellable`, `agent_disabled`, `stt_failed`, `tts_failed`.
+
+Rate limits (`anon`, `user`, `chat`) are stored in the configured cache. Production uses the database cache, so limits survive restarts and are shared by all gunicorn workers; tests use an in-memory cache.
 
 ## Health
 
@@ -202,11 +205,27 @@ Response `201`:
   "hold_expires_at": "2026-11-13T10:45:00+01:00",
   "can_confirm": true,
   "calendar": null,
+  "manage_token": "eyJzYWx0Ijoi...",
+  "manage_url": "http://localhost:8000/booking/HA-7KQ2M4/?token=eyJzYWx0Ijoi...",
   "created_at": "2026-11-13T10:15:00+01:00",
   "confirmed_at": null,
   "cancelled_at": null
 }
 ```
+
+Store `manage_token`/`manage_url` with the booking. The token is signed, scoped to one booking and contains a random per-booking secret, so rotating `Booking.access_token` revokes every link for that booking.
+
+### Booking access
+
+`GET /api/v1/bookings/<REFERENCE>/`, `.../confirm/` and `.../cancel/` require the token in one of three forms:
+
+| Transport | Example |
+| --- | --- |
+| Query parameter | `?token=eyJzYWx0Ijoi...` |
+| Header | `X-Booking-Token: eyJzYWx0Ijoi...` |
+| Bearer token | `Authorization: Bearer eyJzYWx0Ijoi...` |
+
+A missing, forged, expired or revoked token returns `403` with `booking_access_denied`. The web lookup at `/booking/` issues a fresh signed link when the guest supplies the reference plus the email address or phone number used for the booking.
 
 ### `GET /api/v1/bookings/<REFERENCE>/`
 
@@ -214,7 +233,7 @@ Returns the same booking object. References are case-insensitive (`ha-7kq2m4` is
 
 ### `POST /api/v1/bookings/<REFERENCE>/confirm/`
 
-Confirms a pending hold. Idempotent for an already confirmed booking. Returns `409` with `hold_expired` when the hold has lapsed, or `not_confirmable` for other terminal states.
+Confirms a pending hold. Idempotent for an already confirmed booking. Returns `409` with `hold_expired` when the hold has lapsed, or `not_confirmable` for other terminal states. On success the confirmation email and calendar sync are scheduled after the database commit.
 
 ### `POST /api/v1/bookings/<REFERENCE>/cancel/`
 
@@ -326,7 +345,7 @@ Default DRF rates (configurable through env):
 | user | `2000/hour` |
 | chat (session create, messages, voice) | `120/hour` |
 
-Throttling is in-memory per process and disabled in tests.
+Throttling uses the configured cache. Production defaults to the database cache (`createcachetable` on boot), so limits survive restarts and are shared by all workers. Tests disable throttling and use an in-memory cache.
 
 ## curl examples
 
@@ -338,6 +357,11 @@ curl "http://localhost:8000/api/v1/availability/?check_in=2026-12-12&check_out=2
 curl -X POST http://localhost:8000/api/v1/bookings/ \
   -H "Content-Type: application/json" \
   -d '{"room_type":"standard-double","check_in":"2026-12-12","check_out":"2026-12-15","first_name":"Anna","email":"anna@example.com"}'
+
+# Read or confirm it with the manage_token from the create response
+curl "http://localhost:8000/api/v1/bookings/HA-XXXXXX/?token=<manage_token>"
+curl -X POST "http://localhost:8000/api/v1/bookings/HA-XXXXXX/confirm/" \
+  -H "X-Booking-Token: <manage_token>"
 
 # Start a chat and send a message
 curl -X POST http://localhost:8000/api/v1/chat/sessions/ \
