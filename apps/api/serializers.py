@@ -90,6 +90,7 @@ class BookingSerializer(serializers.ModelSerializer):
     source_display = serializers.CharField(source="get_source_display", read_only=True)
     cancellation_reason_display = serializers.CharField(source="get_cancellation_reason_display", read_only=True)
     cancelled_by_display = serializers.CharField(source="get_cancelled_by_display", read_only=True)
+    confirmation_email_status = serializers.CharField(source="get_confirmation_email_status_display", read_only=True)
     cancellation = serializers.SerializerMethodField()
     calendar = serializers.SerializerMethodField()
     manage_token = serializers.SerializerMethodField()
@@ -135,6 +136,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "confirmed_at",
             "cancelled_at",
+            "confirmation_email_status",
+            "confirmation_email_error",
         )
 
     def get_manage_token(self, obj: Booking) -> str:

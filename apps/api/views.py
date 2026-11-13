@@ -398,3 +398,48 @@ class VoiceSpeakView(APIView):
         except SpeechProviderError as exc:
             raise ApiError("tts_failed", str(exc), status_code=502) from exc
         return HttpResponse(audio, content_type=content_type)
+
+
+class EmailWebhookView(APIView):
+    """Receive bounce/complaint/delivery events from an email provider."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, provider: str):
+        from django.conf import settings
+
+        secret = getattr(settings, "EMAIL_WEBHOOK_SECRET", "")
+        if secret:
+            supplied = request.headers.get("X-Email-Webhook-Secret", "")
+            if supplied != secret:
+                raise ApiError("webhook_access_denied", "Invalid webhook secret.", status_code=403)
+
+        data = request.data if isinstance(request.data, dict) else {}
+        reference = (data.get("reference") or data.get("booking_reference") or "").strip().upper()
+        event = (data.get("event") or data.get("type") or "").strip().lower()
+
+        from apps.hotel.models import Booking
+
+        try:
+            booking = Booking.objects.get(reference=reference)
+        except Booking.DoesNotExist as exc:
+            raise ApiError("booking_not_found", "Booking not found.", status_code=404) from exc
+
+        status_map = {
+            "delivered": "delivered",
+            "delivery": "delivered",
+            "bounce": "bounced",
+            "bounced": "bounced",
+            "complaint": "complained",
+            "complained": "complained",
+            "failed": "failed",
+        }
+        new_status = status_map.get(event)
+        if new_status is None:
+            return Response({"status": "ignored", "event": event})
+
+        updates = {"confirmation_email_status": new_status}
+        if new_status == "bounced":
+            updates["confirmation_email_error"] = data.get("reason") or data.get("message") or "bounced"
+        Booking.objects.filter(pk=booking.pk).update(**updates)
+        return Response({"status": "ok", "reference": reference, "email_status": new_status})
