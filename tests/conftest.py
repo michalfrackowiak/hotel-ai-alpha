@@ -52,6 +52,16 @@ def deluxe_room(deluxe_suite) -> Room:
     return Room.objects.create(number="201", room_type=deluxe_suite, floor=2)
 
 
+@pytest.fixture(autouse=True)
+def fake_calendar():
+    """Keep the fake provider's class-level event store isolated per test."""
+    from apps.calendar_sync.providers import FakeCalendarProvider
+
+    FakeCalendarProvider.reset()
+    yield
+    FakeCalendarProvider.reset()
+
+
 @pytest.fixture
 def stay_dates():
     """A future three-night stay."""

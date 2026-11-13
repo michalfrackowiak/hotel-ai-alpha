@@ -11,6 +11,8 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.hotel.models import Booking, Client, TimeStampedModel
 
+from .fields import EncryptedCharField
+
 
 def new_session_key() -> str:
     return uuid.uuid4().hex
@@ -28,7 +30,7 @@ class AIProvider(TimeStampedModel):
     provider_type = models.CharField(_("provider type"), max_length=20, choices=Type.choices)
     model = models.CharField(_("model"), max_length=120)
     base_url = models.URLField(_("API base URL"), blank=True)
-    api_key = models.CharField(_("API key"), max_length=500, blank=True)
+    api_key = EncryptedCharField(_("API key"), max_length=1024, blank=True)
     is_active = models.BooleanField(_("active"), default=True)
     is_default = models.BooleanField(_("default provider"), default=False)
     temperature = models.FloatField(

@@ -63,8 +63,12 @@
     return App.request(url, { method: "GET" });
   };
 
-  App.postJSON = function (url, body) {
-    return App.request(url, { method: "POST", body: body || {} });
+  App.postJSON = function (url, body, headers) {
+    return App.request(url, {
+      method: "POST",
+      body: body || {},
+      headers: headers || {},
+    });
   };
 
   App.escapeHtml = function (value) {

@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.agents.models import Conversation
+from apps.hotel.access import booking_manage_url, make_booking_token
 from apps.hotel.models import Booking, Client, RoomType
 from apps.hotel.pricing import StayError, validate_stay
 
@@ -83,6 +84,8 @@ class BookingSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     source_display = serializers.CharField(source="get_source_display", read_only=True)
     calendar = serializers.SerializerMethodField()
+    manage_token = serializers.SerializerMethodField()
+    manage_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -109,10 +112,18 @@ class BookingSerializer(serializers.ModelSerializer):
             "hold_expires_at",
             "can_confirm",
             "calendar",
+            "manage_token",
+            "manage_url",
             "created_at",
             "confirmed_at",
             "cancelled_at",
         )
+
+    def get_manage_token(self, obj: Booking) -> str:
+        return make_booking_token(obj)
+
+    def get_manage_url(self, obj: Booking) -> str:
+        return booking_manage_url(obj)
 
     def get_calendar(self, obj: Booking):
         record = obj.calendar_events.order_by("-created_at").first()

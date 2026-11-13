@@ -1,0 +1,101 @@
+"""Signed booking access: tokens, contact lookup and revocation."""
+
+from __future__ import annotations
+
+import pytest
+
+from apps.hotel.access import (
+    BookingAccessError,
+    booking_from_token,
+    booking_manage_path,
+    booking_manage_url,
+    contact_matches,
+    find_booking_for_contact,
+    make_booking_token,
+    token_matches,
+)
+from apps.hotel.booking_service import create_booking
+
+
+@pytest.fixture
+def booking(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    return create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        phone="+48 600 100 200",
+        adults=2,
+    )
+
+
+@pytest.mark.django_db
+def test_token_round_trip_returns_the_booking(booking):
+    token = make_booking_token(booking)
+
+    assert booking_from_token(token) == booking
+    assert token_matches(booking, token)
+
+
+@pytest.mark.django_db
+def test_token_is_scoped_to_one_booking(booking, room_type, stay_dates):
+    check_in, check_out = stay_dates
+    other = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Jan",
+        last_name="Nowak",
+        email="jan@example.com",
+        adults=1,
+    )
+
+    assert token_matches(other, make_booking_token(booking)) is False
+
+
+@pytest.mark.django_db
+def test_garbage_and_empty_tokens_are_rejected(booking):
+    assert token_matches(booking, "") is False
+    assert token_matches(booking, "not-a-token") is False
+    with pytest.raises(BookingAccessError):
+        booking_from_token("not-a-token")
+
+
+@pytest.mark.django_db
+def test_rotating_access_token_revokes_existing_links(booking):
+    token = make_booking_token(booking)
+
+    booking.access_token = "a-brand-new-secret"
+    booking.save(update_fields=["access_token"])
+
+    assert token_matches(booking, token) is False
+
+
+@pytest.mark.django_db
+def test_manage_path_and_url_include_the_token(booking):
+    path = booking_manage_path(booking)
+    url = booking_manage_url(booking)
+
+    assert path.startswith(f"/booking/{booking.reference}/")
+    assert "token=" in path
+    assert url.startswith("http")
+    assert url.endswith(path)
+
+
+@pytest.mark.django_db
+def test_contact_matching_is_case_and_format_insensitive(booking):
+    assert contact_matches(booking, "ANNA@example.com")
+    assert contact_matches(booking, "+48 600 100 200")
+    assert contact_matches(booking, "48600100200")
+    assert contact_matches(booking, "someone@example.com") is False
+    assert contact_matches(booking, "") is False
+
+
+@pytest.mark.django_db
+def test_contact_lookup_requires_both_parts(booking):
+    assert find_booking_for_contact(booking.reference, "anna@example.com") == booking
+    assert find_booking_for_contact(booking.reference, "nope@example.com") is None
+    assert find_booking_for_contact("HA-NOPE00", "anna@example.com") is None

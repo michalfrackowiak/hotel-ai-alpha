@@ -9,14 +9,33 @@
     <p class="eyebrow">{% trans "Your reservation" %}</p>
     <h1>{% trans "Find my booking" %}</h1>
     <p class="lookup-card__lede">
-      {% trans "Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, confirm a hold or cancel." %}
+      {% trans "Enter your reference and the email address or phone number you booked with. We will open a private link to your reservation." %}
     </p>
+
+    {% if access_denied %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "That link is invalid or has expired. Enter your reference and contact details to get a fresh link." %}
+      </p>
+    {% elif lookup_error %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "We could not match that reference and contact. Check both and try again, or call reception." %}
+      </p>
+    {% elif missing_contact %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "Enter the email address or phone number you booked with to protect your reservation." %}
+      </p>
+    {% endif %}
 
     <form class="lookup-form" method="get" action="{% url 'web:booking-lookup' %}">
       <label class="field">
         <span>{% trans "Booking reference" %}</span>
-        <input type="text" name="reference" placeholder="HA-XXXXXX" autocomplete="off"
+        <input type="text" name="reference" value="{{ reference|default:'' }}" placeholder="HA-XXXXXX" autocomplete="off"
                autocapitalize="characters" spellcheck="false" maxlength="12" required autofocus>
+      </label>
+      <label class="field">
+        <span>{% trans "Email or phone" %}</span>
+        <input type="text" name="contact" value="{{ contact|default:'' }}" placeholder="anna@example.com"
+               autocomplete="email" spellcheck="false" maxlength="120" required>
       </label>
       <button class="btn btn--primary btn--block" type="submit">{% trans "Look up booking" %}</button>
     </form>

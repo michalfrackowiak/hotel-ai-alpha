@@ -9,6 +9,7 @@
        data-cancel-url="/api/v1/bookings/{{ booking.reference }}/cancel/"
        data-confirm-url="/api/v1/bookings/{{ booking.reference }}/confirm/"
        data-reference="{{ booking.reference }}"
+       data-access-token="{{ access_token }}"
        data-msg-cancel-confirm="{% trans 'Cancel this reservation? This cannot be undone.' %}"
        data-msg-confirm="{% trans 'Confirm this reservation now?' %}"
        data-msg-working="{% trans 'Updating your reservation…' %}"
