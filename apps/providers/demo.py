@@ -265,8 +265,17 @@ class DemoProvider(BaseLLMProvider):
         if not found:
             for match in re.finditer(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b", lowered):
                 found.append(self._safe_date(int(match.group(1)), int(match.group(2)), int(match.group(3))))
-            for match in re.finditer(r"\b(\d{1,2})[./](\d{1,2})[./](20\d{2})\b", lowered):
+            for match in re.finditer(r"\b(\d{1,2})\.(\d{1,2})\.(20\d{2})\b", lowered):
                 found.append(self._safe_date(int(match.group(3)), int(match.group(2)), int(match.group(1))))
+            for match in re.finditer(r"\b(\d{1,2})/(\d{1,2})/(20\d{2})\b", lowered):
+                # US-style MM/DD/YYYY first; fall back to DD/MM/YYYY.
+                us = self._safe_date(int(match.group(3)), int(match.group(1)), int(match.group(2)))
+                if us is not None:
+                    found.append(us)
+                else:
+                    eu = self._safe_date(int(match.group(3)), int(match.group(2)), int(match.group(1)))
+                    if eu is not None:
+                        found.append(eu)
             for match in re.finditer(
                 r"\b(\d{1,2})\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b", lowered
             ):
@@ -285,6 +294,15 @@ class DemoProvider(BaseLLMProvider):
                 dates = [today + timedelta(days=1)]
             elif re.search(r"\btoday\b|\bdziś\b|\bdzisiaj\b", lowered):
                 dates = [today]
+            elif re.search(r"\bnext week\b|\bprzyszły tydzień\b|\bprzyszly tydzien\b", lowered):
+                dates = [today + timedelta(days=7)]
+            else:
+                match = re.search(r"\bin\s+(\d+)\s+(day|days|week|weeks)\b", lowered)
+                if match:
+                    amount = int(match.group(1))
+                    unit = match.group(2)
+                    delta = amount * 7 if unit.startswith("week") else amount
+                    dates = [today + timedelta(days=delta)]
 
         if len(dates) >= 2:
             return dates[0], dates[1]
@@ -305,7 +323,8 @@ class DemoProvider(BaseLLMProvider):
     @staticmethod
     def _strip_dates(text: str) -> str:
         cleaned = re.sub(r"\b20\d{2}-\d{1,2}-\d{1,2}\b", " ", text or "")
-        cleaned = re.sub(r"\b\d{1,2}[./]\d{1,2}[./]20\d{2}\b", " ", cleaned)
+        cleaned = re.sub(r"\b\d{1,2}\.\d{1,2}\.20\d{2}\b", " ", cleaned)
+        cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/20\d{2}\b", " ", cleaned)
         return cleaned
 
     @staticmethod
