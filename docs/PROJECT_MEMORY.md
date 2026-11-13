@@ -92,6 +92,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-13 | `ruff check .` | clean after import/field fixes |
 | 2026-11-13 | Docker compose build + `/healthz` | image built; `/healthz` returns `{"status": "ok"}` |
 | 2026-11-13 | Browser booking EN/PL | chat flow confirmed two bookings; fake calendar events synced |
+| 2026-11-13 | GitHub Actions CI | green on `main` and `develop` |
 
 Update this table when the release gate is re-run.
 
