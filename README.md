@@ -2,7 +2,7 @@
 
 An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, emails a bilingual confirmation and mirrors it into a per-room Google Calendar.
 
-> **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing, no channel manager and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
+> **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
 ---
 
@@ -258,7 +258,7 @@ docs/             architecture, API, roadmap, branching, release notes
 ## Known limitations
 
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
-- No payment, deposit, invoice or channel-manager integration.
+- No payment, deposit or invoice integration. (iCal channel manager is available; see `sync_channel_feeds`.)
 - Booking access uses signed links; the guest account is passwordless (single-use magic link), so there is no password to reset or leak.
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.

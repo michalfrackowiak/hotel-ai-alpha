@@ -31,6 +31,14 @@
       <span class="ops-card__label">{% trans "Calendar drift (failed, stale, unsynced)" %}</span>
     </div>
     <div class="ops-card">
+      <span class="ops-card__value">{{ channel_feed_error_count }}</span>
+      <span class="ops-card__label">{% trans "Channel feed errors" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ channel_conflicts }}</span>
+      <span class="ops-card__label">{% trans "Channel conflicts" %}</span>
+    </div>
+    <div class="ops-card">
       <span class="ops-card__value">{{ dirty_room_count }}</span>
       <span class="ops-card__label">{% trans "Dirty rooms" %}</span>
     </div>
@@ -186,6 +194,51 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No delivery problems." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Channel feeds" %}</h2>
+    {% if channel_feeds %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Feed" %}</th><th>{% trans "Room" %}</th><th>{% trans "Last synced" %}</th><th>{% trans "Events" %}</th><th>{% trans "Conflicts" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <tbody>
+          {% for feed in channel_feeds %}
+            <tr>
+              <td>{{ feed.name }}</td>
+              <td>{{ feed.room.number }} · {{ feed.room.room_type.name }}</td>
+              <td>{% if feed.last_synced_at %}{{ feed.last_synced_at|date:"d M H:i" }}{% else %}—{% endif %}</td>
+              <td>{{ feed.last_event_count }}</td>
+              <td>{{ feed.conflict_count }}</td>
+              <td>{{ feed.last_error|default:"—"|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No channel feeds configured." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Room blocks" %}</h2>
+    {% if upcoming_blocks %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Room" %}</th><th>{% trans "Check-in" %}</th><th>{% trans "Check-out" %}</th><th>{% trans "Source" %}</th><th>{% trans "Summary" %}</th></tr></thead>
+        <tbody>
+          {% for block in upcoming_blocks %}
+            <tr>
+              <td>{{ block.room.number }} · {{ block.room.room_type.name }}</td>
+              <td>{{ block.check_in|date:"d M Y" }}</td>
+              <td>{{ block.check_out|date:"d M Y" }}</td>
+              <td>{{ block.get_source_display }}</td>
+              <td>{{ block.summary|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No upcoming room blocks." %}</p>
     {% endif %}
   </section>
 
