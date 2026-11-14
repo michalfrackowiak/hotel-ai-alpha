@@ -782,6 +782,8 @@ TRANSLATIONS: dict[str, str] = {
     "Channel feed": "Kanał",
     "Channel feeds": "Kanały",
     "Channel manager": "Menedżer kanałów",
+    "Currency": "Waluta",
+    "Install app": "Zainstaluj aplikację",
     "Conflicts": "Konflikty",
     "Events": "Zdarzenia",
     "External UID": "Zewnętrzny UID",

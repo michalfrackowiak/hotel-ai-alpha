@@ -1,4 +1,5 @@
 {% extends "web/base.html" %}
+{% load currency_tags %}
 {% load i18n humanize static %}
 
 {% block title %}{{ hotel.name }} · {% trans "Rooms & reservations" %}{% endblock %}
@@ -81,7 +82,7 @@
         <article class="room-card">
           <div class="room-card__visual room-card__visual--{{ forloop.counter }}" aria-hidden="true">
             <span>{{ room_type.name|slice:":1" }}</span>
-            <small>{% trans "from" %} {{ room_type.base_price|floatformat:0 }} {{ room_type.currency }}</small>
+            <small>{% trans "from" %} {{ room_type.base_price|money }}</small>
           </div>
           <div class="room-card__body">
             <div class="room-card__title">
@@ -90,7 +91,7 @@
             </div>
             <p>{{ room_type.short_description }}</p>
             <p class="room-card__price">
-              {{ room_type.base_price|floatformat:0 }} {{ room_type.currency }}
+              {{ room_type.base_price|money }}
               <span>/ {% trans "night" %}</span>
             </p>
             {% if room_type.amenities %}

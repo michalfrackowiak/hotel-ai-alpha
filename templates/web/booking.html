@@ -1,4 +1,5 @@
 {% extends "web/base.html" %}
+{% load currency_tags %}
 {% load i18n humanize static %}
 
 {% block title %}{{ booking.reference }} · {{ hotel.name }}{% endblock %}
@@ -54,7 +55,7 @@
         </div>
         <div class="detail">
           <span class="detail__label">{% trans "Cancellation fee" %}</span>
-          <span class="detail__value">{{ booking.cancellation_fee }} {{ booking.currency }}</span>
+          <span class="detail__value">{{ booking.cancellation_fee|money }}</span>
         </div>
         <div class="detail">
           <span class="detail__label">{% trans "Cancelled by" %}</span>
@@ -100,7 +101,7 @@
           {% for night in booking.price_breakdown.nightly %}
             <tr>
               <td>{{ night.date }}</td>
-              <td>{{ night.rate }} {{ booking.currency }}</td>
+              <td>{{ night.rate|money }}</td>
               <td class="muted">{% if night.rules %}{{ night.rules|join:", " }}{% else %}—{% endif %}</td>
             </tr>
           {% endfor %}
@@ -108,7 +109,7 @@
         <tfoot>
           <tr>
             <th colspan="2">{% trans "Total (VAT included)" %}</th>
-            <th>{{ booking.total_price }} {{ booking.currency }}</th>
+            <th>{{ booking.total_price|money }}</th>
           </tr>
         </tfoot>
       </table>
@@ -176,7 +177,7 @@
           <label for="modify-room-type">{% trans "Room type" %}</label>
           <select id="modify-room-type" name="room_type">
             {% for type in room_types %}
-              <option value="{{ type.slug }}"{% if type.pk == booking.room.room_type_id %} selected{% endif %}>{{ type.name }} · {{ type.base_price }} {{ type.currency }}</option>
+              <option value="{{ type.slug }}"{% if type.pk == booking.room.room_type_id %} selected{% endif %}>{{ type.name }} · {{ type.base_price|money }}</option>
             {% endfor %}
           </select>
           <div class="booking-form__row">

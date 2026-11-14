@@ -1,4 +1,5 @@
 {% extends "web/base.html" %}
+{% load currency_tags %}
 {% load i18n %}
 
 {% block title %}{% trans "My bookings" %} · {{ hotel.name }}{% endblock %}
@@ -26,7 +27,7 @@
             </div>
             <div class="guest-booking__meta">
               <span class="badge badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
-              <span>{{ booking.total_price }} {{ booking.currency }}</span>
+              <span>{{ booking.total_price|money }}</span>
             </div>
           </li>
         {% endfor %}
