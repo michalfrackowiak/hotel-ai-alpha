@@ -44,6 +44,7 @@ class EmailMessage:
     text_body: str
     html_body: str = ""
     attachments: list[Attachment] = field(default_factory=list)
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -128,6 +129,9 @@ class SesProvider:
         if message.html_body:
             params["Message.Body.Html.Data"] = message.html_body
             params["Message.Body.Html.Charset"] = "UTF-8"
+        for index, (key, value) in enumerate(message.metadata.items(), start=1):
+            params[f"Tags.member.{index}.Name"] = key
+            params[f"Tags.member.{index}.Value"] = value
         body = urllib.parse.urlencode(params).encode()
 
         now = dt.datetime.now(dt.UTC)
@@ -208,6 +212,7 @@ class PostmarkProvider:
                 }
                 for attachment in message.attachments
             ],
+            "Metadata": message.metadata,
         }
         request = urllib.request.Request(
             "https://api.postmarkapp.com/email",

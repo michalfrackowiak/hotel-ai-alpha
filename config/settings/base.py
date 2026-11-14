@@ -208,6 +208,12 @@ SES_SECRET_ACCESS_KEY = os.getenv("SES_SECRET_ACCESS_KEY", "")
 SES_REGION = os.getenv("SES_REGION", "eu-central-1")
 POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN", "")
 
+# Retry policy for confirmation emails. Failed sends are retried by the
+# scheduler with exponential backoff until they succeed or hit the cap.
+EMAIL_MAX_ATTEMPTS = int(os.getenv("EMAIL_MAX_ATTEMPTS", "5"))
+EMAIL_RETRY_BASE_SECONDS = int(os.getenv("EMAIL_RETRY_BASE_SECONDS", "300"))
+EMAIL_RETRY_MAX_SECONDS = int(os.getenv("EMAIL_RETRY_MAX_SECONDS", "21600"))
+
 # Signed booking management links. Guests can always request a fresh link with
 # their reference and contact details, so expiry is a safety net, not a trap.
 BOOKING_ACCESS_MAX_AGE_DAYS = int(os.getenv("BOOKING_ACCESS_MAX_AGE_DAYS", "180"))

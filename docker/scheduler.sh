@@ -10,5 +10,6 @@ echo "==> Hold cleanup scheduler started (every ${interval}s)"
 while true; do
     python manage.py expire_holds || echo "expire_holds failed; will retry"
     python manage.py reconcile_calendars --apply || echo "reconcile_calendars failed; will retry"
+    python manage.py send_booking_emails || echo "send_booking_emails failed; will retry"
     sleep "$interval"
 done
