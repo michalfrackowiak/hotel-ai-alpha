@@ -53,6 +53,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Imported OTA reservations become `RoomBlock` rows, not bookings | Keeps the booking write path, availability and modification logic untouched; channel conflicts are counted, not auto-rejected. |
 | Channel feed is per physical room | Matches the per-room availability invariant; one feed per room is the simplest correct mapping for an alpha. |
 | Export feed uses a signed token (`django.core.signing`) | A room calendar URL is a secret subscription endpoint, not a public reference. |
+| Haru full-duplex model not integrated | Requires a 12 GB GPU, no Polish support, no tool calling; incompatible with the alpha's CPU stack and booking agent. See `docs/research/haru-voice-model.md`. |
 | Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
 | Policy is hotel-wide, not per rate plan | v0.3.0 has no rate plans yet; a single window and fee-night count matches the pilot's contract and stays explainable. |
 | Fee = first N stored nightly rates, capped at the total | Uses the actual quote (including daily-rate overrides) instead of a fresh calculation, and can never exceed what the guest agreed to pay. |
