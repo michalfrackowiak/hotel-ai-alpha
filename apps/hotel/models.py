@@ -519,6 +519,37 @@ class Booking(TimeStampedModel):
                 raise ValidationError(_("This room is already booked for the selected dates."))
 
 
+class GuestLoginToken(models.Model):
+    """Single-use magic-link token for the guest booking account.
+
+    Only a SHA-256 hash of the token is stored, so a database leak does not
+    hand out working login links. Tokens expire quickly and are consumed once.
+    """
+
+    email = models.EmailField(_("email"), db_index=True)
+    token_hash = models.CharField(_("token hash"), max_length=64, unique=True)
+    expires_at = models.DateTimeField(_("expires at"))
+    used_at = models.DateTimeField(_("used at"), null=True, blank=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("guest login token")
+        verbose_name_plural = _("guest login tokens")
+        indexes = [models.Index(fields=["email", "-created_at"], name="guest_login_email_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.email} · {self.created_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def is_expired(self) -> bool:
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_usable(self) -> bool:
+        return self.used_at is None and not self.is_expired
+
+
 class BookingEvent(models.Model):
     """Append-only audit record for every booking transition."""
 

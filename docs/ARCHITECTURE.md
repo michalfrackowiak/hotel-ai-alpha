@@ -29,7 +29,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, confirmation email, admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email, admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
@@ -128,7 +128,8 @@ Every transition appends a `BookingEvent` with the actor (`guest`, `staff`, `age
 - `apps.hotel.access` issues and verifies signed booking tokens, builds management URLs, and matches a reference against the email or normalised phone number on the booking.
 - The API returns `manage_token` and `manage_url` on every booking response. Detail/confirm/cancel accept the token as a query parameter, `X-Booking-Token` header or Bearer token.
 - The web lookup never exposes a booking from a reference alone: it redirects to a signed link only when the contact matches. Rotating `Booking.access_token` revokes every link.
-- `apps.hotel.notifications` renders an English or Polish confirmation with `apps.hotel.ics` and sends it after commit. `confirmation_email_sent_at` makes retries idempotent; `send_booking_emails` retries undelivered confirmations.
+- `/my-bookings/` is a passwordless guest account. `apps.hotel.guest_access` stores only a SHA-256 hash of a single-use, 30-minute token. The request page always returns the same neutral message; an email is sent only when the address already has a booking. A signed-in session can open any booking whose client email matches, and the detail view issues that booking's normal signed token so confirm/modify/cancel keep working.
+- `apps.hotel.notifications` renders an English or Polish confirmation with `apps.hotel.ics` and sends it after commit. `confirmation_email_sent_at` makes retries idempotent; `send_booking_emails` retries undelivered confirmations. The same notification module renders the guest magic-link email through the configured provider.
 - Email and calendar failures are logged and never roll back a reservation.
 
 ### Availability
@@ -265,9 +266,9 @@ Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise ser
 
 ### Security posture
 
-Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, encrypted provider keys, append-only booking audit events, no card data collection.
+Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, single-use hashed magic links, encrypted provider keys, append-only booking audit events, no card data collection.
 
-Deliberately out of scope for the alpha: guest accounts, payment, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
+Deliberately out of scope for the alpha: payment, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
 
 ## Extension points
 

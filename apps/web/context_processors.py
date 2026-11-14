@@ -7,6 +7,8 @@ import logging
 from django.conf import settings
 from django.utils import timezone, translation
 
+from apps.hotel.guest_access import GUEST_SESSION_KEY, normalise_email
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +34,7 @@ def site_context(request) -> dict:
     return {
         "hotel": hotel,
         "assistant": assistant,
+        "guest_email": normalise_email(request.session.get(GUEST_SESSION_KEY)),
         "site_languages": [
             {"code": code, "label": label} for code, label in settings.LANGUAGES
         ],

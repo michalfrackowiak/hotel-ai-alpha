@@ -1,0 +1,1 @@
+{% load i18n %}{% blocktrans with hotel=hotel.name %}Your {{ hotel }} booking account{% endblocktrans %}

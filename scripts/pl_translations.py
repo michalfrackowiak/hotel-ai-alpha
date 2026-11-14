@@ -49,6 +49,7 @@ TRANSLATIONS: dict[str, str] = {
     "Book in December": "Rezerwacja w grudniu",
     "Book with chat": "Zarezerwuj przez czat",
     "Booked via": "Zarezerwowano przez",
+    "Booking account": "Konto rezerwacji",
     "Booking not found": "Nie znaleziono rezerwacji",
     "Booking not found.": "Nie znaleziono rezerwacji.",
     "Booking reference": "Numer rezerwacji",
@@ -111,6 +112,7 @@ TRANSLATIONS: dict[str, str] = {
     "Disable selected providers": "Wyłącz wybranych dostawców",
     "Do you have a room for two this weekend?": "Czy macie pokój dla dwóch osób w ten weekend?",
     "Email or phone is required.": "Wymagany jest adres e-mail lub numer telefonu.",
+    "Email address": "Adres e-mail",
     "Enable selected providers": "Włącz wybranych dostawców",
     "End call": "Zakończ połączenie",
     "English": "Angielski",
@@ -118,6 +120,10 @@ TRANSLATIONS: dict[str, str] = {
     "Enter the reference we gave you, for example HA-7KQ2M4, to see your reservation, confirm a hold or cancel.": (
         "Wpisz numer, który otrzymałeś, np. HA-7KQ2M4, aby zobaczyć rezerwację, "
         "potwierdzić blokadę lub ją anulować."
+    ),
+    "Enter the email address you booked with. We will send you a one-time link that opens every reservation tied to that address.": (
+        "Podaj adres e-mail użyty przy rezerwacji. Wyślemy jednorazowy link, "
+        "który otworzy wszystkie rezerwacje powiązane z tym adresem."
     ),
     "Expired": "Wygasła",
     "Extras": "Dodatki",
@@ -127,13 +133,24 @@ TRANSLATIONS: dict[str, str] = {
         "Zapasowy identyfikator kalendarza, gdy mapowanie pokoju go nie określa."
     ),
     "Find my booking": "Znajdź moją rezerwację",
+    "Find a booking": "Znajdź rezerwację",
+    "Find one booking": "Znajdź jedną rezerwację",
     "Fixed amount per night": "Stała kwota za noc",
     "Generation": "Generowanie",
     "Good to know": "Warto wiedzieć",
     "Google Calendar": "Google Calendar",
     "Guest": "Gość",
+    "Guest account": "Konto gościa",
     "Guests": "Goście",
     "Held until": "Zablokowane do",
+    "Hello,\n\nUse the link below to open your booking account at %(hotel)s. You will see every reservation made with this email address.": (
+        "Dzień dobry,\n\nUżyj poniższego linku, aby otworzyć konto rezerwacji w %(hotel)s. "
+        "Zobaczysz wszystkie rezerwacje złożone na ten adres e-mail."
+    ),
+    "Hello, Use the link below to open your booking account at %(hotel)s. You will see every reservation made with this email address.": (
+        "Dzień dobry, użyj poniższego linku, aby otworzyć konto rezerwacji w %(hotel)s. "
+        "Zobaczysz wszystkie rezerwacje złożone na ten adres e-mail."
+    ),
     "Hold": "Blokada",
     "How it works": "Jak to działa",
     "I could not reach the reception service. Check your connection and try again.": (
@@ -162,6 +179,7 @@ TRANSLATIONS: dict[str, str] = {
     ),
     "Model": "Model",
     "My booking": "Moja rezerwacja",
+    "My bookings": "Moje rezerwacje",
     "Need a hand? Reception can find your reservation by name, email or phone.": (
         "Potrzebujesz pomocy? Recepcja znajdzie Twoją rezerwację po nazwisku, e-mailu lub telefonie."
     ),
@@ -182,6 +200,7 @@ TRANSLATIONS: dict[str, str] = {
     "Ollama / self-hosted": "Ollama / własny serwer",
     "On hold": "Wstępnie zablokowana",
     "Open chat": "Otwórz czat",
+    "Open my bookings": "Otwórz moje rezerwacje",
     "Open the voice concierge and simply speak. It can check rooms, prices and confirm your stay.": (
         "Otwórz konsjerża głosowego i po prostu mów. Sprawdzi pokoje, ceny i potwierdzi pobyt."
     ),
@@ -195,6 +214,7 @@ TRANSLATIONS: dict[str, str] = {
     "Polish": "Polski",
     "Polish prompts": "Podpowiedzi polskie",
     "Prefer to talk it through?": "Wolisz porozmawiać?",
+    "Prefer your booking reference?": "Wolisz numer rezerwacji?",
     "Preferences": "Preferencje",
     "Presentation": "Prezentacja",
     "Press the call button and talk naturally. Aurora listens, checks real availability and confirms your room — in English or Polish.": (
@@ -232,6 +252,12 @@ TRANSLATIONS: dict[str, str] = {
     "Say hello": "Przywitaj się",
     "Seasonal": "Sezonowa",
     "See real availability": "Zobacz rzeczywistą dostępność",
+    "See all my bookings": "Zobacz wszystkie moje rezerwacje",
+    "Send sign-in link": "Wyślij link do logowania",
+    "Sign out": "Wyloguj się",
+    "Signed in as %(email)s. Every reservation made with this address is listed below.": (
+        "Zalogowano jako %(email)s. Poniżej znajdują się wszystkie rezerwacje z tym adresem."
+    ),
     "Send": "Wyślij",
     "Service account key JSON or OAuth authorised-user JSON. The file path from GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty.": (
         "Klucz konta usługi w formacie JSON lub plik JSON autoryzacji OAuth. "
@@ -292,13 +318,27 @@ TRANSLATIONS: dict[str, str] = {
     "The selected room is no longer available.": "Wybrany pokój nie jest już dostępny.",
     "The selected room is not available.": "Wybrany pokój jest niedostępny.",
     "The selected room type is not available.": "Wybrany typ pokoju jest niedostępny.",
+    "The link can be used once and expires in 30 minutes.": (
+        "Link można użyć tylko raz i wygasa po 30 minutach."
+    ),
+    "That sign-in link is invalid, already used or expired. Request a fresh one below.": (
+        "Ten link do logowania jest nieprawidłowy, został już użyty lub wygasł. "
+        "Poproś o nowy poniżej."
+    ),
     "The voice concierge is unavailable right now. Please use chat instead.": (
         "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
     ),
     "There is no reservation matching <strong>%(ref)s</strong>. Check the reference and try again.": (
         "Brak rezerwacji o numerze <strong>%(ref)s</strong>. Sprawdź numer i spróbuj ponownie."
     ),
+    "There are no reservations tied to this email address yet.": (
+        "Z tym adresem e-mail nie są jeszcze powiązane żadne rezerwacje."
+    ),
     "This booking can no longer be cancelled.": "Tej rezerwacji nie można już anulować.",
+    "This link can be used once and expires in 30 minutes. If you did not request it, you can ignore this message.": (
+        "Ten link można użyć tylko raz i wygasa po 30 minutach. "
+        "Jeśli go nie zamawiałeś, zignoruj tę wiadomość."
+    ),
     "This booking can no longer be confirmed.": "Tej rezerwacji nie można już potwierdzić.",
     "This browser does not support speech recognition. Please use Chrome or Edge, or switch to chat.": (
         "Ta przeglądarka nie obsługuje rozpoznawania mowy. "
@@ -321,6 +361,10 @@ TRANSLATIONS: dict[str, str] = {
     "Two ways to settle in": "Dwa sposoby na przytulny pobyt",
     "Updating your reservation…": "Aktualizuję rezerwację…",
     "Use comma separated numbers between 0 and 6.": "Użyj liczb od 0 do 6 oddzielonych przecinkami.",
+    "Use the button below to open your booking account at %(hotel)s. You will see every reservation made with this email address.": (
+        "Użyj poniższego przycisku, aby otworzyć konto rezerwacji w %(hotel)s. "
+        "Zobaczysz wszystkie rezerwacje złożone na ten adres e-mail."
+    ),
     "Validity": "Ważność",
     "View booking": "Zobacz rezerwację",
     "Voice": "Głos",
@@ -337,10 +381,15 @@ TRANSLATIONS: dict[str, str] = {
     "You can ask to cancel or look up an existing booking.": (
         "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
     ),
+    "You can still open a single reservation with its reference and the email or phone number used to book.": (
+        "Nadal możesz otworzyć pojedynczą rezerwację, podając jej numer oraz "
+        "adres e-mail lub numer telefonu użyty przy rezerwacji."
+    ),
     "You're all set. We look forward to welcoming you — check-in is from %(checkin)s.": (
         "Wszystko gotowe. Czekamy na Ciebie — zameldowanie od %(checkin)s."
     ),
     "Your booking": "Twoja rezerwacja",
+    "Your %(hotel)s booking account": "Twoje konto rezerwacji w %(hotel)s",
     "Your browser will ask for microphone access. Audio is only sent to your own reception service.": (
         "Przeglądarka poprosi o dostęp do mikrofonu. Dźwięk trafia wyłącznie do Twojej recepcji."
     ),
@@ -393,6 +442,7 @@ TRANSLATIONS: dict[str, str] = {
     "event id": "identyfikator zdarzenia",
     "event payload": "dane zdarzenia",
     "expired": "wygasła",
+    "expires at": "wygasa o",
     "extra settings": "ustawienia dodatkowe",
     "fallback message (English)": "wiadomość zapasowa (angielska)",
     "fallback message (Polish)": "wiadomość zapasowa (polska)",
@@ -402,6 +452,8 @@ TRANSLATIONS: dict[str, str] = {
     "greeting (English)": "powitanie (angielskie)",
     "greeting (Polish)": "powitanie (polskie)",
     "guest": "gość",
+    "guest login token": "token logowania gościa",
+    "guest login tokens": "tokeny logowania gościa",
     "guests": "goście",
     "hold expires at": "blokada wygasa o",
     "kind": "rodzaj",
@@ -451,12 +503,14 @@ TRANSLATIONS: dict[str, str] = {
     "temperature": "temperatura",
     "text-to-speech provider": "dostawca zamiany tekstu na mowę",
     "timeout (seconds)": "limit czasu (sekundy)",
+    "token hash": "skrót tokenu",
     "token usage": "zużycie tokenów",
     "tool call id": "identyfikator wywołania narzędzia",
     "tool calls": "wywołania narzędzi",
     "tool name": "nazwa narzędzia",
     "total price": "cena całkowita",
     "until": "do",
+    "used at": "użyto o",
     "valid from": "ważna od",
     "valid until": "ważna do",
     "voice enabled": "głos włączony",
@@ -485,6 +539,10 @@ TRANSLATIONS: dict[str, str] = {
     "Guest: %(name)s": "Gość: %(name)s",
     "If you need to change or cancel your reservation, use the link above or contact reception.": (
         "Jeśli chcesz zmienić lub anulować rezerwację, użyj powyższego linku lub skontaktuj się z recepcją."
+    ),
+    "If %(email)s has a reservation with us, a sign-in link is on its way. Check your inbox and spam folder.": (
+        "Jeśli %(email)s ma u nas rezerwację, link do logowania jest już w drodze. "
+        "Sprawdź skrzynkę odbiorczą i folder spam."
     ),
     "Manage your booking": "Zarządzaj rezerwacją",
     "Provide the booking access link or token from your confirmation.": (
