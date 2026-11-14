@@ -177,6 +177,9 @@ TRANSLATIONS: dict[str, str] = {
     "Microphone access was blocked. Allow the microphone and try again.": (
         "Dostęp do mikrofonu został zablokowany. Zezwól na mikrofon i spróbuj ponownie."
     ),
+    "No microphone was found or audio capture failed.": (
+        "Nie znaleziono mikrofonu lub przechwytywanie dźwięku nie powiodło się."
+    ),
     "Model": "Model",
     "My booking": "Moja rezerwacja",
     "My bookings": "Moje rezerwacje",
@@ -340,6 +343,13 @@ TRANSLATIONS: dict[str, str] = {
         "Jeśli go nie zamawiałeś, zignoruj tę wiadomość."
     ),
     "This booking can no longer be confirmed.": "Tej rezerwacji nie można już potwierdzić.",
+    "Speech recognition could not reach its service. Check your connection and try again.": (
+        "Usługa rozpoznawania mowy jest niedostępna. Sprawdź połączenie i spróbuj ponownie."
+    ),
+    "Speech recognition is not available for this language in this browser.": (
+        "Rozpoznawanie mowy nie jest dostępne dla tego języka w tej przeglądarce."
+    ),
+    "Try Chrome or Edge, or use chat.": "Spróbuj w Chrome lub Edge albo użyj czatu.",
     "This browser does not support speech recognition. Please use Chrome or Edge, or switch to chat.": (
         "Ta przeglądarka nie obsługuje rozpoznawania mowy. "
         "Użyj Chrome lub Edge albo przejdź do czatu."

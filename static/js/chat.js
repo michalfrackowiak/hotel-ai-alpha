@@ -189,10 +189,16 @@
     }
     if (!stored || !stored.key) return false;
 
+    const desired = (languageSelect && languageSelect.value) || root.dataset.language || language;
     try {
       const data = await App.getJSON(sessionUrl(stored.key));
+      const sessionLanguage = data.language || stored.language || "";
+      if (desired && sessionLanguage && sessionLanguage !== desired) {
+        App.storage.remove(storageKey);
+        return false;
+      }
       sessionKey = data.session_key;
-      language = data.language || stored.language || language;
+      language = sessionLanguage || desired || language;
       if (languageSelect) languageSelect.value = language;
       log.innerHTML = "";
       (data.messages || []).forEach(function (message) {
@@ -301,6 +307,8 @@
   if (languageSelect) {
     languageSelect.addEventListener("change", function () {
       if (busy) return;
+      App.storage.remove(storageKey);
+      sessionKey = null;
       createSession(languageSelect.value);
     });
   }

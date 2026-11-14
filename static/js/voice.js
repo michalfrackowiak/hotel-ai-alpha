@@ -35,6 +35,7 @@
   let speaking = false;
   let listening = false;
   let recognition = null;
+  let recognitionLangIndex = 0;
 
   function speechCode(code) {
     const entry =
@@ -45,6 +46,14 @@
       });
     if (entry && entry.speech) return entry.speech;
     return code === "pl" ? "pl-PL" : "en-US";
+  }
+
+  function recognitionLangs(code) {
+    const primary = speechCode(code);
+    if (code === "pl") {
+      return primary === "pl" ? ["pl", "pl-PL"] : ["pl-PL", "pl"];
+    }
+    return [primary];
   }
 
   function preferredVoice(code) {
@@ -266,12 +275,29 @@
       return;
     }
 
-    recognition.lang = speechCode(language);
+    const langs = recognitionLangs(language);
+    recognition.lang = langs[Math.min(recognitionLangIndex, langs.length - 1)] || speechCode(language);
     recognition.interimResults = true;
     recognition.continuous = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
+    recognition.lastError = null;
 
     let finalText = "";
+    let lastInterim = "";
+    let submitted = false;
+
+    const submitText = function (text) {
+      const value = (text || "").trim();
+      if (!value || submitted) return;
+      submitted = true;
+      setInterim("");
+      try {
+        recognition.stop();
+      } catch (error) {
+        /* ignore */
+      }
+      handleUserText(value);
+    };
 
     recognition.onstart = function () {
       listening = true;
@@ -283,44 +309,70 @@
       let pending = "";
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
         const result = event.results[index];
+        const transcriptText = (result[0] && result[0].transcript) || "";
         if (result.isFinal) {
-          finalText += result[0].transcript + " ";
+          finalText += transcriptText + " ";
         } else {
-          pending += result[0].transcript;
+          pending += transcriptText;
         }
       }
+      lastInterim = pending;
       setInterim(pending);
       const text = finalText.trim();
       if (text) {
-        finalText = "";
-        setInterim("");
-        try {
-          recognition.stop();
-        } catch (error) {
-          /* ignore */
-        }
-        handleUserText(text);
+        submitText(text);
       }
     };
 
     recognition.onerror = function (event) {
       listening = false;
+      recognition.lastError = event.error || "unknown";
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setStatusText(i18n.permissionDenied || "Microphone access was blocked.");
         endCall(true);
+      } else if (event.error === "audio-capture") {
+        setStatusText(i18n.audioCapture || "No microphone was found or audio capture failed.");
+        endCall(true);
+      } else if (event.error === "network") {
+        setStatusText(i18n.networkSpeech || "Speech recognition network error. Check your connection and try again.");
+      } else if (event.error === "language-not-supported" || event.error === "bad-grammar") {
+        const langs = recognitionLangs(language);
+        if (language === "pl" && recognitionLangIndex + 1 < langs.length) {
+          recognitionLangIndex += 1;
+          setStatusText(i18n.statusListening || "Listening — speak now");
+          window.setTimeout(function () {
+            if (active && !processing && !speaking && !listening) startListening();
+          }, 200);
+        } else {
+          setStatusText(
+            (i18n.languageUnsupported || "Speech recognition is not available for this language in this browser.") +
+              " (" + speechCode(language) + "). " +
+              (i18n.useChrome || "Try Chrome/Edge or switch to chat.")
+          );
+          endCall(true);
+        }
       } else if (event.error === "no-speech") {
         setStatusText(i18n.noSpeech || "I did not catch that.");
       } else if (event.error !== "aborted") {
-        setStatusText(i18n.genericError || "Something went wrong.");
+        setStatusText((i18n.genericError || "Something went wrong.") + " (" + (event.error || "unknown") + ")");
       }
     };
 
     recognition.onend = function () {
       listening = false;
+      if (submitted) return;
+      const text = (finalText || lastInterim || "").trim();
+      if (text && active && !processing && !speaking) {
+        submitText(text);
+        return;
+      }
       if (active && !processing && !speaking) {
-        window.setTimeout(function () {
-          if (active && !processing && !speaking && !listening) startListening();
-        }, 450);
+        const err = recognition.lastError;
+        if (!err || err === "network" || err === "no-speech") {
+          window.setTimeout(function () {
+            if (active && !processing && !speaking && !listening) startListening();
+          }, 450);
+        }
       }
     };
 
@@ -328,6 +380,9 @@
       recognition.start();
     } catch (error) {
       listening = false;
+      if (active && !processing && !speaking) {
+        setStatusText((i18n.genericError || "Something went wrong.") + " (start)");
+      }
     }
   }
 
@@ -387,6 +442,7 @@
     active = true;
     processing = false;
     speaking = false;
+    recognitionLangIndex = 0;
     language = languageSelect ? languageSelect.value : language;
     setBusyUi();
     setStatus("statusConnecting");
@@ -438,6 +494,7 @@
   if (languageSelect) {
     languageSelect.addEventListener("change", function () {
       language = languageSelect.value;
+      recognitionLangIndex = 0;
     });
   }
 

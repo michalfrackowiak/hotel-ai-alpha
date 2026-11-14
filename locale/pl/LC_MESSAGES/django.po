@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 15:02+0100\n"
+"POT-Creation-Date: 2026-11-14 22:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -857,6 +857,9 @@ msgstr "Brak problemów z dostarczaniem."
 msgid "No departures scheduled for today."
 msgstr "Brak zaplanowanych wyjazdów na dziś."
 
+msgid "No microphone was found or audio capture failed."
+msgstr "Nie znaleziono mikrofonu lub przechwytywanie dźwięku nie powiodło się."
+
 msgid "No rooms are available for those dates. Try different dates or ask the concierge."
 msgstr "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
 
@@ -1143,6 +1146,12 @@ msgstr "Mów. Resztą zajmiemy się my."
 msgid "Special requests"
 msgstr "Specjalne życzenia"
 
+msgid "Speech recognition could not reach its service. Check your connection and try again."
+msgstr "Usługa rozpoznawania mowy jest niedostępna. Sprawdź połączenie i spróbuj ponownie."
+
+msgid "Speech recognition is not available for this language in this browser."
+msgstr "Rozpoznawanie mowy nie jest dostępne dla tego języka w tej przeglądarce."
+
 msgid "Standard rate"
 msgstr "Taryfa standardowa"
 
@@ -1356,6 +1365,9 @@ msgstr "Razem (z VAT)"
 #, python-format
 msgid "Total: %(total)s %(currency)s"
 msgstr "Razem: %(total)s %(currency)s"
+
+msgid "Try Chrome or Edge, or use chat."
+msgstr "Spróbuj w Chrome lub Edge albo użyj czatu."
 
 msgid "Try another reference"
 msgstr "Spróbuj innego numeru"
