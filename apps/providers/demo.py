@@ -290,11 +290,15 @@ class DemoProvider(BaseLLMProvider):
 
         if not dates:
             today = timezone.localdate()
-            if re.search(r"\btomorrow\b|\bjutro\b", lowered):
+            has_today = bool(re.search(r"\btoday\b|\bdzis\b|\bdzisiaj\b", lowered))
+            has_tomorrow = bool(re.search(r"\btomorrow\b|\bjutro\b", lowered))
+            if has_today and has_tomorrow:
+                dates = [today, today + timedelta(days=1)]
+            elif has_tomorrow:
                 dates = [today + timedelta(days=1)]
-            elif re.search(r"\btoday\b|\bdziś\b|\bdzisiaj\b", lowered):
+            elif has_today:
                 dates = [today]
-            elif re.search(r"\bnext week\b|\bprzyszły tydzień\b|\bprzyszly tydzien\b", lowered):
+            elif re.search(r"\bnext week\b", lowered):
                 dates = [today + timedelta(days=7)]
             else:
                 match = re.search(r"\bin\s+(\d+)\s+(day|days|week|weeks)\b", lowered)

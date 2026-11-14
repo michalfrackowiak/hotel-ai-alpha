@@ -7,7 +7,7 @@ instead of raising into the conversation loop.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -341,9 +341,21 @@ class ToolExecutor:
 
     # --------------------------------------------------------------- helpers
     @staticmethod
-    def _date(value: str, field: str) -> date:
+    def _date(value, field: str) -> date:
+        if isinstance(value, date):
+            return value
+        text = str(value or "").strip().lower()
+        from django.utils import timezone as _tz
+
+        base = _tz.localdate()
+        if text in {"today", "dzisiaj", "dzis"}:
+            return base
+        if text in {"tomorrow", "jutro"}:
+            return base + timedelta(days=1)
+        if text in {"yesterday", "wczoraj"}:
+            return base - timedelta(days=1)
         try:
-            return date.fromisoformat(str(value))
+            return date.fromisoformat(text)
         except (ValueError, TypeError) as exc:
             raise ToolArgumentError(f"{field} must be an ISO date (YYYY-MM-DD).") from exc
 
