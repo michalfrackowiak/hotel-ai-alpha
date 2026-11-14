@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -11,6 +12,8 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone, translation
+from django.utils.dateparse import parse_date
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.hotel.access import (
@@ -19,7 +22,13 @@ from apps.hotel.access import (
     make_booking_token,
     token_matches,
 )
-from apps.hotel.booking_service import BookingError, get_booking
+from apps.hotel.availability import search_availability
+from apps.hotel.booking_service import (
+    BookingError,
+    confirm_booking,
+    create_booking,
+    get_booking,
+)
 from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
@@ -31,8 +40,11 @@ from apps.hotel.guest_access import (
     reserve_login_request,
     session_email,
 )
-from apps.hotel.models import Booking, BookingEvent, Room, RoomType
+from apps.hotel.models import Booking, BookingEvent, RatePlan, Room, RoomType
 from apps.hotel.notifications import send_guest_login_email
+from apps.hotel.pricing import StayError
+
+logger = logging.getLogger(__name__)
 
 
 def home(request):
@@ -46,6 +58,144 @@ def home(request):
             "default_check_in": (today + timedelta(days=1)).isoformat(),
             "default_check_out": (today + timedelta(days=3)).isoformat(),
             "today": today,
+        },
+    )
+
+
+def _int_param(value, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def book(request):
+    """Public booking flow: pick a stay, choose a rate, create the booking.
+
+    The page quotes through ``search_availability`` so the guest sees the same
+    prices and rate-plan options as the chat and voice channels. Creation and
+    confirmation still go through ``apps.hotel.booking_service``.
+    """
+    params = request.POST if request.method == "POST" else request.GET
+    today = timezone.localdate()
+
+    room_type_slug = (params.get("room_type") or "").strip()
+    check_in_value = (params.get("check_in") or "").strip()
+    check_out_value = (params.get("check_out") or "").strip()
+    adults = max(_int_param(params.get("adults") or params.get("guests"), 2), 1)
+    children = max(_int_param(params.get("children"), 0), 0)
+    selected_plan = (params.get("rate_plan") or "").strip()
+
+    check_in = parse_date(check_in_value) if check_in_value else None
+    check_out = parse_date(check_out_value) if check_out_value else None
+    room_type = None
+    quote_data = None
+    plans: list[dict] = []
+    error = ""
+
+    if room_type_slug:
+        room_type = RoomType.objects.filter(slug=room_type_slug, is_active=True).first()
+        if room_type is None:
+            error = _("The selected room type is not available.")
+
+    if room_type and (check_in_value or check_out_value) and (check_in is None or check_out is None):
+        error = _("Both check-in and check-out dates are required.")
+
+    if room_type and check_in and check_out and not error:
+        try:
+            results = search_availability(
+                check_in,
+                check_out,
+                guests=adults + children,
+                room_type_slug=room_type.slug,
+            )
+        except StayError as exc:
+            error = str(exc)
+        else:
+            if not results:
+                error = _("No rooms are available for those dates. Try different dates or ask the concierge.")
+            else:
+                result = results[0]
+                quote_data = result["quote"]
+                plan_rows = result.get("rate_plans", [])
+                records = {
+                    record.slug: record
+                    for record in RatePlan.objects.filter(
+                        is_active=True,
+                        slug__in=[row["slug"] for row in plan_rows],
+                    )
+                }
+                for row in plan_rows:
+                    record = records.get(row["slug"])
+                    plans.append(
+                        {
+                            **row,
+                            "description": record.description if record else "",
+                        }
+                    )
+                if selected_plan and selected_plan not in {row["slug"] for row in plans}:
+                    selected_plan = ""
+
+    if request.method == "POST":
+        first_name = (request.POST.get("first_name") or "").strip()
+        if error:
+            pass
+        elif quote_data is None:
+            error = _("Choose a room type and your dates first.")
+        elif not first_name:
+            error = _("Please enter your first name.")
+        else:
+            try:
+                booking = create_booking(
+                    room_type=room_type,
+                    check_in=check_in,
+                    check_out=check_out,
+                    first_name=first_name,
+                    last_name=(request.POST.get("last_name") or "").strip(),
+                    email=(request.POST.get("email") or "").strip(),
+                    phone=(request.POST.get("phone") or "").strip(),
+                    adults=adults,
+                    children=children,
+                    source=Booking.Source.WEB,
+                    language=translation.get_language(),
+                    special_requests=(request.POST.get("special_requests") or "").strip(),
+                    rate_plan=selected_plan or None,
+                )
+            except BookingError as exc:
+                error = exc.message
+            else:
+                try:
+                    confirm_booking(
+                        booking.reference,
+                        actor=BookingEvent.Actor.GUEST,
+                        channel=Booking.Source.WEB,
+                    )
+                except BookingError:
+                    logger.exception("Could not confirm web booking %s", booking.reference)
+                return redirect(booking_manage_path(booking))
+
+    return render(
+        request,
+        "web/book.html",
+        {
+            "room_types": RoomType.objects.filter(is_active=True).order_by(
+                "sort_order", "base_price", "name"
+            ),
+            "room_type": room_type,
+            "quote": quote_data,
+            "plans": plans,
+            "selected_plan": selected_plan,
+            "check_in": check_in,
+            "check_out": check_out,
+            "check_in_value": check_in_value,
+            "check_out_value": check_out_value,
+            "adults": adults,
+            "children": children,
+            "today": today,
+            "default_check_in": (today + timedelta(days=1)).isoformat(),
+            "default_check_out": (today + timedelta(days=3)).isoformat(),
+            "error": error,
+            "form_data": request.POST if request.method == "POST" else {},
         },
     )
 

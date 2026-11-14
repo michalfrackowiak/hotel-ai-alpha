@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of **13 November 2026**.
+Status as of **14 November 2026**.
 
 | Phase | Milestone | Status |
 | --- | --- | --- |
@@ -208,16 +208,21 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.5.0 (planning)
+## Next milestone — v0.5.0 (in progress)
 
 Theme: **guest experience and polish**. The reception side is now feature-complete for a pilot; v0.5 focuses on the guest-facing booking journey and the remaining sharp edges.
+
+### Released slices
+
+- **v0.4.10** — passwordless guest account at `/my-bookings/` (magic-link login, booking list, session-based detail access).
+- **v0.4.11** — public booking flow at `/book/` with named rate-plan selection, direct booking links from availability results and the room cards.
 
 ### Must have
 
 1. **Guest accounts** - magic-link login so a guest can see all their bookings without a password. *(shipped in v0.4.10)*
-2. **Web booking flow** — a public page that creates a booking (currently chat/voice/API only).
-3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API.
-4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests.
+2. **Web booking flow** — a public page that creates a booking without chat or voice. *(shipped in v0.4.11)*
+3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API. *(shipped in v0.4.11)*
+4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests. *(remaining)*
 
 ### Should have
 

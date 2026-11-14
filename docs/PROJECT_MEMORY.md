@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 · **Version:** v0.4.10 · **Tests:** 144 passing
+**Last updated:** 14 November 2026 · **Version:** v0.4.11 · **Tests:** 152 passing
 
 ## Current state
 
@@ -15,6 +15,8 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
 - Guests have a passwordless account at `/my-bookings/`: a single-use magic link (stored hashed, 30-minute expiry) signs them in and lists every booking tied to that email. A signed-in guest can open their bookings without a token.
+- Guests can book directly at `/book/` without the chat: the page quotes through `search_availability`, lists the standard rate plus every applicable named `RatePlan`, creates the booking through `create_booking(source=web)` and confirms it immediately through `confirm_booking`.
+- Availability results on the home page and the room cards link straight to `/book/` with the room type, dates and guest count prefilled.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds` every five minutes.
 
@@ -54,6 +56,9 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | `DailyRate` replaces the calculated rate and skips rules | One explicit row per room type/night is easier for reception to reason about than layering another rule type; the rate is the price. |
 | Minimum stay is enforced in `quote()` | Keeps direct pricing, creation and modification honest; availability catches `StayError` and omits the room type so search never shows an unbookable option. |
 | Rate calendar is an admin month grid | Reception already works in the admin; a grid over ordinary `DailyRate` rows avoids a parallel UI and keeps bulk import possible. |
+| `/book/` quotes through `search_availability` | The web form must show the same prices, restrictions and rate-plan totals as chat and voice; re-implementing the pricing loop in the view would drift. |
+| The web booking form confirms immediately | The guest has already entered their details and pressed the final button, so the hold has served its purpose; the confirmation email and calendar sync then follow the normal after-commit path. |
+| Rate-plan radios are built from the availability payload | `search_availability` already filters plans by room type and stay restrictions; the view only enriches them with the admin description. |
 
 ## Runbook
 
@@ -99,6 +104,8 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 ## Traps and invariants
 
 - **One write path.** `apps.hotel.booking_service` owns create/confirm/modify/cancel/expire. Do not write bookings from views, tools or admin actions directly.
+- **`/book/` creates and confirms through the service.** The view validates the form and quotes through `search_availability`, then calls `create_booking()` and `confirm_booking()`; it must not set `Booking.status` or prices itself.
+- **The web booking form does not duplicate rate-plan arithmetic.** Plan totals come from the availability payload; the view only adds the admin description. Changing a plan's adjustment or applicability belongs in `pricing.quote()` / `RatePlan`.
 - **Cancellation fees come from `cancellation_preview()`.** The page, API preview, agent tools and `cancel_booking()` must read that function; never re-implement the free window or fee arithmetic in a view or template.
 - **Refresh a stale booking before previewing.** `confirm_booking()` and `cancel_booking()` return fresh objects; an in-memory instance from before the transition still says `pending` and previews the wrong reason/fee.
 - **`BookingEvent` is append-only.** `save()` raises on an existing pk and the admin is read-only. Add a new event instead of editing history; do not add admin add/delete permissions.
@@ -162,20 +169,28 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-13 | v0.3.0 | Docker ops dashboard | `/ops/` rendered arrivals/departures/holds/failed syncs/email gaps/recent events; staff login required |
 | 2026-11-13 | v0.3.0 | Docker pages EN/PL | home, booking detail and `/ops/` rendered in both languages; cancellation policy and modify form translated |
 | 2026-11-13 | v0.3.0 | GitHub Actions CI | green on `main` and `develop` (tests + Docker build) |
+| 2026-11-14 | v0.4.11 | `pytest` | 152 passed |
+| 2026-11-14 | v0.4.11 | `manage.py check` | 0 issues |
+| 2026-11-14 | v0.4.11 | `makemigrations --check` | no changes detected |
+| 2026-11-14 | v0.4.11 | `ruff check .` | clean |
+| 2026-11-14 | v0.4.11 | Polish catalogue | 555 strings extracted, 0 missing |
+| 2026-11-14 | v0.4.11 | `/book/` locally EN/PL | 200; quote and guest form rendered |
+| 2026-11-14 | v0.4.11 | Docker compose build + `/healthz` | image built; `/healthz` returns `{"status": "ok"}` |
+| 2026-11-14 | v0.4.11 | Docker web booking EN/PL | two bookings confirmed (`HA-QLW54V`, `HA-V45S3Q`), source `web`, confirmation email `sent` |
+| 2026-11-14 | v0.4.11 | Docker rate-plan booking | plan shown in `/book/`; `HA-LCRYX2` stored the plan, total `756.00`, email `sent` |
 
 Update this table when the release gate is re-run.
 
 ## Open questions for v0.5.0
 
-- Guest accounts: magic-link login, or full password-based accounts?
-- Web booking flow: a single page, or a multi-step wizard?
-- Rate plan selection in the UI: radio list, or a comparison table?
+- Transactional email hardening: provider retry/backoff in-process, or a queue/worker?
 - Channel manager: iCal import/export first, or a direct OTA API?
+- Multi-currency: display-only conversion, or separate price books per currency?
 
 ## Next move
 
-v0.4.x is complete and released (v0.4.10). The next milestone is v0.5.0 (guest experience and polish). Recommended first slices:
+v0.4.11 is released. The remaining v0.5.0 must-have is transactional email hardening (retry/backoff, delivery dashboard, provider bounce tests). Recommended order:
 
-1. A public web booking flow (create a booking without chat).
-2. Rate plan selection in the booking UI.
-3. Channel manager (iCal import/export).
+1. Transactional email hardening.
+2. Channel manager (iCal import/export).
+3. Accessibility audit for the booking and voice pages.

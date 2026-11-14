@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 11:01+0100\n"
+"POT-Creation-Date: 2026-11-14 11:34+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -171,11 +171,20 @@ msgstr "Wróć do pokoi"
 msgid "Behaviour"
 msgstr "Zachowanie"
 
+msgid "Book a room"
+msgstr "Zarezerwuj pokój"
+
 msgid "Book in December"
 msgstr "Rezerwacja w grudniu"
 
-msgid "Book with chat"
-msgstr "Zarezerwuj przez czat"
+msgid "Book now"
+msgstr "Zarezerwuj teraz"
+
+msgid "Book this room"
+msgstr "Zarezerwuj ten pokój"
+
+msgid "Book your stay"
+msgstr "Zarezerwuj pobyt"
 
 msgid "Booked via"
 msgstr "Zarezerwowano przez"
@@ -229,6 +238,9 @@ msgstr "Odbity"
 
 msgid "Boutique stays · AI concierge"
 msgstr "Butikowe pobyty · konsjerż AI"
+
+msgid "By booking you agree to the cancellation policy shown on your reservation page."
+msgstr "Dokonując rezerwacji, akceptujesz zasady anulowania pokazane na stronie rezerwacji."
 
 msgid "Calendar"
 msgstr "Kalendarz"
@@ -287,6 +299,9 @@ msgstr "Nie możesz znaleźć numeru rezerwacji?"
 msgid "Capacity & price"
 msgstr "Pojemność i cena"
 
+msgid "Change dates or room"
+msgstr "Zmień daty lub pokój"
+
 msgid "Change reservation"
 msgstr "Zmień rezerwację"
 
@@ -311,6 +326,9 @@ msgid ""
 msgstr ""
 "Sprawdź wiadomość potwierdzającą od konsjerża lub skontaktuj się z recepcją, a "
 "odnajdziemy ją dla Ciebie."
+
+msgid "Check this stay"
+msgstr "Sprawdź ten pobyt"
 
 msgid "Check-in"
 msgstr "Zameldowanie"
@@ -340,8 +358,14 @@ msgstr "Sprawdzam dostępność…"
 msgid "Children"
 msgstr "Dzieci"
 
+msgid "Choose a room type and your dates first."
+msgstr "Najpierw wybierz typ pokoju i terminy."
+
 msgid "Choose a valid cancellation reason."
 msgstr "Wybierz prawidłowy powód anulowania."
+
+msgid "Choose your rate"
+msgstr "Wybierz taryfę"
 
 msgid "Clean"
 msgstr "Czysty"
@@ -427,6 +451,9 @@ msgstr "Wyjazdy"
 msgid "Departures today"
 msgstr "Dzisiejsze wyjazdy"
 
+msgid "Direct booking"
+msgstr "Rezerwacja bezpośrednia"
+
 msgid "Dirty"
 msgstr "Brudny"
 
@@ -438,6 +465,9 @@ msgstr "Wyłącz wybranych dostawców"
 
 msgid "Do you have a room for two this weekend?"
 msgstr "Czy macie pokój dla dwóch osób w ten weekend?"
+
+msgid "Email"
+msgstr "E-mail"
 
 msgid "Email address"
 msgstr "Adres e-mail"
@@ -521,6 +551,9 @@ msgstr "Znajdź moją rezerwację"
 msgid "Find one booking"
 msgstr "Znajdź jedną rezerwację"
 
+msgid "First name"
+msgstr "Imię"
+
 msgid "Fixed amount"
 msgstr "Stała kwota"
 
@@ -538,6 +571,9 @@ msgstr ""
 
 msgid "Generation"
 msgstr "Generowanie"
+
+msgid "Give us an email address or a phone number so we can reach you."
+msgstr "Podaj adres e-mail lub numer telefonu, abyśmy mogli się z Tobą skontaktować."
 
 msgid "Good to know"
 msgstr "Warto wiedzieć"
@@ -632,6 +668,9 @@ msgstr "Język"
 
 msgid "Last minute"
 msgstr "Ostatnia chwila"
+
+msgid "Last name"
+msgstr "Nazwisko"
 
 msgid "Last synced at"
 msgstr "Ostatnia synchronizacja"
@@ -747,11 +786,17 @@ msgstr "Brak zaplanowanych wyjazdów na dziś."
 msgid "No rooms are available for those dates. Try different dates or ask the concierge."
 msgstr "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
 
+msgid "No rooms available"
+msgstr "Brak dostępnych pokoi"
+
 msgid "No rooms of this type are available for the selected dates."
 msgstr "Brak pokoi tego typu w wybranych terminach."
 
 msgid "No show"
 msgstr "Nieobecność"
+
+msgid "Non-refundable"
+msgstr "Bezzwrotna"
 
 msgid "Not found"
 msgstr "Nie znaleziono"
@@ -804,8 +849,19 @@ msgstr "Procent"
 msgid "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."
 msgstr "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
 
+msgid "Phone"
+msgstr "Telefon"
+
+msgid ""
+"Pick your dates, choose a rate and leave your contact details. We will send a "
+"confirmation right away."
+msgstr "Wybierz terminy, taryfę i podaj dane kontaktowe. Potwierdzenie wyślemy od razu."
+
 msgid "Plans changed"
 msgstr "Zmiana planów"
+
+msgid "Please enter your first name."
+msgstr "Podaj imię."
 
 msgid "Please provide an email address or a phone number."
 msgstr "Podaj adres e-mail lub numer telefonu."
@@ -883,6 +939,9 @@ msgstr "Recepcja"
 
 msgid "Reference"
 msgstr "Numer"
+
+msgid "Refundable"
+msgstr "Zwrotna"
 
 msgid "Resend confirmation email"
 msgstr "Wyślij ponownie e-mail potwierdzający"
@@ -998,6 +1057,9 @@ msgstr "Mów. Resztą zajmiemy się my."
 msgid "Special requests"
 msgstr "Specjalne życzenia"
 
+msgid "Standard rate"
+msgstr "Taryfa standardowa"
+
 msgid "Start a call"
 msgstr "Rozpocznij połączenie"
 
@@ -1077,6 +1139,9 @@ msgstr "Rezerwacja jest nieprawidłowa."
 
 msgid "The end date must be after the start date."
 msgstr "Data końcowa musi być późniejsza niż początkowa."
+
+msgid "The flexible price for your stay."
+msgstr "Elastyczna cena Twojego pobytu."
 
 #, python-format
 msgid ""
@@ -1302,6 +1367,9 @@ msgid ""
 msgstr ""
 "Przeglądarka poprosi o dostęp do mikrofonu. Dźwięk trafia wyłącznie do Twojej "
 "recepcji."
+
+msgid "Your details"
+msgstr "Twoje dane"
 
 msgid "Your message"
 msgstr "Twoja wiadomość"

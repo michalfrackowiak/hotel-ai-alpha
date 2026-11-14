@@ -12,8 +12,9 @@
       <h1>{% blocktrans with name=hotel.name %}A warmer welcome at {{ name }}{% endblocktrans %}</h1>
       <p class="hero__lede">{{ hotel.tagline }}</p>
       <div class="hero__actions">
+        <a class="btn btn--primary" href="{% url 'web:book' %}">{% trans "Book a room" %}</a>
         {% if assistant.chat_enabled %}
-          <a class="btn btn--primary" href="{% url 'web:chat' %}">{% trans "Chat with the concierge" %}</a>
+          <a class="btn btn--ghost" href="{% url 'web:chat' %}">{% trans "Chat with the concierge" %}</a>
         {% endif %}
         {% if assistant.voice_enabled %}
           <a class="btn btn--ghost" href="{% url 'web:voice' %}">{% trans "Start a voice call" %}</a>
@@ -27,6 +28,7 @@
     <form class="availability-card" id="availability-form"
           data-endpoint="/api/v1/availability/"
           data-currency="{{ hotel.currency }}"
+          data-book-url="{% url 'web:book' %}"
           data-chat-url="{% url 'web:chat' %}"
           data-voice-url="{% url 'web:voice' %}"
           data-msg-searching="{% trans 'Checking availability…' %}"
@@ -36,7 +38,8 @@
           data-msg-nights="{% trans 'nights' %}"
           data-msg-total="{% trans 'Total' %}"
           data-msg-available="{% trans 'available' %}"
-          data-msg-book="{% trans 'Book with chat' %}"
+          data-msg-book-now="{% trans 'Book now' %}"
+          data-msg-ask="{% trans 'Ask the concierge' %}"
           data-msg-call="{% trans 'Call' %}">
       <h2>{% trans "Check availability" %}</h2>
       <div class="field-row">
@@ -98,8 +101,10 @@
               </ul>
             {% endif %}
             <div class="room-card__actions">
+              <a class="btn btn--small btn--primary"
+                 href="{% url 'web:book' %}?room_type={{ room_type.slug }}">{% trans "Book this room" %}</a>
               {% if assistant.chat_enabled %}
-                <a class="btn btn--small btn--primary"
+                <a class="btn btn--small btn--ghost"
                    href="{% url 'web:chat' %}?room_type={{ room_type.slug }}">{% trans "Ask about this room" %}</a>
               {% endif %}
               {% if assistant.voice_enabled %}

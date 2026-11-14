@@ -9,6 +9,7 @@
   const statusEl = document.getElementById("availability-status");
   const resultsEl = document.getElementById("availability-results");
   const endpoint = form.dataset.endpoint || "/api/v1/availability/";
+  const bookUrl = form.dataset.bookUrl || "/book/";
   const chatUrl = form.dataset.chatUrl || "/chat/";
   const voiceUrl = form.dataset.voiceUrl || "/voice/";
 
@@ -48,6 +49,7 @@
           check_out: quote.check_out || "",
           guests: quote.adults || "",
         };
+        const bookHref = App.escapeHtml(bookingLink(bookUrl, params));
         const chatHref = App.escapeHtml(bookingLink(chatUrl, params));
         const voiceHref = App.escapeHtml(bookingLink(voiceUrl, params));
 
@@ -93,9 +95,14 @@
           "</div>" +
           '<div class="result-card__actions">' +
           '<a class="btn btn--small btn--primary" href="' +
+          bookHref +
+          '">' +
+          App.escapeHtml(msg("msgBookNow", "Book now")) +
+          "</a>" +
+          '<a class="btn btn--small btn--ghost" href="' +
           chatHref +
           '">' +
-          App.escapeHtml(msg("msgBook", "Book with chat")) +
+          App.escapeHtml(msg("msgAsk", "Ask the concierge")) +
           "</a>" +
           '<a class="btn btn--small btn--ghost" href="' +
           voiceHref +

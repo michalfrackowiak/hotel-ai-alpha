@@ -1,6 +1,6 @@
 # Hotel Aurora · AI Reception Alpha
 
-An alpha of an AI hotel receptionist that takes reservations by **chat and voice**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, emails a bilingual confirmation and mirrors it into a per-room Google Calendar.
+An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, emails a bilingual confirmation and mirrors it into a per-room Google Calendar.
 
 > **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing, no channel manager and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
@@ -10,8 +10,10 @@ An alpha of an AI hotel receptionist that takes reservations by **chat and voice
 
 - **Chat concierge** at `/chat/` with a bilingual conversation UI.
 - **Voice concierge** at `/voice/` using the browser Web Speech API (Chrome/Edge), with optional server-side OpenAI Whisper/TTS.
+- **Direct booking** at `/book/`: search a stay, choose a rate plan and create a confirmed reservation without the chat.
 - **Real availability and pricing** from Django models, not model guesswork.
-- **Booking lifecycle**: pending hold (30 minutes by default) → explicit guest confirmation → confirmed booking.
+- **Named rate plans**: refundable or non-refundable percentage/fixed plans, selectable in the web form and by the agent tools.
+- **Booking lifecycle**: pending hold (30 minutes by default) → explicit guest confirmation → confirmed booking. The web form confirms immediately after the guest submits their details.
 - **Guest self-service**: change dates, room type or occupancy, and cancel with a reason through the signed link. A configurable policy previews the fee before the guest commits.
 - **Cancellation policy**: pending holds are free; confirmed bookings are free until `check_in - CANCELLATION_FREE_DAYS`; late cancellations charge the first `CANCELLATION_FEE_NIGHTS` nightly rates, capped at the total.
 - **Append-only audit log**: every create, confirm, modify, cancel and expiry records the actor, channel and before/after state.
@@ -64,6 +66,7 @@ These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` an
 | Path | Purpose |
 | --- | --- |
 | `/` | Landing page, availability search and room types |
+| `/book/` | Direct booking: choose a stay, rate plan and guest details |
 | `/chat/` | Chat concierge |
 | `/voice/` | Voice concierge |
 | `/booking/` | Look up a reservation by reference and email/phone |
