@@ -12,8 +12,10 @@ replacement for testing colour contrast or the live voice interaction.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from html.parser import HTMLParser
+from pathlib import Path
 
 import pytest
 from django.test import Client
@@ -225,7 +227,75 @@ def _audit(html: str) -> list[str]:
             problems.append(f"heading level jumps from h{previous} to h{current}")
             break
 
-    return problems
+# ---------------------------------------------------------------------------
+# Colour contrast (static token audit)
+# ---------------------------------------------------------------------------
+
+
+def _hex_to_rgb(value: str) -> tuple[int, int, int]:
+    value = value.strip().lstrip("#")
+    if len(value) == 3:
+        value = "".join(ch * 2 for ch in value)
+    if len(value) == 8:
+        value = value[:6]
+    return (int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16))
+
+
+def _relative_luminance(rgb: tuple[int, int, int]) -> float:
+    channels = []
+    for channel in rgb:
+        srgb = channel / 255.0
+        channels.append(srgb / 12.92 if srgb <= 0.03928 else ((srgb + 0.055) / 1.055) ** 2.4)
+    r, g, b = channels
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _contrast_ratio(fg: str, bg: str) -> float:
+    l1 = _relative_luminance(_hex_to_rgb(fg))
+    l2 = _relative_luminance(_hex_to_rgb(bg))
+    lighter, darker = (l1, l2) if l1 >= l2 else (l2, l1)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def _css_variables() -> dict[str, str]:
+    text = (Path(__file__).resolve().parent.parent / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    variables: dict[str, str] = {}
+    for match in re.finditer(r"--([a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{3,8})", text):
+        variables[f"--{match.group(1)}"] = match.group(2)
+    return variables
+
+
+@pytest.mark.django_db
+def test_colour_tokens_meet_wcag_aa_contrast():
+    variables = _css_variables()
+    pairs = [
+        ("--ink", "--paper"),
+        ("--ink", "--cream"),
+        ("--ink", "--cream-deep"),
+        ("--ink-soft", "--paper"),
+        ("--ink-soft", "--cream"),
+        ("--muted", "--paper"),
+        ("--muted", "--cream"),
+        ("--forest", "--paper"),
+        ("--forest", "--cream"),
+        ("--danger", "--paper"),
+        ("--danger", "--cream"),
+        ("--success", "--paper"),
+        ("--success", "--cream"),
+        ("--warning", "--paper"),
+        ("--warning", "--cream"),
+        ("--btn-fg", "--forest"),
+    ]
+    failures = []
+    for fg_name, bg_name in pairs:
+        fg = variables.get(fg_name)
+        bg = variables.get(bg_name)
+        if not fg or not bg:
+            continue
+        ratio = _contrast_ratio(fg, bg)
+        if ratio < 4.5:
+            failures.append(f"{fg_name} ({fg}) on {bg_name} ({bg}): {ratio:.2f}:1")
+    assert not failures, "Colour contrast below WCAG AA (4.5:1):\n" + "\n".join(f"- {item}" for item in failures)
 
 
 def _assert_accessible(html: str, label: str) -> None:
