@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-13 22:02+0100\n"
+"POT-Creation-Date: 2026-11-14 10:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -821,6 +821,9 @@ msgstr "Kalendarz stawek"
 #, python-format
 msgid "Rate for %(room)s on %(date)s"
 msgstr "Stawka dla %(room)s w dniu %(date)s"
+
+msgid "Rate plan"
+msgstr "Plan cenowy"
 
 msgid "Ready"
 msgstr "Gotowe"

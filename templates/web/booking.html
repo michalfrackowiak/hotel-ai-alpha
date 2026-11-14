@@ -86,7 +86,7 @@
       <div class="detail">
         <span class="detail__label">{% trans "Guests" %}</span>
         <span class="detail__value">{{ booking.adults }} {% trans "adults" %}{% if booking.children %}, {{ booking.children }} {% trans "children" %}{% endif %}</span>
-        <span class="muted">{% trans "Booked via" %} {{ booking.get_source_display }}</span>
+        <span class="muted">{% trans "Booked via" %} {{ booking.get_source_display }}{% if booking.rate_plan %} · {% trans "Rate plan" %}: {{ booking.rate_plan.name }}{% endif %}</span>
       </div>
     </div>
 

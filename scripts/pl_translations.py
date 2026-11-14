@@ -617,6 +617,7 @@ TRANSLATIONS: dict[str, str] = {
     "Plans changed": "Zmiana planów",
     "Previous month": "Poprzedni miesiąc",
     "Rate calendar": "Kalendarz stawek",
+    "Rate plan": "Plan cenowy",
     "Rate for %(room)s on %(date)s": "Stawka dla %(room)s w dniu %(date)s",
     "Recent booking events": "Ostatnie zdarzenia rezerwacji",
     "Reservation updated.": "Rezerwacja zaktualizowana.",
