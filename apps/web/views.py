@@ -8,6 +8,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import connection
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -41,7 +42,7 @@ from apps.hotel.guest_access import (
     session_email,
 )
 from apps.hotel.models import Booking, BookingEvent, RatePlan, Room, RoomType
-from apps.hotel.notifications import send_guest_login_email
+from apps.hotel.notifications import max_email_attempts, send_guest_login_email
 from apps.hotel.pricing import StayError
 
 logger = logging.getLogger(__name__)
@@ -363,6 +364,31 @@ def ops_dashboard(request):
         client__email__gt="",
         confirmation_email_sent_at__isnull=True,
     ).count()
+    email_delivered_count = Booking.objects.filter(confirmation_email_status="delivered").count()
+    email_failed_count = Booking.objects.filter(confirmation_email_status="failed").count()
+    email_bounced_count = Booking.objects.filter(
+        confirmation_email_status__in=("bounced", "complained")
+    ).count()
+    email_retry_count = (
+        Booking.objects.filter(
+            status__in=active_statuses,
+            client__email__gt="",
+            confirmation_email_sent_at__isnull=True,
+            confirmation_email_attempts__lt=max_email_attempts(),
+        )
+        .filter(
+            Q(confirmation_email_next_retry_at__isnull=True)
+            | Q(confirmation_email_next_retry_at__lte=now)
+        )
+        .count()
+    )
+    problem_emails = (
+        Booking.objects.filter(
+            confirmation_email_status__in=("failed", "bounced", "complained")
+        )
+        .select_related("client")
+        .order_by("-updated_at")[:20]
+    )
     recent_events = BookingEvent.objects.select_related("booking").order_by("-created_at", "-pk")[:20]
     dirty_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.DIRTY).select_related("room_type").order_by("number")
     out_of_order_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.OUT_OF_ORDER).select_related("room_type").order_by("number")
@@ -377,6 +403,11 @@ def ops_dashboard(request):
             "stale_holds": stale_holds,
             "failed_calendar": failed_calendar,
             "missing_email": missing_email,
+            "email_delivered_count": email_delivered_count,
+            "email_failed_count": email_failed_count,
+            "email_bounced_count": email_bounced_count,
+            "email_retry_count": email_retry_count,
+            "problem_emails": problem_emails,
             "recent_events": recent_events,
             "arrival_count": arrivals.count(),
             "departure_count": departures.count(),

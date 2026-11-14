@@ -414,32 +414,30 @@ class EmailWebhookView(APIView):
             if supplied != secret:
                 raise ApiError("webhook_access_denied", "Invalid webhook secret.", status_code=403)
 
-        data = request.data if isinstance(request.data, dict) else {}
-        reference = (data.get("reference") or data.get("booking_reference") or "").strip().upper()
-        event = (data.get("event") or data.get("type") or "").strip().lower()
-
+        from apps.hotel.email_webhooks import parse_email_webhook
         from apps.hotel.models import Booking
 
-        try:
-            booking = Booking.objects.get(reference=reference)
-        except Booking.DoesNotExist as exc:
-            raise ApiError("booking_not_found", "Booking not found.", status_code=404) from exc
+        data = request.data if isinstance(request.data, dict) else {}
+        event = parse_email_webhook(provider, data)
+        if event is None:
+            return Response({"status": "ignored", "event": data.get("event") or data.get("type") or ""})
 
-        status_map = {
-            "delivered": "delivered",
-            "delivery": "delivered",
-            "bounce": "bounced",
-            "bounced": "bounced",
-            "complaint": "complained",
-            "complained": "complained",
-            "failed": "failed",
-        }
-        new_status = status_map.get(event)
-        if new_status is None:
-            return Response({"status": "ignored", "event": event})
+        booking = None
+        if event.reference:
+            booking = Booking.objects.filter(reference=event.reference).first()
+            if booking is None:
+                raise ApiError("booking_not_found", "Booking not found.", status_code=404)
+        elif event.message_id:
+            booking = Booking.objects.filter(confirmation_email_provider_id=event.message_id).first()
+            if booking is None:
+                return Response({"status": "ignored", "message_id": event.message_id})
+        else:
+            raise ApiError("invalid_webhook", "No booking reference or message id.", status_code=400)
 
-        updates = {"confirmation_email_status": new_status}
-        if new_status == "bounced":
-            updates["confirmation_email_error"] = data.get("reason") or data.get("message") or "bounced"
+        updates = {"confirmation_email_status": event.status}
+        if event.status in {"bounced", "complained", "failed"}:
+            updates["confirmation_email_error"] = event.reason or event.status
         Booking.objects.filter(pk=booking.pk).update(**updates)
-        return Response({"status": "ok", "reference": reference, "email_status": new_status})
+        return Response(
+            {"status": "ok", "reference": booking.reference, "email_status": event.status}
+        )

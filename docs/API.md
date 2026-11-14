@@ -398,6 +398,28 @@ Requires `OPENAI_API_KEY` when the configured STT provider is `openai`.
 
 Returns `audio/mpeg` bytes. Requires `OPENAI_API_KEY` when the configured TTS provider is `openai`.
 
+## Email delivery webhooks
+
+`POST /api/v1/email/webhooks/<provider>/` accepts bounce, complaint and delivery
+events from the email provider. Set `EMAIL_WEBHOOK_SECRET` to require the
+`X-Email-Webhook-Secret` header; with no secret configured the endpoint accepts
+anonymous calls (local demos only).
+
+The booking is matched by `reference` when the payload carries one, otherwise by
+the provider message id stored in `confirmation_email_provider_id`. An unknown
+reference returns `404`; an unknown message id returns `200` with
+`{"status": "ignored"}` so providers do not retry forever.
+
+| Provider | Payload | Mapping |
+| --- | --- | --- |
+| `ses` | SNS `Notification` wrapping the SES event, or the SES JSON directly | `notificationType` (`Bounce`, `Complaint`, `Delivery`), `mail.messageId`, bounce diagnostic code |
+| `postmark` | Postmark webhook JSON | `RecordType` (`Bounce`, `Delivery`, `SpamComplaint`), `MessageID`, `Description` |
+| any | Generic JSON | `reference`/`booking_reference`, `event`/`type`, `reason`/`message` |
+
+The update sets `confirmation_email_status` to `delivered`, `bounced`,
+`complained` or `failed`, and records the reason in `confirmation_email_error`
+for bounces, complaints and failures.
+
 ## Throttling
 
 Default DRF rates (configurable through env):

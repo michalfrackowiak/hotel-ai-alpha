@@ -17,9 +17,9 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Guest self-service**: change dates, room type or occupancy, and cancel with a reason through the signed link. A configurable policy previews the fee before the guest commits.
 - **Cancellation policy**: pending holds are free; confirmed bookings are free until `check_in - CANCELLATION_FREE_DAYS`; late cancellations charge the first `CANCELLATION_FEE_NIGHTS` nightly rates, capped at the total.
 - **Append-only audit log**: every create, confirm, modify, cancel and expiry records the actor, channel and before/after state.
-- **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails and recent booking events.
+- **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails, email delivery health and recent booking events.
 - **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
-- **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment.
+- **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment. Failed sends retry with exponential backoff from the scheduler, and the `/ops/` dashboard tracks delivered, failed, bounced and complained messages.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
@@ -99,10 +99,12 @@ What the web container does on boot (`docker/entrypoint.sh`):
 5. creates the superuser from `DJANGO_SUPERUSER_*`;
 6. starts gunicorn on port 8000.
 
-A second `scheduler` container waits for the web container to become healthy, then runs `expire_holds` every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300). It shares the same SQLite volume. On a host without Docker, run the same command from cron or a systemd timer:
+A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
 
 ```cron
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py reconcile_calendars --apply
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_emails
 ```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
@@ -222,7 +224,7 @@ The translation scripts exist because GNU gettext is not guaranteed on Windows. 
 | `seed_demo` | Idempotent demo rooms, pricing, providers, calendars and one confirmed booking |
 | `bootstrap_superuser` | Create/promote the superuser from `DJANGO_SUPERUSER_*` |
 | `expire_holds` | Release pending holds whose deadline passed (run from the scheduler/cron) |
-| `send_booking_emails` | Retry confirmation emails that have no delivery marker (`--force` resends) |
+| `send_booking_emails` | Retry confirmation emails that are due, honouring exponential backoff (`--force` resends everything) |
 | `sync_calendars` | Sync bookings, retry failures or sync one reference |
 | `reconcile_calendars` | Report calendar drift; `--apply` repairs it |
 | `rotate_provider_keys` | Re-encrypt provider API keys after an encryption-key rotation |
@@ -257,7 +259,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
 - No payment, deposit, invoice or channel-manager integration.
 - Booking access uses signed links; the guest account is passwordless (single-use magic link), so there is no password to reset or leak.
-- Email delivery supports SMTP, SES and Postmark with bounce/complaint webhooks; automated retry/backoff is still manual (`send_booking_emails`).
+- Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
 - SMS notifications are not sent.

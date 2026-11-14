@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.conf import settings
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import override
@@ -15,6 +17,19 @@ from .ics import build_booking_ics
 from .models import Booking
 
 logger = logging.getLogger(__name__)
+
+
+def max_email_attempts() -> int:
+    """How many delivery attempts a confirmation email gets before we stop."""
+    return max(int(getattr(settings, "EMAIL_MAX_ATTEMPTS", 5)), 1)
+
+
+def retry_delay_seconds(attempts: int) -> int:
+    """Exponential backoff between attempts, capped by configuration."""
+    base = max(int(getattr(settings, "EMAIL_RETRY_BASE_SECONDS", 300)), 1)
+    cap = max(int(getattr(settings, "EMAIL_RETRY_MAX_SECONDS", 21600)), base)
+    exponent = max(attempts - 1, 0)
+    return min(base * (2**exponent), cap)
 
 
 def _context(booking: Booking) -> dict:
@@ -57,40 +72,65 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
                 mimetype="text/calendar",
             )
         ],
+        metadata={"booking_reference": booking.reference},
     )
 
     provider = get_email_provider()
+    attempt_at = timezone.now()
+    attempts = (booking.confirmation_email_attempts or 0) + 1
+    result = None
+    error = ""
     try:
         result = provider.send(message)
-    except Exception as exc:  # noqa: BLE001
+        if not result.sent:
+            error = result.error or "email delivery failed"
+    except Exception as exc:  # noqa: BLE001 - one failure must not break the booking
+        error = str(exc)
+
+    if error:
+        next_retry_at = None
+        if attempts < max_email_attempts():
+            next_retry_at = attempt_at + timedelta(seconds=retry_delay_seconds(attempts))
         Booking.objects.filter(pk=booking.pk).update(
             confirmation_email_status="failed",
-            confirmation_email_error=str(exc),
+            confirmation_email_error=error,
+            confirmation_email_attempts=attempts,
+            confirmation_email_last_attempt_at=attempt_at,
+            confirmation_email_next_retry_at=next_retry_at,
         )
         booking.confirmation_email_status = "failed"
-        booking.confirmation_email_error = str(exc)
-        raise
-
-    if not result.sent:
-        Booking.objects.filter(pk=booking.pk).update(
-            confirmation_email_status="failed",
-            confirmation_email_error=result.error,
+        booking.confirmation_email_error = error
+        booking.confirmation_email_attempts = attempts
+        booking.confirmation_email_last_attempt_at = attempt_at
+        booking.confirmation_email_next_retry_at = next_retry_at
+        logger.warning(
+            "Confirmation email attempt %s/%s failed for booking %s via %s: %s",
+            attempts,
+            max_email_attempts(),
+            booking.reference,
+            provider.name,
+            error,
         )
-        booking.confirmation_email_status = "failed"
-        booking.confirmation_email_error = result.error
-        raise RuntimeError(result.error or "email delivery failed")
+        return False
 
-    sent_at = timezone.now()
+    sent_at = attempt_at
+    provider_id = result.provider_message_id if result else ""
     Booking.objects.filter(pk=booking.pk).update(
         confirmation_email_sent_at=sent_at,
         confirmation_email_status="sent",
         confirmation_email_error="",
-        confirmation_email_provider_id=result.provider_message_id,
+        confirmation_email_provider_id=provider_id,
+        confirmation_email_attempts=attempts,
+        confirmation_email_last_attempt_at=attempt_at,
+        confirmation_email_next_retry_at=None,
     )
     booking.confirmation_email_sent_at = sent_at
     booking.confirmation_email_status = "sent"
     booking.confirmation_email_error = ""
-    booking.confirmation_email_provider_id = result.provider_message_id
+    booking.confirmation_email_provider_id = provider_id
+    booking.confirmation_email_attempts = attempts
+    booking.confirmation_email_last_attempt_at = attempt_at
+    booking.confirmation_email_next_retry_at = None
     logger.info("Sent confirmation email for booking %s to %s via %s", booking.reference, email, provider.name)
     return True
 
@@ -131,13 +171,23 @@ def send_guest_login_email(email: str, login_url: str, *, language: str = "en") 
 
 
 def send_pending_confirmation_emails(*, force: bool = False) -> int:
-    """Retry confirmations that were confirmed before email delivery succeeded."""
+    """Retry confirmations that were confirmed before email delivery succeeded.
+
+    Without ``force`` the retry queue honours the exponential backoff stored on
+    each booking: a booking is only attempted again once ``next_retry_at`` has
+    passed and it still has attempts left.
+    """
     pending = Booking.objects.filter(
         status__in=(Booking.Status.CONFIRMED, Booking.Status.CHECKED_IN),
         client__email__gt="",
     )
     if not force:
-        pending = pending.filter(confirmation_email_sent_at__isnull=True)
+        now = timezone.now()
+        pending = (
+            pending.filter(confirmation_email_sent_at__isnull=True)
+            .filter(Q(confirmation_email_next_retry_at__isnull=True) | Q(confirmation_email_next_retry_at__lte=now))
+            .filter(confirmation_email_attempts__lt=max_email_attempts())
+        )
     pending = pending.select_related("room", "room__room_type", "client").order_by("pk")
     sent = 0
     for booking in pending:

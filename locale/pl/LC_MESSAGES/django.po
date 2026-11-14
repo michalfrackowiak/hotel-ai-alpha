@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 11:34+0100\n"
+"POT-Creation-Date: 2026-11-14 11:51+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -54,6 +54,10 @@ msgstr "Włączono dostawców: %(count)s."
 #, python-format
 msgid "%(name)s is now the default provider."
 msgstr "%(name)s jest teraz domyślnym dostawcą."
+
+#, python-format
+msgid "%(reference)s: no confirmation email was sent."
+msgstr "%(reference)s: nie wysłano e-maila potwierdzającego."
 
 msgid "A booking may not start (check in) on this night."
 msgstr "Rezerwacja nie może się rozpocząć (przyjazd) w tę noc."
@@ -153,6 +157,9 @@ msgstr "Asystent"
 msgid "At least one adult is required."
 msgstr "Wymagany jest co najmniej jeden dorosły."
 
+msgid "Attempts"
+msgstr "Próby"
+
 msgid "Aurora"
 msgstr "Aurora"
 
@@ -235,6 +242,9 @@ msgstr "Oba typy pokoi oferują śniadanie na życzenie, szybkie Wi-Fi i spokojn
 
 msgid "Bounced"
 msgstr "Odbity"
+
+msgid "Bounced or complained"
+msgstr "Odrzucone lub oznaczone jako spam"
 
 msgid "Boutique stays · AI concierge"
 msgstr "Butikowe pobyty · konsjerż AI"
@@ -439,6 +449,9 @@ msgstr "Usunięte"
 msgid "Delivered"
 msgstr "Dostarczony"
 
+msgid "Delivered emails"
+msgstr "Dostarczone e-maile"
+
 msgid "Deluxe Suite price"
 msgstr "Cena apartamentu Deluxe"
 
@@ -472,6 +485,12 @@ msgstr "E-mail"
 msgid "Email address"
 msgstr "Adres e-mail"
 
+msgid "Email delivery"
+msgstr "Dostarczanie e-maili"
+
+msgid "Email failures"
+msgstr "Błędy e-maili"
+
 msgid "Email or phone"
 msgstr "E-mail lub telefon"
 
@@ -480,6 +499,9 @@ msgstr "Wymagany jest adres e-mail lub numer telefonu."
 
 msgid "Email sent"
 msgstr "Wysłano e-mail"
+
+msgid "Emails waiting to retry"
+msgstr "E-maile oczekujące na ponowną próbę"
 
 msgid "Emergency"
 msgstr "Nagła sytuacja"
@@ -666,6 +688,9 @@ msgstr "Sprawdzony"
 msgid "Language"
 msgstr "Język"
 
+msgid "Last error"
+msgstr "Ostatni błąd"
+
 msgid "Last minute"
 msgstr "Ostatnia chwila"
 
@@ -756,6 +781,9 @@ msgstr "Rozpoczęto nową rozmowę."
 msgid "Next month"
 msgstr "Następny miesiąc"
 
+msgid "Next retry"
+msgstr "Następna próba"
+
 msgid "Night"
 msgstr "Noc"
 
@@ -779,6 +807,9 @@ msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
 
 msgid "No card details are needed in the chat."
 msgstr "W czacie nie są potrzebne dane karty."
+
+msgid "No delivery problems."
+msgstr "Brak problemów z dostarczaniem."
 
 msgid "No departures scheduled for today."
 msgstr "Brak zaplanowanych wyjazdów na dziś."
@@ -936,6 +967,9 @@ msgstr "Ostatnie zdarzenia rezerwacji"
 
 msgid "Reception"
 msgstr "Recepcja"
+
+msgid "Recipient"
+msgstr "Odbiorca"
 
 msgid "Reference"
 msgstr "Numer"
@@ -1497,8 +1531,17 @@ msgstr "zamknięte"
 msgid "closed to arrival"
 msgstr "zamknięte na przyjazd"
 
+msgid "confirmation email attempts"
+msgstr "próby wysłania e-maila potwierdzającego"
+
 msgid "confirmation email error"
 msgstr "błąd e-maila potwierdzającego"
+
+msgid "confirmation email last attempt at"
+msgstr "ostatnia próba wysłania e-maila potwierdzającego"
+
+msgid "confirmation email next retry at"
+msgstr "następna próba wysłania e-maila potwierdzającego"
 
 msgid "confirmation email sent at"
 msgstr "wysłano e-mail potwierdzający"

@@ -42,6 +42,22 @@
       <span class="ops-card__value">{{ missing_email }}</span>
       <span class="ops-card__label">{% trans "Confirmations without email" %}</span>
     </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ email_delivered_count }}</span>
+      <span class="ops-card__label">{% trans "Delivered emails" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ email_failed_count }}</span>
+      <span class="ops-card__label">{% trans "Email failures" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ email_bounced_count }}</span>
+      <span class="ops-card__label">{% trans "Bounced or complained" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ email_retry_count }}</span>
+      <span class="ops-card__label">{% trans "Emails waiting to retry" %}</span>
+    </div>
   </div>
 
   <section class="ops-section">
@@ -147,6 +163,29 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No booking events yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Email delivery" %}</h2>
+    {% if problem_emails %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempts" %}</th><th>{% trans "Next retry" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <tbody>
+          {% for booking in problem_emails %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.email|default:"—" }}</td>
+              <td>{{ booking.get_confirmation_email_status_display }}</td>
+              <td>{{ booking.confirmation_email_attempts }}</td>
+              <td>{% if booking.confirmation_email_next_retry_at %}{{ booking.confirmation_email_next_retry_at|date:"d M H:i" }}{% else %}—{% endif %}</td>
+              <td>{{ booking.confirmation_email_error|default:"—"|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No delivery problems." %}</p>
     {% endif %}
   </section>
 

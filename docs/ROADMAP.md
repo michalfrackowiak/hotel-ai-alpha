@@ -216,13 +216,14 @@ Theme: **guest experience and polish**. The reception side is now feature-comple
 
 - **v0.4.10** — passwordless guest account at `/my-bookings/` (magic-link login, booking list, session-based detail access).
 - **v0.4.11** — public booking flow at `/book/` with named rate-plan selection, direct booking links from availability results and the room cards.
+- **v0.4.12** — transactional email hardening: exponential retry/backoff, provider-native SES/Postmark bounce parsing, and an email delivery section on `/ops/`.
 
 ### Must have
 
 1. **Guest accounts** - magic-link login so a guest can see all their bookings without a password. *(shipped in v0.4.10)*
 2. **Web booking flow** — a public page that creates a booking without chat or voice. *(shipped in v0.4.11)*
 3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API. *(shipped in v0.4.11)*
-4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests. *(remaining)*
+4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests. *(shipped in v0.4.12)*
 
 ### Should have
 
@@ -236,6 +237,10 @@ Theme: **guest experience and polish**. The reception side is now feature-comple
 - A guest can book, change and cancel entirely from the website without chat.
 - A guest can log in and see every reservation tied to their email.
 - The voice and booking pages pass an automated accessibility check.
+
+### Remaining before v0.5.0
+
+The four must-haves are shipped. The milestone still needs the accessibility exit criterion (automated check on the booking and voice pages) and, ideally, a first pass at the should-haves before tagging `v0.5.0`.
 
 ### Release process
 
