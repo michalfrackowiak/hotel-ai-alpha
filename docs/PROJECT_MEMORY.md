@@ -221,12 +221,12 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 
 Update this table when the release gate is re-run.
 
-## Open questions for v0.6.0
+## Open questions for v0.7.0
 
-- Channel manager: iCal import/export first, or a direct OTA API?
-- Multi-currency: display-only conversion, or separate price books per currency?
-- Accessibility: add colour-contrast checks to the automated gate, or keep contrast as a manual review?
+- Colour contrast: add automated checks to the accessibility gate, or keep as manual review?
+- Email history: per-message view vs. only current delivery state.
+- Scheduler: load-test with a large backlog.
 
 ## Next move
 
-v0.5.1 (channel manager) is implemented and verified. Next milestone slices: multi-currency display, then mobile PWA install prompt, leading to v0.6.0.
+v0.6.0 is released. All must-haves (channel manager, multi-currency display, PWA install prompt) are shipped. The next milestone (v0.7.0) would pick up the "should have" items; no scope has been committed yet.

@@ -237,7 +237,7 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.6.0 (planned)
+## Milestone v0.6.0 — released
 
 Theme: **distribution and reach**. The guest journey is complete and accessible; the next milestone widens where bookings come from and how prices are shown.
 
