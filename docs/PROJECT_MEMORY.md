@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 · **Version:** v0.4.9 · **Tests:** 133 passing
+**Last updated:** 14 November 2026 · **Version:** v0.4.10 · **Tests:** 144 passing
 
 ## Current state
 
@@ -10,10 +10,11 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.4.9` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.4.10` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
+- Guests have a passwordless account at `/my-bookings/`: a single-use magic link (stored hashed, 30-minute expiry) signs them in and lists every booking tied to that email. A signed-in guest can open their bookings without a token.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds` every five minutes.
 
@@ -36,6 +37,9 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | SQLite + one gunicorn container | Deliberate alpha scope; persistent throttling and hold cleanup are handled by the database cache and scheduler sidecar. |
 | Signed `TimestampSigner` booking tokens | A short reference is guessable; a signed token containing a random per-booking secret makes links unguessable and revocable. |
 | Contact lookup issues fresh links | Guests lose emails; reference + email/phone is enough to re-issue a link without storing a password. |
+| Magic-link guest account, not passwords | A guest already proves control of an email; a single-use hashed token avoids password storage, resets and a second credential to leak. |
+| Login requests always get the same neutral response | The form must not reveal which email addresses have bookings; the email is only sent when a booking exists. |
+| Guest sessions grant booking access | After a magic link, the session email is proof of identity, so `/booking/<ref>/` can issue its own token instead of forcing the guest back through the lookup form. |
 | Fernet encryption for provider keys | Stops API keys appearing in plaintext in SQLite backups or the admin database dump; rotation is a management command. |
 | Database cache for throttling | No Redis dependency for the pilot; the cache table survives restarts and is shared by gunicorn workers. |
 | Email after commit, with an idempotency marker | A mail outage must not roll back a booking, and retries must not spam the guest. |
@@ -170,9 +174,8 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.4.x is complete and released (v0.4.9). The next milestone is v0.5.0 (guest experience and polish). Recommended first slices:
+v0.4.x is complete and released (v0.4.10). The next milestone is v0.5.0 (guest experience and polish). Recommended first slices:
 
-1. Guest accounts with magic-link login.
-2. A public web booking flow (create a booking without chat).
-3. Rate plan selection in the booking UI.
-4. Channel manager (iCal import/export).
+1. A public web booking flow (create a booking without chat).
+2. Rate plan selection in the booking UI.
+3. Channel manager (iCal import/export).

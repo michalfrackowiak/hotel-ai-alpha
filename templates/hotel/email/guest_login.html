@@ -1,0 +1,38 @@
+{% load i18n %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+  <body style="margin:0;padding:0;background:#f4f1ea;font-family:Georgia,'Times New Roman',serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ea;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fffdf8;border:1px solid #e5ddcc;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="background:#123b34;color:#f8f4e9;padding:28px 32px;">
+                <p style="margin:0 0 6px;font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.8;">{% trans "Booking account" %}</p>
+                <h1 style="margin:0;font-size:28px;font-weight:normal;">{{ hotel.name }}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 32px;">
+                <p style="margin:0 0 18px;font-size:17px;">
+                  {% blocktrans with hotel=hotel.name %}Use the button below to open your booking account at {{ hotel }}. You will see every reservation made with this email address.{% endblocktrans %}
+                </p>
+                <p style="margin:26px 0 0;text-align:center;">
+                  <a href="{{ login_url }}" style="display:inline-block;background:#c2703d;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-size:15px;">{% trans "Open my bookings" %}</a>
+                </p>
+                <p style="margin:18px 0 0;font-size:13px;color:#6b7280;text-align:center;">
+                  {% trans "This link can be used once and expires in 30 minutes. If you did not request it, you can ignore this message." %}
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 32px 26px;border-top:1px solid #e5ddcc;font-size:13px;color:#6b7280;line-height:1.6;">
+                {{ hotel.name }} · {{ hotel.address }}<br>
+                {{ hotel.contact_phone }} · <a href="mailto:{{ hotel.contact_email }}" style="color:#123b34;">{{ hotel.contact_email }}</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

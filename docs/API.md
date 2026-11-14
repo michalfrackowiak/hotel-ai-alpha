@@ -245,6 +245,8 @@ Store `manage_token`/`manage_url` with the booking. The token is signed, scoped 
 
 A missing, forged, expired or revoked token returns `403` with `booking_access_denied`. The web lookup at `/booking/` issues a fresh signed link when the guest supplies the reference plus the email address or phone number used for the booking.
 
+The web guest account at `/my-bookings/` does not add an API credential. A guest requests a single-use magic link by email; following it sets a session, and the web booking page issues that booking's normal signed token so the existing API calls keep working unchanged.
+
 ### `GET /api/v1/bookings/<REFERENCE>/`
 
 Returns the same booking object. References are case-insensitive (`ha-7kq2m4` is accepted).

@@ -1,0 +1,50 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "My bookings" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card">
+    <p class="eyebrow">{% trans "Guest account" %}</p>
+    <h1>{% trans "My bookings" %}</h1>
+
+    {% if link_invalid %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "That sign-in link is invalid, already used or expired. Request a fresh one below." %}
+      </p>
+    {% elif sent %}
+      <p class="notice notice--success" role="status">
+        {% blocktrans %}If {{ email }} has a reservation with us, a sign-in link is on its way. Check your inbox and spam folder.{% endblocktrans %}
+      </p>
+      <p class="lookup-card__lede">
+        {% trans "The link can be used once and expires in 30 minutes." %}
+      </p>
+    {% else %}
+      <p class="lookup-card__lede">
+        {% trans "Enter the email address you booked with. We will send you a one-time link that opens every reservation tied to that address." %}
+      </p>
+    {% endif %}
+
+    <form class="lookup-form" method="post" action="{% url 'web:guest-bookings' %}">
+      {% csrf_token %}
+      <label class="field">
+        <span>{% trans "Email address" %}</span>
+        <input type="email" name="email" value="{{ email|default:'' }}" placeholder="anna@example.com"
+               autocomplete="email" spellcheck="false" maxlength="120" required autofocus>
+      </label>
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Send sign-in link" %}</button>
+    </form>
+
+    <div class="lookup-card__help">
+      <h2>{% trans "Prefer your booking reference?" %}</h2>
+      <p>
+        {% trans "You can still open a single reservation with its reference and the email or phone number used to book." %}
+      </p>
+      <p>
+        <a class="link-button" href="{% url 'web:booking-lookup' %}">{% trans "Find one booking" %} →</a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

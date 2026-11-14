@@ -62,6 +62,19 @@ def test_booking_lookup_page_renders(client):
 
 
 @pytest.mark.django_db
+def test_guest_account_page_renders_in_both_languages(client):
+    english = client.get("/my-bookings/")
+    polish = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert english.status_code == 200
+    assert "My bookings" in english.content.decode()
+    assert "Send sign-in link" in english.content.decode()
+    assert polish.status_code == 200
+    assert "Moje rezerwacje" in polish.content.decode()
+    assert "Wyślij link do logowania" in polish.content.decode()
+
+
+@pytest.mark.django_db
 def test_unknown_booking_shows_not_found(client):
     response = client.get("/booking/HA-NOPE00/")
 

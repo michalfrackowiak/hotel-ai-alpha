@@ -1692,6 +1692,44 @@ button { cursor: pointer; }
   letter-spacing: 0.06em;
 }
 
+.lookup-card--wide { max-width: 760px; }
+
+.guest-bookings {
+  list-style: none;
+  margin: 1.4rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.guest-booking {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--cream);
+}
+
+.guest-booking p { margin: 0.15rem 0 0; font-size: 0.86rem; }
+
+.guest-booking__ref {
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--forest);
+}
+
+.guest-booking__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
 /* ------------------------------------------------------------- animations */
 
 @keyframes rise {
