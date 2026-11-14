@@ -189,31 +189,49 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.4.0 (planning)
+## Phase 10 — Revenue and delivery hardening (v0.4.0)
 
-Theme: **revenue and delivery hardening**. The guest can now self-serve; the next step is to make pricing and operations less manual and to close the remaining delivery gaps.
+**Goal:** make pricing and operations less manual and close the remaining delivery gaps.
+
+- [x] Rate plans and restrictions: closed-to-arrival, fully-closed, min/max length-of-stay plus named `RatePlan`s with percentage/fixed derived nightly rates
+- [x] Nightly reconciliation and alerts: `reconcile_calendars --apply` runs from the scheduler sidecar; `/ops/` shows a calendar-drift counter
+- [x] Email delivery provider: pluggable SMTP/SES/Postmark backends, delivery status tracking, bounce/complaint webhooks
+- [x] Booking and revenue export: `manage.py export_bookings` writes CSV for a date range
+- [x] Backup/restore drill: documented in [docs/BACKUP.md](BACKUP.md)
+- [x] Demo-policy coverage for more date formats (`12/15/2026`, `15.12.2026`, relative dates)
+- [x] Per-room housekeeping status on the operations dashboard
+- [x] Guest-visible rate breakdown: nightly source shown on the booking page
+- [x] Docker smoke-test script wired into CI
+- [x] Updated API docs, README, architecture notes, release notes and Polish catalogue
+
+**Exit criteria:** reception can change prices and restrictions without touching code or raw rows; calendar drift and email delivery failures are visible without reading logs; a backup can be restored into a clean container and verified with the test suite.
+
+---
+
+## Next milestone — v0.5.0 (planning)
+
+Theme: **guest experience and polish**. The reception side is now feature-complete for a pilot; v0.5 focuses on the guest-facing booking journey and the remaining sharp edges.
 
 ### Must have
 
-1. **Rate plans and restrictions** — closed-to-arrival, fully-closed and min/max length-of-stay restrictions plus named `RatePlan`s with percentage/fixed derived nightly rates. Bookings can opt into a plan; availability lists plan totals.
-2. **Nightly reconciliation and alerts** — `reconcile_calendars --apply` now runs from the scheduler sidecar; `/ops/` shows a calendar-drift counter (failed, stale, unsynced).
-3. **Email delivery provider** — resend action via the existing `send_booking_emails` command; transactional API (SES/Postmark) with bounce/complaint handling remains a follow-up.
-4. **Booking and revenue export** — `manage.py export_bookings` writes CSV for a date range, with optional status filter.
-5. **Backup/restore drill** — documented in [docs/BACKUP.md](BACKUP.md).
+1. **Guest accounts** — magic-link login so a guest can see all their bookings without a password.
+2. **Web booking flow** — a public page that creates a booking (currently chat/voice/API only).
+3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API.
+4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests.
 
 ### Should have
 
-- Demo-policy coverage for more date formats (`12/15/2026`, `15.12.2026`, relative dates).
-- Per-room housekeeping status on the operations dashboard.
-- Guest-visible rate breakdown explaining each nightly rate source.
-- Docker smoke-test script that exercises booking, cancellation and modification end to end.
+- Channel manager integration (iCal import/export).
+- Multi-currency display.
+- Mobile PWA install prompt.
+- Accessibility audit (WCAG 2.1 AA) for the booking and voice pages.
 
 ### Exit criteria
 
-- Reception can change prices and restrictions without touching code or raw rows.
-- Calendar drift and email delivery failures are visible without reading logs.
-- A backup can be restored into a clean container and verified with the test suite.
+- A guest can book, change and cancel entirely from the website without chat.
+- A guest can log in and see every reservation tied to their email.
+- The voice and booking pages pass an automated accessibility check.
 
 ### Release process
 
-Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.4.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.4.0`.
+Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.5.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.5.0`.

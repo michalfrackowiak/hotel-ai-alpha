@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 13 November 2026 · **Version:** v0.3.0 · **Tests:** 123 passing
+**Last updated:** 14 November 2026 · **Version:** v0.4.9 · **Tests:** 133 passing
 
 ## Current state
 
@@ -10,7 +10,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; `v0.1.0` and `v0.2.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. The `v0.3.0` release branch is `feature/v0.3.0-guest-self-service`.
+- Git is initialised with `main` and `develop`; releases through `v0.4.9` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -161,22 +161,18 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 
 Update this table when the release gate is re-run.
 
-## Open questions for v0.4.0
+## Open questions for v0.5.0
 
-- Rate plans: named plans with derived nightly rates, or keep one explicit rate per room type/night?
-- Restrictions: closed-to-arrival and length-of-stay on top of the rate calendar, or a separate restriction model?
-- Email delivery: keep SMTP, or add a transactional API (SES/Postmark) with bounce/complaint handling?
-- Reconciliation schedule: run `reconcile_calendars --apply` nightly from the scheduler sidecar, or keep it manual with alerts?
-- Exports: CSV of bookings/cancellations/fees with a date range, or a broader reporting API?
-- Backup/restore: documented SQLite backup/restore/verify commands, or an automated nightly job?
+- Guest accounts: magic-link login, or full password-based accounts?
+- Web booking flow: a single page, or a multi-step wizard?
+- Rate plan selection in the UI: radio list, or a comparison table?
+- Channel manager: iCal import/export first, or a direct OTA API?
 
 ## Next move
 
-Release v0.3.0: commit on `feature/v0.3.0-guest-self-service`, merge to `develop`, then `main`, tag `v0.3.0`, publish the GitHub release. Then start v0.4.0 on `develop` with `feature/v0.4.0-*`. Recommended first slices:
+v0.4.x is complete and released (v0.4.9). The next milestone is v0.5.0 (guest experience and polish). Recommended first slices:
 
-1. Cancellation policy and reason capture (guest-facing value, small domain change).
-2. Reservation modification through the signed link (reuses availability and pricing).
-3. Audit log for every booking transition (needed before more write paths).
-4. Operations dashboard (arrivals, holds, failed syncs, email status).
-5. Nightly reconciliation and email bounce handling (operational hardening).
-6. Update roadmap, this file and `docs/releases/v0.3.0.md` before tagging.
+1. Guest accounts with magic-link login.
+2. A public web booking flow (create a booking without chat).
+3. Rate plan selection in the booking UI.
+4. Channel manager (iCal import/export).
