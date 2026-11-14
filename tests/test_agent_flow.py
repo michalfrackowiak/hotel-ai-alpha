@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 from django.utils import timezone
 
 from apps.agents.engine import AgentEngine, start_conversation
 from apps.agents.models import Conversation, Message
-from apps.hotel.models import Booking
+from apps.hotel.models import Booking, Room, RoomType
 
 
 def _dates():
@@ -19,6 +20,41 @@ def _dates():
 
 def _run(conversation: Conversation, message: str):
     return AgentEngine(conversation).handle_user_message(message)
+
+
+@pytest.mark.django_db
+def test_demo_agent_books_deluxe_suite_by_name(room_type, rooms):
+    """Picking a room by name (as a voice guest would) must not re-run search."""
+    deluxe = RoomType.objects.create(
+        slug="deluxe-suite",
+        name="Deluxe Suite",
+        capacity=4,
+        base_price=Decimal("800.00"),
+    )
+    Room.objects.create(number="201", room_type=deluxe, floor=2)
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
+
+    first = _run(
+        conversation,
+        f"Do you have a room for 2 guests from {check_in.isoformat()} to {check_out.isoformat()}?",
+    )
+    assert first.tool_calls and first.tool_calls[0]["name"] == "check_availability"
+
+    second = _run(conversation, "I'm picking the deluxe suit")
+    assert "full name" in second.content.lower() or "email" in second.content.lower()
+    assert not any(call["name"] == "create_booking" for call in second.tool_calls)
+
+    third = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert any(call["name"] == "create_booking" and call["ok"] for call in third.tool_calls)
+
+    booking = Booking.objects.get()
+    assert booking.room.room_type.slug == "deluxe-suite"
+
+    fourth = _run(conversation, "Yes, please confirm.")
+    assert fourth.booking_reference == booking.reference
+    booking.refresh_from_db()
+    assert booking.status == Booking.Status.CONFIRMED
 
 
 @pytest.mark.django_db

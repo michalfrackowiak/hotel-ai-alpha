@@ -176,6 +176,9 @@ class DemoProvider(BaseLLMProvider):
         if options and contact:
             return self._text(self._offer(language, availability_data, slots), language)
 
+        if options and not contact:
+            return self._text(self._ask_contact(language, slots), language)
+
         if slots["check_in"] and slots["check_out"]:
             return self._tool(
                 "check_availability",
@@ -498,6 +501,13 @@ class DemoProvider(BaseLLMProvider):
             check_in=self._fmt_date(availability.get("check_in"), language),
             check_out=self._fmt_date(availability.get("check_out"), language),
             options="; ".join(lines),
+        )
+
+    def _ask_contact(self, language: str, slots: dict) -> str:
+        return self._t(
+            language,
+            "Great choice. To place the hold I still need your full name and an email address or phone number.",
+            "Dobry wybór. Aby zablokować rezerwację, potrzebuję jeszcze imienia i nazwiska oraz adresu e-mail lub telefonu.",
         )
 
     def _no_availability(self, language: str, slots: dict) -> str:
