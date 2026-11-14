@@ -158,6 +158,8 @@ Chrome and Edge are recommended. If a browser does not support speech recognitio
 
 For server-side speech, set `voice_stt_provider` / `voice_tts_provider` to `openai` in **Admin → Agent settings** and provide `OPENAI_API_KEY`. The endpoints `/api/v1/voice/transcribe/` and `/api/v1/voice/speak/` are already implemented.
 
+After a booking is confirmed, the agent offers to email the confirmation. If the guest agrees and no email is on file, it asks for one and sends the confirmation to that address (`send_confirmation_email` tool).
+
 ---
 
 ## Google Calendar
