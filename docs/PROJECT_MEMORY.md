@@ -2,15 +2,15 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 · **Version:** v0.4.12 · **Tests:** 162 passing
+**Last updated:** 14 November 2026 · **Version:** v0.5.0 · **Tests:** 167 passing
 
 ## Current state
 
-- Phases 0–9 are complete. The app books a room end-to-end by chat and voice in English and Polish, emails a bilingual confirmation and keeps per-room calendars in sync.
+- Phases 0–11 are complete. The app books a room end-to-end by chat and voice in English and Polish, emails a bilingual confirmation and keeps per-room calendars in sync.
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.4.12` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.5.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -20,6 +20,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Confirmation email delivery is retried with exponential backoff. Each attempt updates `confirmation_email_attempts`, `confirmation_email_last_attempt_at` and `confirmation_email_next_retry_at`; the scheduler runs `send_booking_emails`, which only picks up bookings whose backoff window has passed and that still have attempts left.
 - Bounce, complaint and delivery webhooks are normalised for SES (including SNS-wrapped payloads) and Postmark in `apps.hotel.email_webhooks`; the booking is matched by reference or provider message id.
 - `/ops/` shows delivered, failed and bounced/complained email counts plus a table of problem deliveries with attempts, next retry and last error.
+- The guest booking and voice pages pass an automated accessibility check (`tests/test_accessibility.py`) and an axe-core audit. The booking form has labelled controls and a labelled rate-plan radiogroup; the voice page announces call status through a live region and hides the avatar from assistive technology.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails` every five minutes.
 
@@ -66,6 +67,8 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Backoff is exponential and capped by settings | A transient provider outage recovers quickly, while a permanently bad address stops after `EMAIL_MAX_ATTEMPTS` instead of hammering the provider forever. |
 | Webhooks are normalised per provider before the view | SES (including SNS wrappers) and Postmark speak different payloads; keeping that translation in `email_webhooks` keeps the API view small and testable. |
 | Provider message id is the fallback lookup key | Provider callbacks often omit our booking reference, so `confirmation_email_provider_id` lets a bounce still find the right reservation. |
+| Accessibility is checked with a stdlib HTML audit in pytest | The repo has no Node build step, so the CI gate parses rendered pages for labels, landmarks, heading order and ARIA misuse; axe-core remains the manual cross-check. |
+| Voice call status is a live region, not an aria-label on the button | The button's visible label changes from "Start call" to "End call"; a fixed `aria-label` would go stale and break Label in Name. |
 
 ## Runbook
 
@@ -125,6 +128,8 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **Confirmation retries respect the stored backoff.** `send_pending_confirmation_emails()` skips bookings whose `next_retry_at` is in the future or that have reached `EMAIL_MAX_ATTEMPTS`. `--force` is the deliberate override; do not remove the filters from the scheduler path.
 - **Every send attempt updates the retry fields.** `send_booking_confirmation()` must increment `confirmation_email_attempts`, stamp `confirmation_email_last_attempt_at`, and set or clear `confirmation_email_next_retry_at`; otherwise the dashboard and scheduler drift from reality.
 - **Webhook payloads are normalised in `email_webhooks.py`.** Keep SES/SNS and Postmark field names there, not in the API view. The view only resolves the booking and writes the status.
+- **Guest pages must pass `tests/test_accessibility.py`.** It is a structural gate: one `<h1>`, a `<main>` landmark, a skip link, labelled controls, named buttons and links, no positive tabindex and no focusable content under `aria-hidden`. Add new guest-facing pages to the test rather than weakening a rule.
+- **Do not put a fixed `aria-label` on the voice call button.** Its visible label switches between "Start call" and "End call"; a static accessible name breaks WCAG Label in Name. Name the button from its visible text and announce status changes through the `role="status"` region.
 - **Pending bookings are skipped by `sync_booking` before any event record is created.** This is intentional and tested.
 - **A booking reference is not a secret.** Every guest-facing read/confirm/cancel path must go through `apps.hotel.access`; the API accepts `token`, `X-Booking-Token` or Bearer.
 - **Rotating `Booking.access_token` revokes every link for that booking.** Do not log the raw token.
@@ -193,19 +198,29 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-14 | v0.4.12 | `makemigrations --check` | no changes detected |
 | 2026-11-14 | v0.4.12 | `ruff check .` | clean |
 | 2026-11-14 | v0.4.12 | Polish catalogue | 569 strings extracted, 0 missing |
+| 2026-11-14 | v0.5.0 | `pytest` | 167 passed |
+| 2026-11-14 | v0.5.0 | `manage.py check` | 0 issues |
+| 2026-11-14 | v0.5.0 | `makemigrations --check` | no changes detected |
+| 2026-11-14 | v0.5.0 | `ruff check .` | clean |
+| 2026-11-14 | v0.5.0 | Polish catalogue | 568 strings extracted, 0 missing |
+| 2026-11-14 | v0.5.0 | axe-core (`/book/`, quote, `/voice/`, EN/PL) | 0 violations, 0 incomplete |
+| 2026-11-14 | v0.5.0 | `tests/test_accessibility.py` | 5 passed; negative fixture flagged duplicate ids, missing lang/title, unlabelled controls and hidden focusables |
+| 2026-11-14 | v0.5.0 | Docker web booking | `HA-P6WR73` created and confirmed from `/book/`, source `web`, email `sent` |
+| 2026-11-14 | v0.5.0 | Docker SES/Postmark webhooks | bounce and delivery matched; `/ops/` showed the booking |
+| 2026-11-14 | v0.5.0 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
 
 Update this table when the release gate is re-run.
 
-## Open questions for v0.5.0
+## Open questions for v0.6.0
 
 - Channel manager: iCal import/export first, or a direct OTA API?
 - Multi-currency: display-only conversion, or separate price books per currency?
-- Accessibility: which automated checker becomes the exit gate for the booking and voice pages?
+- Accessibility: add colour-contrast checks to the automated gate, or keep contrast as a manual review?
 
 ## Next move
 
-v0.4.12 is released. All four v0.5.0 must-haves are shipped. The milestone now needs the accessibility exit criterion and, optionally, the should-haves. Recommended order:
+v0.5.0 is released and all exit criteria are met. The next milestone is v0.6.0 (distribution and reach). Recommended order:
 
-1. Accessibility audit for the booking and voice pages (exit criterion).
-2. Channel manager (iCal import/export).
-3. Multi-currency display or the mobile PWA prompt.
+1. Channel manager (iCal import/export) with two-way reconciliation.
+2. Multi-currency display with an indicative-conversion marker.
+3. Mobile PWA install prompt and offline-safe static shell.

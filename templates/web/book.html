@@ -90,8 +90,8 @@
         <input type="hidden" name="adults" value="{{ adults }}">
         <input type="hidden" name="children" value="{{ children }}">
 
-        <h2 class="booking-card__section-title">{% trans "Choose your rate" %}</h2>
-        <div class="rate-plans">
+        <h2 class="booking-card__section-title" id="rate-plan-heading">{% trans "Choose your rate" %}</h2>
+        <div class="rate-plans" role="radiogroup" aria-labelledby="rate-plan-heading">
           <label class="rate-plan">
             <input type="radio" name="rate_plan" value=""{% if not selected_plan %} checked{% endif %}>
             <span class="rate-plan__body">
@@ -136,15 +136,15 @@
           <label for="book-email">{% trans "Email" %}
             <input id="book-email" type="email" name="email"
                    value="{{ form_data.email|default:'' }}"
-                   maxlength="254" autocomplete="email">
+                   maxlength="254" autocomplete="email" aria-describedby="book-contact-hint">
           </label>
           <label for="book-phone">{% trans "Phone" %}
             <input id="book-phone" type="tel" name="phone"
                    value="{{ form_data.phone|default:'' }}"
-                   maxlength="40" autocomplete="tel">
+                   maxlength="40" autocomplete="tel" aria-describedby="book-contact-hint">
           </label>
         </div>
-        <p class="muted">{% trans "Give us an email address or a phone number so we can reach you." %}</p>
+        <p class="muted" id="book-contact-hint">{% trans "Give us an email address or a phone number so we can reach you." %}</p>
         <label for="book-requests">{% trans "Special requests" %}
           <textarea id="book-requests" name="special_requests" rows="3" maxlength="1000">{{ form_data.special_requests|default:'' }}</textarea>
         </label>

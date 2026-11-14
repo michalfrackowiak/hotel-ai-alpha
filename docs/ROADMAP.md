@@ -14,8 +14,10 @@ Status as of **14 November 2026**.
 | 7 | Bilingual UI, hardening and release | ✅ Complete (v0.1.0) |
 | 8 | Operational confidence | ✅ Complete (v0.2.0) |
 | 9 | Guest self-service | ✅ Complete (v0.3.0) |
+| 10 | Revenue and delivery hardening | ✅ Complete (v0.4.0) |
+| 11 | Guest experience and polish | ✅ Complete (v0.5.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md).
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md).
 
 ---
 
@@ -208,40 +210,55 @@ The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](re
 
 ---
 
-## Next milestone — v0.5.0 (in progress)
+## Phase 11 — Guest experience and polish (v0.5.0)
 
-Theme: **guest experience and polish**. The reception side is now feature-complete for a pilot; v0.5 focuses on the guest-facing booking journey and the remaining sharp edges.
+**Goal:** let a guest complete the whole journey on the website, in English or Polish, without chat or voice — and make the guest-facing pages accessible.
 
 ### Released slices
 
 - **v0.4.10** — passwordless guest account at `/my-bookings/` (magic-link login, booking list, session-based detail access).
 - **v0.4.11** — public booking flow at `/book/` with named rate-plan selection, direct booking links from availability results and the room cards.
 - **v0.4.12** — transactional email hardening: exponential retry/backoff, provider-native SES/Postmark bounce parsing, and an email delivery section on `/ops/`.
+- **v0.5.0** — accessibility pass and milestone release.
+
+### Delivered
+
+- [x] Passwordless guest account with single-use magic links, neutral responses and cache-backed cooldowns
+- [x] Public booking flow at `/book/` that quotes through `search_availability` and confirms through `create_booking()` / `confirm_booking()`
+- [x] Named rate-plan selection in the web form, with per-plan totals from the availability engine
+- [x] Transactional email retry with exponential backoff, provider message ids and a `/ops/` delivery dashboard
+- [x] Provider-native SES (including SNS) and Postmark bounce/complaint/delivery webhooks
+- [x] Accessibility pass on `/book/` and `/voice/`: labelled controls, a labelled rate-plan radiogroup, a live call-status region, decorative SVG handling and a sane heading order
+- [x] Automated accessibility check in `tests/test_accessibility.py` for the booking and voice pages in English and Polish
+- [x] axe-core audit: 0 violations on the booking (start and quote) and voice pages in both languages
+- [x] Updated API docs, README, release notes, project memory and Polish catalogue
+
+**Exit criteria:** a guest can book, change and cancel entirely from the website without chat; a guest can log in and see every reservation tied to their email; the voice and booking pages pass an automated accessibility check. **All met in v0.5.0.**
+
+---
+
+## Next milestone — v0.6.0 (planned)
+
+Theme: **distribution and reach**. The guest journey is complete and accessible; the next milestone widens where bookings come from and how prices are shown.
 
 ### Must have
 
-1. **Guest accounts** - magic-link login so a guest can see all their bookings without a password. *(shipped in v0.4.10)*
-2. **Web booking flow** — a public page that creates a booking without chat or voice. *(shipped in v0.4.11)*
-3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API. *(shipped in v0.4.11)*
-4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests. *(shipped in v0.4.12)*
+1. **Channel manager (iCal import/export)** — import external OTA reservations as blocked dates and export the hotel's availability, without weakening the per-room overlap invariant.
+2. **Multi-currency display** — show a converted estimate next to the base-currency total, while every stored amount stays in the hotel currency.
+3. **Mobile PWA install prompt** — an installable shell with offline caching for the static assets and a safe fallback when the network is unavailable.
 
 ### Should have
 
-- Channel manager integration (iCal import/export).
-- Multi-currency display.
-- Mobile PWA install prompt.
-- Accessibility audit (WCAG 2.1 AA) for the booking and voice pages.
+- Colour-contrast audit of the guest pages and a manual screen-reader pass for the voice flow.
+- A per-message email history view rather than only the current delivery state.
+- Load-test the scheduler and retry queue with a large backlog.
 
 ### Exit criteria
 
-- A guest can book, change and cancel entirely from the website without chat.
-- A guest can log in and see every reservation tied to their email.
-- The voice and booking pages pass an automated accessibility check.
-
-### Remaining before v0.5.0
-
-The four must-haves are shipped. The milestone still needs the accessibility exit criterion (automated check on the booking and voice pages) and, ideally, a first pass at the should-haves before tagging `v0.5.0`.
+- An imported iCal feed blocks the matching room without creating a duplicate local booking, and reconciliation reports drift in both directions.
+- A guest can switch the displayed currency and the converted estimate is clearly marked as indicative.
+- The app installs to a phone home screen and still renders the booking page offline-safe.
 
 ### Release process
 
-Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.5.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.5.0`.
+Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.6.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.6.0`.

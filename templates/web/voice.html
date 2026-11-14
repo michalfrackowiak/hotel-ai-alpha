@@ -25,7 +25,7 @@
 
       <div class="call-card__status">
         <span class="pulse" id="call-pulse" aria-hidden="true"></span>
-        <span id="call-status">{% trans "Ready when you are" %}</span>
+        <span id="call-status" role="status" aria-live="polite" aria-atomic="true">{% trans "Ready when you are" %}</span>
       </div>
 
       <div class="voice-avatar" id="voice-avatar" aria-hidden="true">
@@ -55,7 +55,7 @@
         </svg>
       </div>
 
-      <button class="call-button" id="call-button" type="button" aria-label="{% trans 'Start voice call' %}">
+      <button class="call-button" id="call-button" type="button" aria-describedby="call-hint">
         <span class="call-button__icon" aria-hidden="true"></span>
         <span class="call-button__label" id="call-button-label">{% trans "Start call" %}</span>
       </button>
