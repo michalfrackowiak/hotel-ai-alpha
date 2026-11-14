@@ -1610,6 +1610,62 @@ button { cursor: pointer; }
   gap: 0.7rem;
 }
 
+.rate-plans {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.rate-plan {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rate-plan:has(input:checked) {
+  border-color: var(--forest-soft);
+  box-shadow: 0 0 0 2px rgba(29, 90, 75, 0.12);
+}
+
+.rate-plan input {
+  margin-top: 0.2rem;
+  accent-color: var(--forest);
+}
+
+.rate-plan__body {
+  display: grid;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.rate-plan__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.rate-plan__head strong { font-size: 0.95rem; }
+
+.rate-plan__price {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--forest);
+  white-space: nowrap;
+}
+
+.rate-plan__body p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* --------------------------------------------------------------- operations */
 
 .ops-shell { padding-block: clamp(1.5rem, 4vw, 3rem); }

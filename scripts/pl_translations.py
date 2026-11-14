@@ -727,4 +727,34 @@ TRANSLATIONS: dict[str, str] = {
     "event type": "typ zdarzenia",
     "rate": "stawka",
     "summary": "podsumowanie",
+    # Public web booking flow (v0.4.11)
+    "Book your stay": "Zarezerwuj pobyt",
+    "Direct booking": "Rezerwacja bezpośrednia",
+    "Email": "E-mail",
+    "First name": "Imię",
+    "Last name": "Nazwisko",
+    "Phone": "Telefon",
+    "Pick your dates, choose a rate and leave your contact details. We will send a confirmation right away.": (
+        "Wybierz terminy, taryfę i podaj dane kontaktowe. Potwierdzenie wyślemy od razu."
+    ),
+    "Check this stay": "Sprawdź ten pobyt",
+    "No rooms available": "Brak dostępnych pokoi",
+    "Choose your rate": "Wybierz taryfę",
+    "Standard rate": "Taryfa standardowa",
+    "The flexible price for your stay.": "Elastyczna cena Twojego pobytu.",
+    "Refundable": "Zwrotna",
+    "Non-refundable": "Bezzwrotna",
+    "Your details": "Twoje dane",
+    "Give us an email address or a phone number so we can reach you.": (
+        "Podaj adres e-mail lub numer telefonu, abyśmy mogli się z Tobą skontaktować."
+    ),
+    "Book now": "Zarezerwuj teraz",
+    "By booking you agree to the cancellation policy shown on your reservation page.": (
+        "Dokonując rezerwacji, akceptujesz zasady anulowania pokazane na stronie rezerwacji."
+    ),
+    "Change dates or room": "Zmień daty lub pokój",
+    "Book a room": "Zarezerwuj pokój",
+    "Book this room": "Zarezerwuj ten pokój",
+    "Please enter your first name.": "Podaj imię.",
+    "Choose a room type and your dates first.": "Najpierw wybierz typ pokoju i terminy.",
 }

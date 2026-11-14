@@ -1,0 +1,162 @@
+{% extends "web/base.html" %}
+{% load i18n humanize %}
+
+{% block title %}{% trans "Book your stay" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell booking-shell">
+  <div class="booking-card">
+    <header class="booking-card__header">
+      <div>
+        <p class="eyebrow">{% trans "Direct booking" %}</p>
+        <h1>{% trans "Book your stay" %}</h1>
+        <p class="muted">
+          {% trans "Pick your dates, choose a rate and leave your contact details. We will send a confirmation right away." %}
+        </p>
+      </div>
+      <a class="btn btn--ghost btn--small" href="{% url 'web:home' %}#rooms">{% trans "Back to rooms" %}</a>
+    </header>
+
+    {% if error %}
+      <p class="notice notice--warning" role="alert">{{ error }}</p>
+    {% endif %}
+
+    {% if not room_type or not quote %}
+      <form class="booking-form" method="get" action="{% url 'web:book' %}">
+        <div class="booking-form__row">
+          <label for="book-room-type">{% trans "Room type" %}
+            <select id="book-room-type" name="room_type" required>
+              {% for type in room_types %}
+                <option value="{{ type.slug }}"{% if room_type and type.pk == room_type.pk %} selected{% endif %}>
+                  {{ type.name }} · {{ type.base_price|floatformat:0 }} {{ type.currency }}
+                </option>
+              {% empty %}
+                <option value="">{% trans "No rooms available" %}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="booking-form__row">
+          <label for="book-check-in">{% trans "Check-in" %}
+            <input id="book-check-in" type="date" name="check_in"
+                   value="{{ check_in_value|default:default_check_in }}"
+                   min="{{ today|date:'Y-m-d' }}" required>
+          </label>
+          <label for="book-check-out">{% trans "Check-out" %}
+            <input id="book-check-out" type="date" name="check_out"
+                   value="{{ check_out_value|default:default_check_out }}"
+                   min="{{ today|date:'Y-m-d' }}" required>
+          </label>
+        </div>
+        <div class="booking-form__row">
+          <label for="book-adults">{% trans "Adults" %}
+            <input id="book-adults" type="number" name="adults" min="1" max="8" value="{{ adults }}" required>
+          </label>
+          <label for="book-children">{% trans "Children" %}
+            <input id="book-children" type="number" name="children" min="0" max="6" value="{{ children }}" required>
+          </label>
+        </div>
+        <button class="btn btn--primary" type="submit">{% trans "Check this stay" %}</button>
+      </form>
+    {% else %}
+      <div class="detail-grid">
+        <div class="detail">
+          <span class="detail__label">{% trans "Room" %}</span>
+          <span class="detail__value">{{ room_type.name }}</span>
+          <span class="muted">{{ room_type.capacity }} {% trans "guests" %}</span>
+        </div>
+        <div class="detail">
+          <span class="detail__label">{% trans "Check-in" %}</span>
+          <span class="detail__value">{{ check_in|date:"D, d M Y" }}</span>
+          <span class="muted">{% trans "from" %} {{ hotel.check_in_time }}</span>
+        </div>
+        <div class="detail">
+          <span class="detail__label">{% trans "Check-out" %}</span>
+          <span class="detail__value">{{ check_out|date:"D, d M Y" }}</span>
+          <span class="muted">{% trans "until" %} {{ hotel.check_out_time }}</span>
+        </div>
+        <div class="detail">
+          <span class="detail__label">{% trans "Guests" %}</span>
+          <span class="detail__value">{{ adults }} {% trans "adults" %}{% if children %}, {{ children }} {% trans "children" %}{% endif %}</span>
+          <span class="muted">{{ quote.nights }} {% trans "nights" %}</span>
+        </div>
+      </div>
+
+      <form class="booking-form" method="post" action="{% url 'web:book' %}">
+        {% csrf_token %}
+        <input type="hidden" name="room_type" value="{{ room_type.slug }}">
+        <input type="hidden" name="check_in" value="{{ check_in|date:'Y-m-d' }}">
+        <input type="hidden" name="check_out" value="{{ check_out|date:'Y-m-d' }}">
+        <input type="hidden" name="adults" value="{{ adults }}">
+        <input type="hidden" name="children" value="{{ children }}">
+
+        <h2 class="booking-card__section-title">{% trans "Choose your rate" %}</h2>
+        <div class="rate-plans">
+          <label class="rate-plan">
+            <input type="radio" name="rate_plan" value=""{% if not selected_plan %} checked{% endif %}>
+            <span class="rate-plan__body">
+              <span class="rate-plan__head">
+                <strong>{% trans "Standard rate" %}</strong>
+                <span class="rate-plan__price">{{ quote.total|floatformat:2 }} {{ quote.currency }}</span>
+              </span>
+              <p>{% trans "The flexible price for your stay." %}</p>
+            </span>
+          </label>
+          {% for plan in plans %}
+            <label class="rate-plan">
+              <input type="radio" name="rate_plan" value="{{ plan.slug }}"{% if selected_plan == plan.slug %} checked{% endif %}>
+              <span class="rate-plan__body">
+                <span class="rate-plan__head">
+                  <strong>{{ plan.name }}</strong>
+                  <span class="rate-plan__price">{{ plan.total|floatformat:2 }} {{ quote.currency }}</span>
+                </span>
+                {% if plan.description %}<p>{{ plan.description }}</p>{% endif %}
+                <p>
+                  {% if plan.is_refundable %}{% trans "Refundable" %}{% else %}{% trans "Non-refundable" %}{% endif %}
+                </p>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+
+        <h2 class="booking-card__section-title">{% trans "Your details" %}</h2>
+        <div class="booking-form__row">
+          <label for="book-first-name">{% trans "First name" %}
+            <input id="book-first-name" type="text" name="first_name"
+                   value="{{ form_data.first_name|default:'' }}"
+                   maxlength="80" autocomplete="given-name" required>
+          </label>
+          <label for="book-last-name">{% trans "Last name" %}
+            <input id="book-last-name" type="text" name="last_name"
+                   value="{{ form_data.last_name|default:'' }}"
+                   maxlength="80" autocomplete="family-name">
+          </label>
+        </div>
+        <div class="booking-form__row">
+          <label for="book-email">{% trans "Email" %}
+            <input id="book-email" type="email" name="email"
+                   value="{{ form_data.email|default:'' }}"
+                   maxlength="254" autocomplete="email">
+          </label>
+          <label for="book-phone">{% trans "Phone" %}
+            <input id="book-phone" type="tel" name="phone"
+                   value="{{ form_data.phone|default:'' }}"
+                   maxlength="40" autocomplete="tel">
+          </label>
+        </div>
+        <p class="muted">{% trans "Give us an email address or a phone number so we can reach you." %}</p>
+        <label for="book-requests">{% trans "Special requests" %}
+          <textarea id="book-requests" name="special_requests" rows="3" maxlength="1000">{{ form_data.special_requests|default:'' }}</textarea>
+        </label>
+        <button class="btn btn--primary" type="submit">{% trans "Book now" %}</button>
+        <p class="muted">
+          {% trans "By booking you agree to the cancellation policy shown on your reservation page." %}
+        </p>
+      </form>
+      <p>
+        <a class="link-button" href="{% url 'web:home' %}#rooms">{% trans "Change dates or room" %} →</a>
+      </p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
