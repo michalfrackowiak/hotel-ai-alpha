@@ -1,4 +1,4 @@
-{% load i18n static %}<!doctype html>
+{% load i18n static currency_tags %}<!doctype html>
 <html lang="{{ current_language }}">
 <head>
   <meta charset="utf-8">
@@ -7,6 +7,8 @@
   <meta name="description" content="{% block meta_description %}{{ hotel.tagline }}{% endblock %}">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#1f3a5f">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -42,6 +44,19 @@
           {% endfor %}
         </select>
       </form>
+
+      <form class="currency-switch" method="get" action="{{ request.path }}">
+        <label class="sr-only" for="currency-select">{% trans "Currency" %}</label>
+        <select id="currency-select" name="currency" onchange="this.form.submit()">
+          {% for code in supported_display_currencies %}
+            <option value="{{ code }}"{% if code == display_currency %} selected{% endif %}>{{ code }}</option>
+          {% endfor %}
+        </select>
+        {% for key, value in request.GET.items %}
+          {% if key != "currency" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+        {% endfor %}
+      </form>
+      <button id="pwa-install-button" class="button button--ghost" type="button" hidden>{% trans "Install app" %}</button>
     </div>
   </header>
 
@@ -67,6 +82,7 @@
   </footer>
 
   <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/pwa.js' %}" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

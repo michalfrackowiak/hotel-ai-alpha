@@ -41,3 +41,16 @@ def site_context(request) -> dict:
         "current_language": translation.get_language(),
         "current_year": timezone.now().year,
     }
+
+
+def display_currency(request):
+    from django.conf import settings
+
+    from .currency import resolve_currency, supported_currencies
+
+    currency = getattr(request, "display_currency", None) or resolve_currency(request)
+    return {
+        "display_currency": currency,
+        "supported_display_currencies": supported_currencies(),
+        "base_currency": settings.HOTEL["currency"],
+    }

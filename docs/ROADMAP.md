@@ -244,8 +244,8 @@ Theme: **distribution and reach**. The guest journey is complete and accessible;
 ### Must have
 
 1. **Channel manager (iCal import/export)** — DONE in v0.5.1. OTA reservations are imported into per-room `RoomBlock` rows (no synthetic bookings); availability, creation and modification honour them, and `Booking.clean()` rejects overlaps. A signed `/calendar/<token>.ics` feed exports blocking bookings (pending holds as `TENTATIVE`) and manual blocks; conflicts with local blocking bookings are counted. The scheduler runs `sync_channel_feeds --apply`.
-2. **Multi-currency display** (pending) — show a converted estimate next to the base-currency total, while every stored amount stays in the hotel currency.
-3. **Mobile PWA install prompt** (pending) — an installable shell with offline caching for the static assets and a safe fallback when the network is unavailable.
+2. **Multi-currency display** (done in v0.5.2 slice) — a currency selector in the header sets a session/cookie; prices render with an indicative conversion next to the base-currency total via the `money` filter. Stored amounts stay in the hotel currency.
+3. **Mobile PWA install prompt** (done in v0.5.2 slice) — `manifest.json`, service worker caching static assets and visited pages, and an install button shown on `beforeinstallprompt`.
 
 ### Should have
 
