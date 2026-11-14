@@ -8,7 +8,10 @@ from apps.hotel.notifications import send_pending_confirmation_emails
 
 
 class Command(BaseCommand):
-    help = "Send confirmation emails for confirmed bookings that have no delivery marker."
+    help = (
+        "Retry confirmation emails that are due, honouring the exponential backoff "
+        "stored on each booking."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(

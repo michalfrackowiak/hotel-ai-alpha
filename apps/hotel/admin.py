@@ -10,7 +10,6 @@ from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import path, reverse
-from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -222,10 +221,15 @@ class BookingAdmin(admin.ModelAdmin):
         sent = 0
         for booking in queryset:
             try:
-                send_booking_confirmation(booking)
-                booking.confirmation_email_sent_at = timezone.now()
-                booking.save(update_fields=["confirmation_email_sent_at", "updated_at"])
-                sent += 1
+                if send_booking_confirmation(booking, force=True):
+                    sent += 1
+                else:
+                    self.message_user(
+                        request,
+                        _("%(reference)s: no confirmation email was sent.")
+                        % {"reference": booking.reference},
+                        messages.WARNING,
+                    )
             except Exception as exc:  # noqa: BLE001
                 self.message_user(request, f"{booking.reference}: {exc}", messages.ERROR)
         if sent:

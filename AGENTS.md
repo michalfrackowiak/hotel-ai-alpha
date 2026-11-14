@@ -6,7 +6,7 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat, voice or the public web form in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.4.11**, 152 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.4.12**, 162 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 
@@ -43,6 +43,8 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 - **The ops dashboard is `/ops/`.** It is staff-only and read-only; do not introduce another write path there.
 - **Calendar sync runs after commit.** Keep `transaction.on_commit`; a calendar failure must never roll back a reservation. Pending bookings are skipped before an event record is created.
 - **Confirmation email also runs after commit.** Keep the `confirmation_email_sent_at` marker so retries are idempotent; never send from inside the booking transaction.
+- **Email retries use stored backoff.** `send_booking_confirmation()` owns the attempt counter and `next_retry_at`; `send_pending_confirmation_emails()` must keep honouring them unless `--force` is explicit.
+- **Provider webhooks are normalised in `apps/hotel/email_webhooks.py`.** SES (including SNS wrappers) and Postmark payloads become one status; the API view only resolves the booking and writes it.
 - **A booking reference is not a secret.** Guest-facing read/confirm/cancel paths go through `apps/hotel/access.py`. The API accepts `token`, `X-Booking-Token` or Bearer; the web lookup requires reference + email/phone.
 - **Guest magic links are single-use and stored hashed.** `/my-bookings/` always returns the same neutral response, whether or not the email has a booking. Never log or display the raw token.
 - **Provider keys are encrypted at rest.** Write `AIProvider.api_key` through the model/admin, never with raw SQL. Key rotation uses `FIELD_ENCRYPTION_KEY_OLD` and `manage.py rotate_provider_keys`.

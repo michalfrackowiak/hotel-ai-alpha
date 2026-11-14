@@ -426,6 +426,21 @@ class Booking(TimeStampedModel):
     )
     confirmation_email_error = models.TextField(_("confirmation email error"), blank=True, default="")
     confirmation_email_provider_id = models.CharField(_("provider message id"), max_length=200, blank=True, default="")
+    confirmation_email_attempts = models.PositiveSmallIntegerField(
+        _("confirmation email attempts"),
+        default=0,
+    )
+    confirmation_email_last_attempt_at = models.DateTimeField(
+        _("confirmation email last attempt at"),
+        null=True,
+        blank=True,
+    )
+    confirmation_email_next_retry_at = models.DateTimeField(
+        _("confirmation email next retry at"),
+        null=True,
+        blank=True,
+        db_index=True,
+    )
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 
     class Meta:

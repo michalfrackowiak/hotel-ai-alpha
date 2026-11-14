@@ -757,4 +757,21 @@ TRANSLATIONS: dict[str, str] = {
     "Book this room": "Zarezerwuj ten pokój",
     "Please enter your first name.": "Podaj imię.",
     "Choose a room type and your dates first.": "Najpierw wybierz typ pokoju i terminy.",
+    # Transactional email hardening (v0.5.0)
+    "Delivered emails": "Dostarczone e-maile",
+    "Email failures": "Błędy e-maili",
+    "Bounced or complained": "Odrzucone lub oznaczone jako spam",
+    "Emails waiting to retry": "E-maile oczekujące na ponowną próbę",
+    "Email delivery": "Dostarczanie e-maili",
+    "Recipient": "Odbiorca",
+    "Attempts": "Próby",
+    "Next retry": "Następna próba",
+    "Last error": "Ostatni błąd",
+    "No delivery problems.": "Brak problemów z dostarczaniem.",
+    "confirmation email attempts": "próby wysłania e-maila potwierdzającego",
+    "confirmation email last attempt at": "ostatnia próba wysłania e-maila potwierdzającego",
+    "confirmation email next retry at": "następna próba wysłania e-maila potwierdzającego",
+    "%(reference)s: no confirmation email was sent.": (
+        "%(reference)s: nie wysłano e-maila potwierdzającego."
+    ),
 }
