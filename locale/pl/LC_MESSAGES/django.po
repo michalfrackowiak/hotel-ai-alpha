@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 10:12+0100\n"
+"POT-Creation-Date: 2026-11-14 11:01+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -183,6 +183,9 @@ msgstr "Zarezerwowano przez"
 #, python-format
 msgid "Booking %(reference)s"
 msgstr "Rezerwacja %(reference)s"
+
+msgid "Booking account"
+msgstr "Konto rezerwacji"
 
 msgid "Booking cancelled."
 msgstr "Rezerwacja anulowana."
@@ -436,6 +439,9 @@ msgstr "Wyłącz wybranych dostawców"
 msgid "Do you have a room for two this weekend?"
 msgstr "Czy macie pokój dla dwóch osób w ten weekend?"
 
+msgid "Email address"
+msgstr "Adres e-mail"
+
 msgid "Email or phone"
 msgstr "E-mail lub telefon"
 
@@ -469,6 +475,13 @@ msgstr ""
 "rezerwację."
 
 msgid ""
+"Enter the email address you booked with. We will send you a one-time link that opens "
+"every reservation tied to that address."
+msgstr ""
+"Podaj adres e-mail użyty przy rezerwacji. Wyślemy jednorazowy link, który otworzy "
+"wszystkie rezerwacje powiązane z tym adresem."
+
+msgid ""
 "Enter your reference and the email address or phone number you booked with. We will "
 "open a private link to your reservation."
 msgstr ""
@@ -499,8 +512,14 @@ msgstr "Atrapa (demo/testy)"
 msgid "Fallback calendar id when a room mapping does not specify one."
 msgstr "Zapasowy identyfikator kalendarza, gdy mapowanie pokoju go nie określa."
 
+msgid "Find a booking"
+msgstr "Znajdź rezerwację"
+
 msgid "Find my booking"
 msgstr "Znajdź moją rezerwację"
+
+msgid "Find one booking"
+msgstr "Znajdź jedną rezerwację"
 
 msgid "Fixed amount"
 msgstr "Stała kwota"
@@ -529,6 +548,9 @@ msgstr "Google Calendar"
 msgid "Guest"
 msgstr "Gość"
 
+msgid "Guest account"
+msgstr "Konto gościa"
+
 msgid "Guest request"
 msgstr "Prośba gościa"
 
@@ -541,6 +563,14 @@ msgstr "Goście"
 
 msgid "Held until"
 msgstr "Zablokowane do"
+
+#, python-format
+msgid ""
+"Hello, Use the link below to open your booking account at %(hotel)s. You will see "
+"every reservation made with this email address."
+msgstr ""
+"Dzień dobry, użyj poniższego linku, aby otworzyć konto rezerwacji w %(hotel)s. "
+"Zobaczysz wszystkie rezerwacje złożone na ten adres e-mail."
 
 msgid "Hold"
 msgstr "Blokada"
@@ -574,6 +604,14 @@ msgstr "Chciałbym zarezerwować pokój"
 
 msgid "I would like to book a room from the 12th to the 15th of December."
 msgstr "Chciałbym zarezerwować pokój od 12 do 15 grudnia."
+
+#, python-format
+msgid ""
+"If %(email)s has a reservation with us, a sign-in link is on its way. Check your "
+"inbox and spam folder."
+msgstr ""
+"Jeśli %(email)s ma u nas rezerwację, link do logowania jest już w drodze. Sprawdź "
+"skrzynkę odbiorczą i folder spam."
 
 msgid ""
 "If you need to change or cancel your reservation, use the link above or contact "
@@ -662,8 +700,8 @@ msgstr "Model"
 msgid "Modified"
 msgstr "Zmieniono"
 
-msgid "My booking"
-msgstr "Moja rezerwacja"
+msgid "My bookings"
+msgstr "Moje rezerwacje"
 
 msgid "Need a hand? Reception can find your reservation by name, email or phone."
 msgstr ""
@@ -730,6 +768,9 @@ msgstr "Wstępnie zablokowana"
 msgid "Open chat"
 msgstr "Otwórz czat"
 
+msgid "Open my bookings"
+msgstr "Otwórz moje rezerwacje"
+
 msgid ""
 "Open the voice concierge and simply speak. It can check rooms, prices and confirm "
 "your stay."
@@ -777,6 +818,9 @@ msgstr "Podpowiedzi polskie"
 
 msgid "Prefer to talk it through?"
 msgstr "Wolisz porozmawiać?"
+
+msgid "Prefer your booking reference?"
+msgstr "Wolisz numer rezerwacji?"
 
 msgid "Preferences"
 msgstr "Preferencje"
@@ -900,11 +944,17 @@ msgstr "Przywitaj się"
 msgid "Seasonal"
 msgstr "Sezonowa"
 
+msgid "See all my bookings"
+msgstr "Zobacz wszystkie moje rezerwacje"
+
 msgid "See real availability"
 msgstr "Zobacz rzeczywistą dostępność"
 
 msgid "Send"
 msgstr "Wyślij"
+
+msgid "Send sign-in link"
+msgstr "Wyślij link do logowania"
 
 msgid "Sent"
 msgstr "Wysłany"
@@ -925,6 +975,13 @@ msgstr ""
 
 msgid "Show rooms"
 msgstr "Pokaż pokoje"
+
+msgid "Sign out"
+msgstr "Wyloguj się"
+
+#, python-format
+msgid "Signed in as %(email)s. Every reservation made with this address is listed below."
+msgstr "Zalogowano jako %(email)s. Poniżej znajdują się wszystkie rezerwacje z tym adresem."
 
 msgid "Skip to content"
 msgstr "Przejdź do treści"
@@ -1004,6 +1061,11 @@ msgstr ""
 "Ten link jest nieprawidłowy lub wygasł. Podaj numer rezerwacji i dane kontaktowe, aby"
 " otrzymać nowy link."
 
+msgid "That sign-in link is invalid, already used or expired. Request a fresh one below."
+msgstr ""
+"Ten link do logowania jest nieprawidłowy, został już użyty lub wygasł. Poproś o nowy "
+"poniżej."
+
 msgid "The Google Calendar id dedicated to this room."
 msgstr "Identyfikator kalendarza Google przypisanego do tego pokoju."
 
@@ -1026,6 +1088,9 @@ msgstr ""
 
 msgid "The hold on this reservation expired before it was confirmed."
 msgstr "Blokada tej rezerwacji wygasła przed potwierdzeniem."
+
+msgid "The link can be used once and expires in 30 minutes."
+msgstr "Link można użyć tylko raz i wygasa po 30 minutach."
 
 msgid "The reception service is unreachable. Check your connection."
 msgstr "Usługa recepcji jest nieosiągalna. Sprawdź połączenie."
@@ -1051,6 +1116,9 @@ msgstr "Zmiana w skrócie na %(date)s."
 
 msgid "The voice concierge is unavailable right now. Please use chat instead."
 msgstr "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
+
+msgid "There are no reservations tied to this email address yet."
+msgstr "Z tym adresem e-mail nie są jeszcze powiązane żadne rezerwacje."
 
 #, python-format
 msgid ""
@@ -1088,6 +1156,13 @@ msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
 
 msgid "This is a temporary hold. Cancelling it is free."
 msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
+
+msgid ""
+"This link can be used once and expires in 30 minutes. If you did not request it, you "
+"can ignore this message."
+msgstr ""
+"Ten link można użyć tylko raz i wygasa po 30 minutach. Jeśli go nie zamawiałeś, "
+"zignoruj tę wiadomość."
 
 msgid "This rate plan is not available for the selected room type."
 msgstr "Ten plan cenowy nie jest dostępny dla wybranego typu pokoju."
@@ -1143,6 +1218,14 @@ msgstr "Aktualizuję rezerwację…"
 msgid "Use comma separated numbers between 0 and 6."
 msgstr "Użyj liczb od 0 do 6 oddzielonych przecinkami."
 
+#, python-format
+msgid ""
+"Use the button below to open your booking account at %(hotel)s. You will see every "
+"reservation made with this email address."
+msgstr ""
+"Użyj poniższego przycisku, aby otworzyć konto rezerwacji w %(hotel)s. Zobaczysz "
+"wszystkie rezerwacje złożone na ten adres e-mail."
+
 msgid "Validity"
 msgstr "Ważność"
 
@@ -1195,9 +1278,20 @@ msgstr "Ty"
 msgid "You can ask to cancel or look up an existing booking."
 msgstr "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
 
+msgid ""
+"You can still open a single reservation with its reference and the email or phone "
+"number used to book."
+msgstr ""
+"Nadal możesz otworzyć pojedynczą rezerwację, podając jej numer oraz adres e-mail lub "
+"numer telefonu użyty przy rezerwacji."
+
 #, python-format
 msgid "You're all set. We look forward to welcoming you — check-in is from %(checkin)s."
 msgstr "Wszystko gotowe. Czekamy na Ciebie — zameldowanie od %(checkin)s."
+
+#, python-format
+msgid "Your %(hotel)s booking account"
+msgstr "Twoje konto rezerwacji w %(hotel)s"
 
 msgid "Your booking"
 msgstr "Twoja rezerwacja"
@@ -1416,6 +1510,9 @@ msgstr "typ zdarzenia"
 msgid "expired"
 msgstr "wygasła"
 
+msgid "expires at"
+msgstr "wygasa o"
+
 msgid "extra settings"
 msgstr "ustawienia dodatkowe"
 
@@ -1442,6 +1539,12 @@ msgstr "powitanie (polskie)"
 
 msgid "guest"
 msgstr "gość"
+
+msgid "guest login token"
+msgstr "token logowania gościa"
+
+msgid "guest login tokens"
+msgstr "tokeny logowania gościa"
 
 msgid "guests"
 msgstr "goście"
@@ -1614,6 +1717,9 @@ msgstr "dostawca zamiany tekstu na mowę"
 msgid "timeout (seconds)"
 msgstr "limit czasu (sekundy)"
 
+msgid "token hash"
+msgstr "skrót tokenu"
+
 msgid "token usage"
 msgstr "zużycie tokenów"
 
@@ -1631,6 +1737,9 @@ msgstr "cena całkowita"
 
 msgid "until"
 msgstr "do"
+
+msgid "used at"
+msgstr "użyto o"
 
 msgid "valid from"
 msgstr "ważna od"

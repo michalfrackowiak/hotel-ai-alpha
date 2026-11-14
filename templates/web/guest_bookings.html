@@ -1,0 +1,50 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "My bookings" %} · {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card lookup-card--wide">
+    <p class="eyebrow">{% trans "Guest account" %}</p>
+    <h1>{% trans "My bookings" %}</h1>
+    <p class="lookup-card__lede">
+      {% blocktrans with email=guest_email %}Signed in as {{ email }}. Every reservation made with this address is listed below.{% endblocktrans %}
+    </p>
+
+    {% if bookings %}
+      <ul class="guest-bookings">
+        {% for booking in bookings %}
+          <li class="guest-booking">
+            <div>
+              <a class="guest-booking__ref" href="{% url 'web:booking-detail' booking.reference %}">{{ booking.reference }}</a>
+              <p class="muted">
+                {{ booking.check_in|date:"D, d M Y" }} → {{ booking.check_out|date:"D, d M Y" }}
+                · {{ booking.nights }} {% trans "nights" %}
+              </p>
+              <p class="muted">{{ booking.room.number }} · {{ booking.room_type.name }}</p>
+            </div>
+            <div class="guest-booking__meta">
+              <span class="badge badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
+              <span>{{ booking.total_price }} {{ booking.currency }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="notice notice--muted">{% trans "There are no reservations tied to this email address yet." %}</p>
+      <p>
+        <a class="btn btn--primary" href="{% url 'web:home' %}#rooms">{% trans "Check availability" %}</a>
+      </p>
+    {% endif %}
+
+    <div class="lookup-card__actions">
+      <form method="post" action="{% url 'web:guest-logout' %}">
+        {% csrf_token %}
+        <button class="btn btn--ghost" type="submit">{% trans "Sign out" %}</button>
+      </form>
+      <a class="btn btn--ghost" href="{% url 'web:booking-lookup' %}">{% trans "Find one booking" %}</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -212,6 +212,12 @@ POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN", "")
 # their reference and contact details, so expiry is a safety net, not a trap.
 BOOKING_ACCESS_MAX_AGE_DAYS = int(os.getenv("BOOKING_ACCESS_MAX_AGE_DAYS", "180"))
 
+# Passwordless guest account. Magic-link tokens are single use and short lived;
+# the cooldowns stop the form from being used to flood an inbox.
+GUEST_LOGIN_MAX_AGE_MINUTES = int(os.getenv("GUEST_LOGIN_MAX_AGE_MINUTES", "30"))
+GUEST_LOGIN_COOLDOWN_SECONDS = int(os.getenv("GUEST_LOGIN_COOLDOWN_SECONDS", "300"))
+GUEST_LOGIN_IP_COOLDOWN_SECONDS = int(os.getenv("GUEST_LOGIN_IP_COOLDOWN_SECONDS", "60"))
+
 # Encryption material for provider API keys at rest. When unset, a key is
 # derived from DJANGO_SECRET_KEY; set a dedicated value in production.
 FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "")

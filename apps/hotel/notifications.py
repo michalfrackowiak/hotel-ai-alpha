@@ -10,7 +10,8 @@ from django.utils import timezone
 from django.utils.translation import override
 
 from .access import booking_manage_url
-from .email_providers import get_email_provider
+from .email_providers import Attachment, EmailMessage, get_email_provider
+from .ics import build_booking_ics
 from .models import Booking
 
 logger = logging.getLogger(__name__)
@@ -44,9 +45,23 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
         text_body = render_to_string("hotel/email/booking_confirmation.txt", context)
         html_body = render_to_string("hotel/email/booking_confirmation.html", context)
 
+    message = EmailMessage(
+        to=email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+        attachments=[
+            Attachment(
+                filename=f"{booking.reference}.ics",
+                content=build_booking_ics(booking).encode(),
+                mimetype="text/calendar",
+            )
+        ],
+    )
+
     provider = get_email_provider()
     try:
-        result = provider.send(booking, subject=subject, text_body=text_body, html_body=html_body)
+        result = provider.send(message)
     except Exception as exc:  # noqa: BLE001
         Booking.objects.filter(pk=booking.pk).update(
             confirmation_email_status="failed",
@@ -77,6 +92,41 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
     booking.confirmation_email_error = ""
     booking.confirmation_email_provider_id = result.provider_message_id
     logger.info("Sent confirmation email for booking %s to %s via %s", booking.reference, email, provider.name)
+    return True
+
+
+def send_guest_login_email(email: str, login_url: str, *, language: str = "en") -> bool:
+    """Send a single-use sign-in link to the guest booking account.
+
+    Delivery failures are logged but never surfaced to the caller: the request
+    page always shows the same neutral "check your inbox" message so it cannot
+    be used to discover which addresses have bookings.
+    """
+    if not settings.BOOKING_EMAILS_ENABLED:
+        return False
+
+    context = {"hotel": settings.HOTEL, "email": email, "login_url": login_url}
+    with override(language or settings.HOTEL["default_language"]):
+        subject = render_to_string("hotel/email/guest_login_subject.txt", context).strip()
+        text_body = render_to_string("hotel/email/guest_login.txt", context)
+        html_body = render_to_string("hotel/email/guest_login.html", context)
+
+    message = EmailMessage(
+        to=email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
+    provider = get_email_provider()
+    try:
+        result = provider.send(message)
+    except Exception:  # noqa: BLE001
+        logger.exception("Guest login email failed for %s", email)
+        return False
+    if not result.sent:
+        logger.warning("Guest login email failed for %s via %s: %s", email, provider.name, result.error)
+        return False
+    logger.info("Sent guest login email to %s via %s", email, provider.name)
     return True
 
 

@@ -20,6 +20,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat and voice
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
+- **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
 - **Per-room calendar sync** through a provider interface: a deterministic fake adapter for demos and a Google Calendar adapter for real calendars.
 - **Calendar reconciliation** (`reconcile_calendars`) that reports and repairs events deleted or edited outside the app.
 - **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
@@ -67,6 +68,8 @@ These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` an
 | `/voice/` | Voice concierge |
 | `/booking/` | Look up a reservation by reference and email/phone |
 | `/booking/<REFERENCE>/?token=…` | Reservation detail, confirm/modify/cancel through a signed link |
+| `/my-bookings/` | Passwordless guest account: request a magic link and list every booking for the email |
+| `/my-bookings/login/<TOKEN>/` | Single-use magic-link sign-in (expires after 30 minutes) |
 | `/ops/` | Staff operations dashboard (sign in first) |
 | `/admin/` | Django admin, including the rate calendar |
 | `/api/v1/` | REST API (see [docs/API.md](docs/API.md)) |
@@ -250,8 +253,8 @@ docs/             architecture, API, roadmap, branching, release notes
 
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
 - No payment, deposit, invoice or channel-manager integration.
-- Booking access is protected by a signed link, but there is no guest account or password.
-- Email delivery uses SMTP/console backends; there is no bounce handling or delivery webhook.
+- Booking access uses signed links; the guest account is passwordless (single-use magic link), so there is no password to reset or leak.
+- Email delivery supports SMTP, SES and Postmark with bounce/complaint webhooks; automated retry/backoff is still manual (`send_booking_emails`).
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
 - SMS notifications are not sent.

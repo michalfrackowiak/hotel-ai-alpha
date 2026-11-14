@@ -214,7 +214,7 @@ Theme: **guest experience and polish**. The reception side is now feature-comple
 
 ### Must have
 
-1. **Guest accounts** — magic-link login so a guest can see all their bookings without a password.
+1. **Guest accounts** - magic-link login so a guest can see all their bookings without a password. *(shipped in v0.4.10)*
 2. **Web booking flow** — a public page that creates a booking (currently chat/voice/API only).
 3. **Rate plan selection in the UI** — guests can pick a plan on the booking page, not only via the API.
 4. **Transactional email hardening** — retry/backoff, a delivery dashboard, and provider-specific bounce handling tests.

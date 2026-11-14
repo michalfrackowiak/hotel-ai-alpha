@@ -26,7 +26,8 @@
         <a href="{% url 'web:home' %}#rooms">{% trans "Rooms" %}</a>
         {% if assistant.chat_enabled %}<a href="{% url 'web:chat' %}">{% trans "Chat" %}</a>{% endif %}
         {% if assistant.voice_enabled %}<a href="{% url 'web:voice' %}">{% trans "Voice" %}</a>{% endif %}
-        <a href="{% url 'web:booking-lookup' %}">{% trans "My booking" %}</a>
+        <a href="{% url 'web:booking-lookup' %}">{% trans "Find a booking" %}</a>
+        <a href="{% url 'web:guest-bookings' %}">{% trans "My bookings" %}</a>
         {% if request.user.is_staff %}<a href="{% url 'web:ops' %}">{% trans "Operations" %}</a>{% endif %}
         {% if request.user.is_staff %}<a href="{% url 'admin:index' %}">{% trans "Admin" %}</a>{% endif %}
       </nav>

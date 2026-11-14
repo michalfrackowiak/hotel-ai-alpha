@@ -4,20 +4,35 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.utils import timezone
+from django.urls import reverse
+from django.utils import timezone, translation
+from django.views.decorators.http import require_POST
 
 from apps.hotel.access import (
     booking_manage_path,
     find_booking_for_contact,
+    make_booking_token,
     token_matches,
 )
 from apps.hotel.booking_service import BookingError, get_booking
 from apps.hotel.cancellation import cancellation_preview
+from apps.hotel.guest_access import (
+    GUEST_SESSION_KEY,
+    bookings_for_email,
+    consume_login_token,
+    guest_session_matches,
+    issue_login_token,
+    normalise_email,
+    reserve_login_request,
+    session_email,
+)
 from apps.hotel.models import Booking, BookingEvent, Room, RoomType
+from apps.hotel.notifications import send_guest_login_email
 
 
 def home(request):
@@ -65,6 +80,63 @@ def booking_lookup(request):
     return render(request, "web/booking_lookup.html")
 
 
+def guest_bookings(request):
+    """Passwordless guest account: request a link, then list every booking."""
+    email = session_email(request)
+    if request.method == "POST":
+        requested = normalise_email(request.POST.get("email"))
+        client_ip = request.META.get("REMOTE_ADDR", "")
+        if requested and reserve_login_request(requested, client_ip):
+            issued = issue_login_token(requested)
+            if issued is not None:
+                _record, raw_token = issued
+                login_path = reverse("web:guest-login", args=[raw_token])
+                login_url = f"{settings.HOTEL['public_url'].rstrip('/')}{login_path}"
+                send_guest_login_email(
+                    requested,
+                    login_url,
+                    language=translation.get_language(),
+                )
+        return render(
+            request,
+            "web/guest_login.html",
+            {"sent": True, "email": requested},
+        )
+
+    if email:
+        return render(
+            request,
+            "web/guest_bookings.html",
+            {
+                "guest_email": email,
+                "bookings": bookings_for_email(email),
+                "today": timezone.localdate(),
+            },
+        )
+    return render(request, "web/guest_login.html")
+
+
+def guest_login(request, token: str):
+    email = consume_login_token(token)
+    if email is None:
+        return render(
+            request,
+            "web/guest_login.html",
+            {"link_invalid": True},
+            status=400,
+        )
+    request.session[GUEST_SESSION_KEY] = email
+    request.session.cycle_key()
+    return redirect("web:guest-bookings")
+
+
+@require_POST
+def guest_logout(request):
+    request.session.pop(GUEST_SESSION_KEY, None)
+    request.session.cycle_key()
+    return redirect("web:guest-bookings")
+
+
 def booking_detail(request, reference: str):
     reference = reference.upper()
     try:
@@ -75,12 +147,14 @@ def booking_detail(request, reference: str):
     session_key = f"booking-token-{reference}"
     token = request.GET.get("token") or request.session.get(session_key)
     if not token_matches(booking, token):
-        return render(
-            request,
-            "web/booking_lookup.html",
-            {"reference": reference, "access_denied": True},
-            status=403,
-        )
+        if not guest_session_matches(request, booking):
+            return render(
+                request,
+                "web/booking_lookup.html",
+                {"reference": reference, "access_denied": True},
+                status=403,
+            )
+        token = make_booking_token(booking)
     request.session[session_key] = token
     return render(
         request,

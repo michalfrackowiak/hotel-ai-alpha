@@ -1,0 +1,12 @@
+{% load i18n %}{% autoescape off %}{% blocktrans with hotel=hotel.name %}Hello,
+
+Use the link below to open your booking account at {{ hotel }}. You will see every reservation made with this email address.{% endblocktrans %}
+
+{{ login_url }}
+
+{% trans "This link can be used once and expires in 30 minutes. If you did not request it, you can ignore this message." %}
+
+{{ hotel.name }}
+{{ hotel.address }}
+{{ hotel.contact_phone }} · {{ hotel.contact_email }}
+{% endautoescape %}
