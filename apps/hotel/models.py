@@ -192,7 +192,7 @@ class Client(TimeStampedModel):
         POLISH = "pl", _("Polish")
 
     first_name = models.CharField(_("first name"), max_length=80)
-    last_name = models.CharField(_("last name"), max_length=80)
+    last_name = models.CharField(_("last name"), max_length=80, blank=True, default="")
     email = models.EmailField(_("email"), blank=True)
     phone = models.CharField(_("phone"), max_length=40, blank=True)
     language = models.CharField(_("language"), max_length=2, choices=Language.choices, default="en")
