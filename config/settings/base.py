@@ -202,6 +202,11 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", HOTEL["contact_email"])
 BOOKING_EMAILS_ENABLED = env_bool("BOOKING_EMAILS_ENABLED", True)
 EMAIL_WEBHOOK_SECRET = os.getenv("EMAIL_WEBHOOK_SECRET", "")
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "smtp").lower()
+SES_ACCESS_KEY_ID = os.getenv("SES_ACCESS_KEY_ID", "")
+SES_SECRET_ACCESS_KEY = os.getenv("SES_SECRET_ACCESS_KEY", "")
+SES_REGION = os.getenv("SES_REGION", "eu-central-1")
+POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN", "")
 
 # Signed booking management links. Guests can always request a fresh link with
 # their reference and contact details, so expiry is a safety net, not a trap.
