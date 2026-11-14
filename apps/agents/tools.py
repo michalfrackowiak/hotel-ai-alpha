@@ -22,6 +22,7 @@ from apps.hotel.booking_service import (
     resolve_room_type,
 )
 from apps.hotel.cancellation import cancellation_preview
+from apps.hotel.notifications import send_booking_confirmation
 from apps.hotel.pricing import StayError, quote
 
 from .models import AgentSettings, Conversation
@@ -136,6 +137,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "description": "Optional cancellation reason supplied by the guest.",
                 },
                 "note": {"type": "string", "description": "Optional free-text note."},
+            },
+            "required": ["reference"],
+        },
+    },
+    {
+        "name": "send_confirmation_email",
+        "description": (
+            "Send (or resend) the booking confirmation email to the guest. Optionally update the "
+            "guest's email address first. Only call after the guest agreed to receive the email."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reference": {"type": "string", "description": "Booking reference, e.g. HA-7KQ2M4."},
+                "email": {"type": "string", "description": "Optional email address to store and send to."},
             },
             "required": ["reference"],
         },
@@ -338,6 +354,25 @@ class ToolExecutor:
         self.conversation.state["last_booking"] = booking_payload(booking)
         self.conversation.save(update_fields=["state", "updated_at"])
         return {"ok": True, "booking": booking_payload(booking)}
+
+    def _tool_send_confirmation_email(self, reference: str, email: str = "") -> dict:
+        booking = get_booking(reference)
+        if email:
+            booking.client.email = email.strip().lower()
+            booking.client.save(update_fields=["email", "updated_at"])
+        booking.refresh_from_db()
+        if not (booking.client.email or "").strip():
+            return error_payload("contact_required", "An email address is required to send the confirmation.")
+        try:
+            sent = send_booking_confirmation(booking, force=True)
+        except Exception as exc:  # noqa: BLE001
+            return error_payload("email_failed", str(exc))
+        return {
+            "ok": True,
+            "sent": bool(sent),
+            "email": booking.client.email,
+            "reference": booking.reference,
+        }
 
     # --------------------------------------------------------------- helpers
     @staticmethod

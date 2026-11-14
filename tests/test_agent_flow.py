@@ -23,6 +23,42 @@ def _run(conversation: Conversation, message: str):
 
 
 @pytest.mark.django_db
+def test_demo_agent_offers_and_sends_confirmation_email(room_type, rooms):
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
+
+    _run(conversation, f"from {check_in.isoformat()} to {check_out.isoformat()} for 2 guests")
+    _run(conversation, "Anna Kowalska, anna@example.com")
+    confirmed = _run(conversation, "Yes, please confirm.")
+    assert "confirmation" in confirmed.content.lower()
+
+    sent = _run(conversation, "Yes, please send it.")
+    assert any(
+        call["name"] == "send_confirmation_email" and call["ok"] for call in sent.tool_calls
+    )
+    assert sent.tool_calls[0]["arguments"]["email"] == "anna@example.com"
+
+    done = _run(conversation, "Great")
+    assert "sent the confirmation email" in done.content.lower()
+
+
+@pytest.mark.django_db
+def test_demo_agent_asks_for_email_when_only_phone_given(room_type, rooms):
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
+
+    _run(conversation, f"from {check_in.isoformat()} to {check_out.isoformat()} for 2 guests")
+    _run(conversation, "my phone number is +48-510-378-4222")
+    _run(conversation, "Yes, please confirm.")
+
+    asked = _run(conversation, "Yes")
+    assert "which email address" in asked.content.lower()
+
+    sent = _run(conversation, "anna@example.com")
+    assert any(call["name"] == "send_confirmation_email" and call["ok"] for call in sent.tool_calls)
+
+
+@pytest.mark.django_db
 def test_demo_agent_books_deluxe_suite_by_name(room_type, rooms):
     """Picking a room by name (as a voice guest would) must not re-run search."""
     deluxe = RoomType.objects.create(

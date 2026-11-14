@@ -44,6 +44,7 @@ AFFIRMATIVE = re.compile(
     r"tak|potwierdzam|zgoda|rezerwuj|proszę|dobrze)\b",
     re.IGNORECASE,
 )
+NEGATIVE = re.compile(r"\b(no|nope|not now|later|nie|nie trzeba|nie chc�T)\b", re.IGNORECASE)
 CANCEL_INTENT = re.compile(r"\b(cancel|cancelled|anuluj|anulować|odwołaj|odwołać)\b", re.IGNORECASE)
 REFERENCE = re.compile(r"\bHA-[A-Z0-9]{6}\b", re.IGNORECASE)
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
@@ -107,9 +108,36 @@ class DemoProvider(BaseLLMProvider):
             return self._text(self._error(language, cancelled), language)
 
         if confirmed:
-            if confirmed.get("ok"):
-                return self._text(self._confirmed(language, confirmed.get("booking", {})), language)
-            return self._text(self._error(language, confirmed), language)
+            if not confirmed.get("ok"):
+                return self._text(self._error(language, confirmed), language)
+            booking = confirmed.get("booking", {})
+            if not self._email_asked(messages):
+                return self._text(
+                    self._confirmed(language, booking) + " " + self._ask_email(language, booking),
+                    language,
+                )
+            email_result = results.get("send_confirmation_email")
+            if email_result is not None:
+                if email_result.get("ok"):
+                    return self._text(self._email_sent(language, email_result.get("email", "")), language)
+                return self._text(self._error(language, email_result), language)
+            # Email already asked but not handled yet: continue below.
+
+        # Email confirmation flow after a completed booking.
+        confirmed_booking = (confirmed or {}).get("booking") or {}
+        ref = confirmed_booking.get("reference") or ""
+        if ref and self._email_asked(messages) and not self._email_handled(messages):
+            if NEGATIVE.search(last_user or ""):
+                return self._text(self._email_declined(language), language)
+            email_match = EMAIL.search(last_user or "")
+            if email_match:
+                return self._tool("send_confirmation_email", {"reference": ref, "email": email_match.group(0)}, language)
+            if self._is_affirmative(last_user or ""):
+                booking_email = slots["email"]
+                if booking_email:
+                    return self._tool("send_confirmation_email", {"reference": ref, "email": booking_email}, language)
+                return self._text(self._ask_email_address(language), language)
+            # Fall through to availability handling otherwise.
 
         if created:
             if not created.get("ok"):
@@ -453,6 +481,57 @@ class DemoProvider(BaseLLMProvider):
             "Rezerwacja potwierdzona. Numer {reference}: {room}, od {check_in} do {check_out}, "
             "razem {total} {currency}. Do zobaczenia w hotelu.",
         ).format(**self._booking_fields(booking, language))
+
+    def _email_asked(self, messages: list[ChatMessage]) -> bool:
+        for message in reversed(messages):
+            if message.role == "assistant":
+                text = (message.content or "").lower()
+                return "confirmation" in text
+        return False
+
+    def _email_handled(self, messages: list[ChatMessage]) -> bool:
+        for message in reversed(messages):
+            if message.role == "tool" and message.name == "send_confirmation_email":
+                return True
+            if message.role == "assistant":
+                text = (message.content or "").lower()
+                return "not sending" in text or "nie b\u0119d\u0119 wysy\u0142a\u0107" in text
+        return False
+
+    def _ask_email(self, language: str, booking: dict) -> str:
+        email = (booking.get("guest_email") or "").strip()
+        if email:
+            return self._t(
+                language,
+                "Would you like the booking confirmation sent to {email}?",
+                "Czy wys\u0142a\u0107 potwierdzenie rezerwacji na adres {email}?",
+            ).format(email=email)
+        return self._t(
+            language,
+            "Would you like me to email you the booking confirmation?",
+            "Czy mam wys\u0142a\u0107 potwierdzenie rezerwacji e-mailem?",
+        )
+
+    def _ask_email_address(self, language: str) -> str:
+        return self._t(
+            language,
+            "Of course. Which email address should I send the confirmation to?",
+            "Jasne. Na kt\u00f3ry adres e-mail mam wys\u0142a\u0107 potwierdzenie?",
+        )
+
+    def _email_sent(self, language: str, email: str) -> str:
+        return self._t(
+            language,
+            "I've sent the confirmation email to {email}.",
+            "Wys\u0142ano potwierdzenie rezerwacji na adres {email}.",
+        ).format(email=email)
+
+    def _email_declined(self, language: str) -> str:
+        return self._t(
+            language,
+            "No problem, I won't send an email. Your booking is confirmed.",
+            "Jasne, nie b\u0119d\u0119 wysy\u0142a\u0107 e-maila. Rezerwacja jest potwierdzona.",
+        )
 
     def _cancelled(self, language: str, booking: dict) -> str:
         fee = booking.get("cancellation_fee") or "0"
