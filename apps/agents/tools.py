@@ -379,20 +379,62 @@ class ToolExecutor:
     def _date(value, field: str) -> date:
         if isinstance(value, date):
             return value
-        text = str(value or "").strip().lower()
+        text = str(value or "").strip()
+        lowered = text.lower()
         from django.utils import timezone as _tz
 
         base = _tz.localdate()
-        if text in {"today", "dzisiaj", "dzis"}:
+        if lowered in {"today", "dzisiaj", "dziś", "dzis"}:
             return base
-        if text in {"tomorrow", "jutro"}:
+        if lowered in {"tomorrow", "jutro"}:
             return base + timedelta(days=1)
-        if text in {"yesterday", "wczoraj"}:
+        if lowered in {"yesterday", "wczoraj"}:
             return base - timedelta(days=1)
         try:
-            return date.fromisoformat(text)
-        except (ValueError, TypeError) as exc:
-            raise ToolArgumentError(f"{field} must be an ISO date (YYYY-MM-DD).") from exc
+            return date.fromisoformat(lowered)
+        except (ValueError, TypeError):
+            pass
+
+        # Flexible formats as a safety net for LLM/tool inputs.
+        import re
+
+        month_names = {
+            "january": 1, "jan": 1, "february": 2, "feb": 2, "march": 3, "mar": 3,
+            "april": 4, "apr": 4, "may": 5, "june": 6, "jun": 6, "july": 7, "jul": 7,
+            "august": 8, "aug": 8, "september": 9, "sep": 9, "october": 10, "oct": 10,
+            "november": 11, "nov": 11, "december": 12, "dec": 12,
+            "stycznia": 1, "styczeń": 1, "lutego": 2, "luty": 2, "marca": 3, "marzec": 3,
+            "kwietnia": 4, "kwiecień": 4, "maja": 5, "maj": 5, "czerwca": 6, "czerwiec": 6,
+            "lipca": 7, "lipiec": 7, "sierpnia": 8, "sierpień": 8, "września": 9, "wrzesień": 9,
+            "października": 10, "październik": 10, "listopada": 11, "listopad": 11,
+            "grudnia": 12, "grudzień": 12,
+        }
+        for pattern, order in (
+            (r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b", "dmy"),
+            (r"\b([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(20\d{2})\b", "mdy"),
+        ):
+            m = re.search(pattern, lowered)
+            if not m:
+                continue
+            if order == "dmy":
+                day_s, month_s, year_s = m.group(1), m.group(2), m.group(3)
+            else:
+                month_s, day_s, year_s = m.group(1), m.group(2), m.group(3)
+            month = month_names.get(month_s)
+            if month:
+                try:
+                    return date(int(year_s), month, int(day_s))
+                except ValueError:
+                    pass
+        for pattern in (r"\b(\d{1,2})\.(\d{1,2})\.(20\d{2})\b",):
+            m = re.search(pattern, lowered)
+            if m:
+                try:
+                    return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+                except ValueError:
+                    pass
+
+        raise ToolArgumentError(f"{field} must be an ISO date (YYYY-MM-DD).")
 
     @staticmethod
     def _int(value: Any, field: str, *, minimum: int, maximum: int) -> int:

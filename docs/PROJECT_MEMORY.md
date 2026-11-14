@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 · **Version:** v0.6.0 · **Tests:** 180 passing
+**Last updated:** 14 November 2026 — **Version:** v0.6.8 — **Tests:** 188 passing
 
 ## Current state
 
@@ -10,7 +10,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.6.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.6.8` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -24,6 +24,9 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails` every five minutes.
 - Channel manager (v0.5.1): OTA iCal feeds are imported into per-room `RoomBlock` rows through `ChannelFeed`; availability, creation and modification honour them, and `Booking.clean()` rejects overlapping blocks. A signed `/calendar/<token>.ics` feed exports the hotel's blocking bookings (pending holds as `TENTATIVE`) and manual blocks. Conflicts with local blocking bookings are counted on the feed and surfaced on `/ops/`. The scheduler runs `sync_channel_feeds --apply`.
+
+- After confirmation, the agent offers to send the booking confirmation email: it can use a known email or ask for one and send it via the `send_confirmation_email` tool (demo and LLM tool path).
+- Demo/provider date parsing accepts natural inputs (e.g. “20th of November”, ranges without year, “from tomorrow for 5 days” / “od jutra na 3 noce”); tool date parsing is tolerant as a safety net.
 
 ## Decisions and why
 
@@ -54,6 +57,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Channel feed is per physical room | Matches the per-room availability invariant; one feed per room is the simplest correct mapping for an alpha. |
 | Export feed uses a signed token (`django.core.signing`) | A room calendar URL is a secret subscription endpoint, not a public reference. |
 | Haru full-duplex model not integrated | Requires a 12 GB GPU, no Polish support, no tool calling; incompatible with the alpha's CPU stack and booking agent. See `docs/research/haru-voice-model.md`. |
+| Deterministic flexible date parsing | Demo/provider parsing and tolerant tool-date handling cover natural booking inputs (ordinals, ranges without year, relative start + duration) without adding an SLM dependency, preserving the offline/CPU-only fallback. |
 | Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
 | Policy is hotel-wide, not per rate plan | v0.3.0 has no rate plans yet; a single window and fee-night count matches the pilot's contract and stays explainable. |
 | Fee = first N stored nightly rates, capped at the total | Uses the actual quote (including daily-rate overrides) instead of a fresh calculation, and can never exceed what the guest agreed to pay. |
@@ -231,3 +235,7 @@ Update this table when the release gate is re-run.
 ## Next move
 
 v0.6.0 is released. All must-haves (channel manager, multi-currency display, PWA install prompt) are shipped. The next milestone (v0.7.0) would pick up the "should have" items; no scope has been committed yet.
+| 2026-11-14 | v0.6.8 | `pytest` | 188 passed |
+| 2026-11-14 | v0.6.8 | `manage.py check` | 0 issues |
+| 2026-11-14 | v0.6.8 | `makemigrations --check` | no changes detected |
+| 2026-11-14 | v0.6.8 | `ruff check .` | clean |

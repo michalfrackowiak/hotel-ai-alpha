@@ -281,15 +281,17 @@ class DemoProvider(BaseLLMProvider):
             return None, None
         lowered = text.lower()
         found: list[date] = []
+        today = timezone.localdate()
 
         # "12–15 December 2026" / "12 do 15 grudnia 2026"
         for match in re.finditer(
-            r"\b(\d{1,2})\s*(?:-|–|to|do)\s*(\d{1,2})\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b",
+            r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to|do)\s*(\d{1,2})(?:st|nd|rd|th)?\s+"
+            r"(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b",
             lowered,
         ):
             month = MONTHS.get(match.group(3))
             if month:
-                found.extend(self._safe_date(int(match.group(4)), month, int(match.group(1))))
+                found.append(self._safe_date(int(match.group(4)), month, int(match.group(1))))
                 found.append(self._safe_date(int(match.group(4)), month, int(match.group(2))))
                 break
 
@@ -308,11 +310,36 @@ class DemoProvider(BaseLLMProvider):
                     if eu is not None:
                         found.append(eu)
             for match in re.finditer(
-                r"\b(\d{1,2})\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b", lowered
+                r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b",
+                lowered,
             ):
                 month = MONTHS.get(match.group(2))
                 if month:
                     found.append(self._safe_date(int(match.group(3)), month, int(match.group(1))))
+            for match in re.finditer(
+                r"\b([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(20\d{2})\b",
+                lowered,
+            ):
+                month = MONTHS.get(match.group(1))
+                if month:
+                    found.append(self._safe_date(int(match.group(3)), month, int(match.group(2))))
+
+        # Dates without explicit year, e.g. "20th of November", "20 listopada".
+        if not found:
+            for match in re.finditer(
+                r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\b",
+                lowered,
+            ):
+                month = MONTHS.get(match.group(2))
+                if month:
+                    found.append(self._date_without_year(today, month, int(match.group(1))))
+            for match in re.finditer(
+                r"\b([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b",
+                lowered,
+            ):
+                month = MONTHS.get(match.group(1))
+                if month:
+                    found.append(self._date_without_year(today, month, int(match.group(2))))
 
         dates: list[date] = []
         for item in found:
@@ -320,16 +347,18 @@ class DemoProvider(BaseLLMProvider):
                 dates.append(item)
 
         if not dates:
-            today = timezone.localdate()
-            has_today = bool(re.search(r"\btoday\b|\bdzis\b|\bdzisiaj\b", lowered))
-            has_tomorrow = bool(re.search(r"\btomorrow\b|\bjutro\b", lowered))
+            has_today = bool(re.search(r"\btoday\b|\bdzi(?:ś|siaj)\b", lowered))
+            has_tomorrow = bool(re.search(r"\btomorrow\b|\bjutr[ao]\b", lowered))
+            has_day_after = bool(re.search(r"\bday after tomorrow\b|\bpojutrze\b", lowered))
             if has_today and has_tomorrow:
                 dates = [today, today + timedelta(days=1)]
+            elif has_day_after:
+                dates = [today + timedelta(days=2)]
             elif has_tomorrow:
                 dates = [today + timedelta(days=1)]
             elif has_today:
                 dates = [today]
-            elif re.search(r"\bnext week\b", lowered):
+            elif re.search(r"\bnext week\b|\bza tydzie(?:ń|n)\b", lowered):
                 dates = [today + timedelta(days=7)]
             else:
                 match = re.search(r"\bin\s+(\d+)\s+(day|days|week|weeks)\b", lowered)
@@ -338,15 +367,54 @@ class DemoProvider(BaseLLMProvider):
                     unit = match.group(2)
                     delta = amount * 7 if unit.startswith("week") else amount
                     dates = [today + timedelta(days=delta)]
+                else:
+                    match = re.search(r"\bza\s+(\d+)\s+(dzie(?:ń|ni)|tygod(?:nie|ni))\b", lowered)
+                    if match:
+                        amount = int(match.group(1))
+                        unit = match.group(2)
+                        delta = amount * 7 if unit.startswith("tygod") else amount
+                        dates = [today + timedelta(days=delta)]
 
         if len(dates) >= 2:
             return dates[0], dates[1]
         if len(dates) == 1:
-            nights = self._first_int(NIGHTS, lowered)
+            nights = self._duration_nights(lowered)
             if nights:
                 return dates[0], dates[0] + timedelta(days=nights)
             return dates[0], None
         return None, None
+
+    @staticmethod
+    def _date_without_year(today: date, month: int, day: int) -> date | None:
+        try:
+            candidate = date(today.year, month, day)
+        except ValueError:
+            return None
+        if candidate < today:
+            try:
+                return date(today.year + 1, month, day)
+            except ValueError:
+                return None
+        return candidate
+
+    @staticmethod
+    def _duration_nights(text: str) -> int | None:
+        # Prefer explicit "for/stay/na N nights/days" phrasing as a stay length.
+        for match in re.finditer(
+            r"\b(?:for|stay(?:ing)?|na|pobyt)\s+(\d+)\s*"
+            r"(?:night|nights|noc|noce|nocy|day|days|dni|dzie(?:ń|ni))\b",
+            text or "",
+            re.IGNORECASE,
+        ):
+            value = int(match.group(1))
+            if 1 <= value <= 30:
+                return value
+        match = NIGHTS.search(text or "")
+        if match:
+            value = int(match.group(1))
+            if 1 <= value <= 30:
+                return value
+        return None
 
     @staticmethod
     def _safe_date(year: int, month: int, day: int) -> date | None:

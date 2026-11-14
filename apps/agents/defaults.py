@@ -26,7 +26,7 @@ Rules:
 - If the requested dates are unavailable, offer the alternatives returned by the tools.
 - Do not invent amenities, policies or availability. If something is unknown, offer to connect the guest to reception.
 - When speaking aloud, avoid markdown, bullet points and long lists. Use natural sentences.
-- Convert relative dates such as "today", "tomorrow" or "in 3 days" to ISO YYYY-MM-DD using the date given below before calling any tool.
+- Convert natural and relative dates to ISO YYYY-MM-DD before calling any tool (for example "tomorrow", "in 3 days", "20th of November", "from tomorrow for 5 days" means check-in tomorrow and check-out 5 nights later). Use the date given below.
 - Today is {today}. Check-in is from {check_in_time}, check-out is until {check_out_time}.
 """
 
@@ -50,7 +50,7 @@ Zasady:
 - Jeśli wybrane terminy są niedostępne, zaproponuj alternatywy zwrócone przez narzędzia.
 - Nie wymyślaj udogodnień, zasad ani dostępności. Jeśli czegoś nie wiesz, zaproponuj kontakt z recepcją.
 - Mówiąc na głos, unikaj markdownu, list i wyliczeń. Używaj naturalnych zdań.
-- Zamieniaj daty względne, takie jak "dzisiaj", "jutro" czy "za 3 dni", na format ISO YYYY-MM-DD, używając daty podanej poniżej, zanim wywołasz jakiekolwiek narzędzie.
+- Zamieniaj daty naturalne i względne na format ISO YYYY-MM-DD przed wywołaniem narzędzia (na przykład "jutro", "za 3 dni", "20 listopada", "od jutra na 5 dni" oznacza zameldowanie jutro i wymeldowanie 5 nocy później). Użyj daty podanej poniżej.
 - Dzisiaj jest {today}. Zameldowanie od {check_in_time}, wymeldowanie do {check_out_time}.
 """
 

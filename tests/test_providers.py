@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 
 from apps.agents.models import AgentSettings, AIProvider
@@ -84,3 +86,37 @@ def test_demo_policy_strips_sentence_punctuation_from_email():
     )
 
     assert slots["email"] == "anna@example.com"
+
+
+def test_demo_extracts_natural_language_date_ranges():
+    from datetime import date
+
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    def nov(day: int):
+        candidate = date(today.year, 11, day)
+        return candidate if candidate >= today else date(today.year + 1, 11, day)
+
+    slots = provider._extract_slots("", "check in 20 of November check out 22 of November")
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+    slots = provider._extract_slots(
+        "", "arrival on the 20th of November and check out on the 22nd of November"
+    )
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+
+def test_demo_extracts_relative_start_with_duration():
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    slots = provider._extract_slots("", "from tomorrow for 5 days")
+    assert slots["check_in"] == today + timedelta(days=1)
+    assert slots["check_out"] == today + timedelta(days=6)
