@@ -6,7 +6,7 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat, voice or the public web form in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.5.1**, 180 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.6.0**, 180 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 

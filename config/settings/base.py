@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from decimal import Decimal
 from pathlib import Path
@@ -56,8 +57,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.web.currency.CurrencyMiddleware",
 ]
-
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -72,6 +73,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.web.context_processors.site_context",
+                "apps.web.context_processors.display_currency",
             ],
         },
     },
@@ -181,6 +183,17 @@ HOTEL = {
     "contact_email": os.getenv("HOTEL_CONTACT_EMAIL", "reception@example.com"),
     "contact_phone": os.getenv("HOTEL_CONTACT_PHONE", "+48 22 000 00 00"),
     "address": os.getenv("HOTEL_ADDRESS", "ul. Przykładowa 1, 00-001 Warszawa"),
+    "supported_display_currencies": [
+        code.strip().upper()
+        for code in os.getenv("SUPPORTED_DISPLAY_CURRENCIES", "PLN,EUR,USD,GBP").split(",")
+        if code.strip()
+    ],
+    "exchange_rates": json.loads(
+        os.getenv(
+            "EXCHANGE_RATES",
+            '{"PLN": 1.0, "EUR": 0.23, "USD": 0.25, "GBP": 0.20}',
+        )
+    ),
 }
 
 AI = {

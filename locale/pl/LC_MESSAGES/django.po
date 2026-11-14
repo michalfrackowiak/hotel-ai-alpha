@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 12:52+0100\n"
+"POT-Creation-Date: 2026-11-14 13:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -454,6 +454,9 @@ msgstr "Utworzono"
 msgid "Credentials"
 msgstr "Dane uwierzytelniające"
 
+msgid "Currency"
+msgstr "Waluta"
+
 msgid "Dates"
 msgstr "Terminy"
 
@@ -712,6 +715,9 @@ msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
 
 msgid "Inspected"
 msgstr "Sprawdzony"
+
+msgid "Install app"
+msgstr "Zainstaluj aplikację"
 
 msgid "Language"
 msgstr "Język"
