@@ -28,6 +28,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
 - **Django admin** for rooms, pricing rules, clients, bookings, audit events, daily rates, providers, prompts and calendars.
 - **English/Polish UI** with a language switcher and compiled Polish gettext catalogue.
+- **Accessible guest pages**: the booking and voice pages are gated by an automated check (`tests/test_accessibility.py`) and audited with axe-core; labels, landmarks, heading order and live call status are covered.
 - **Persistent throttling** through the database cache, shared by every gunicorn worker.
 - **Dockerised deployment** with SQLite on a named volume, WhiteNoise static files, gunicorn and a hold-cleanup scheduler sidecar.
 

@@ -6,7 +6,7 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat, voice or the public web form in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.4.12**, 162 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.5.0**, 167 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 
@@ -54,6 +54,7 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 - **The agent affects the world only through tools.** Tool handlers return `{"ok": false, "error": ...}` on bad input or domain errors instead of raising.
 - **The demo provider is the offline fallback.** It must keep working without API keys and must stay in sync with the tool schemas. It takes no `language` tool argument.
 - **Chat and voice share one conversation engine.** Add behaviour to the engine/tools, not to a channel-specific path.
+- **Accessibility is gated by `tests/test_accessibility.py`.** The booking and voice pages must keep labelled controls, one `<h1>`, a `<main>` landmark, a skip link and no positive tabindex; add new guest-facing pages to the check.
 - **Polish translations are generated.** Edit `scripts/pl_translations.py`, then run `scripts/update_translations.py` and `scripts/compile_translations.py`. Commit the `.po` and `.mo`.
 - **Admin model forms use explicit `fields`.** `ruff` rule `DJ007` rejects `fields = "__all__"`.
 - **Secrets stay out of git.** `.env`, `data/`, `staticfiles/`, provider keys and Google credentials are ignored; keep them that way.

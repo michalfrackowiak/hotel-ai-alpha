@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 11:51+0100\n"
+"POT-Creation-Date: 2026-11-14 12:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1105,9 +1105,6 @@ msgstr "Rozpocznij rozmowę głosową"
 
 msgid "Start call"
 msgstr "Rozpocznij połączenie"
-
-msgid "Start voice call"
-msgstr "Rozpocznij rozmowę głosową"
 
 msgid "Status"
 msgstr "Status"
