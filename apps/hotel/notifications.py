@@ -14,7 +14,7 @@ from django.utils.translation import override
 from .access import booking_manage_url
 from .email_providers import Attachment, EmailMessage, get_email_provider
 from .ics import build_booking_ics
-from .models import Booking
+from .models import Booking, EmailDelivery
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +103,15 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
         booking.confirmation_email_attempts = attempts
         booking.confirmation_email_last_attempt_at = attempt_at
         booking.confirmation_email_next_retry_at = next_retry_at
+        EmailDelivery.objects.create(
+            booking=booking,
+            attempt=attempts,
+            status=EmailDelivery.Status.FAILED,
+            provider=provider.name,
+            recipient=email,
+            subject=subject,
+            error_message=error,
+        )
         logger.warning(
             "Confirmation email attempt %s/%s failed for booking %s via %s: %s",
             attempts,
@@ -131,6 +140,15 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
     booking.confirmation_email_attempts = attempts
     booking.confirmation_email_last_attempt_at = attempt_at
     booking.confirmation_email_next_retry_at = None
+    EmailDelivery.objects.create(
+        booking=booking,
+        attempt=attempts,
+        status=EmailDelivery.Status.SENT,
+        provider=provider.name,
+        provider_message_id=provider_id,
+        recipient=email,
+        subject=subject,
+    )
     logger.info("Sent confirmation email for booking %s to %s via %s", booking.reference, email, provider.name)
     return True
 

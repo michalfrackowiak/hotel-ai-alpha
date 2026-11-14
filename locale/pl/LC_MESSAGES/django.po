@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 13:12+0100\n"
+"POT-Creation-Date: 2026-11-14 15:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1502,6 +1502,9 @@ msgstr "kwota"
 msgid "assistant name"
 msgstr "nazwa asystenta"
 
+msgid "attempt"
+msgstr "próba"
+
 msgid "available"
 msgstr "dostępny"
 
@@ -1667,6 +1670,12 @@ msgstr "opis"
 msgid "email"
 msgstr "e-mail"
 
+msgid "email deliveries"
+msgstr "dostawy e-maili"
+
+msgid "email delivery"
+msgstr "dostawa e-maila"
+
 msgid "enabled"
 msgstr "włączony"
 
@@ -1675,6 +1684,9 @@ msgstr "obsługiwane języki"
 
 msgid "error"
 msgstr "błąd"
+
+msgid "error message"
+msgstr "komunikat błędu"
 
 msgid "event id"
 msgstr "identyfikator zdarzenia"
@@ -1832,6 +1844,9 @@ msgstr "plan cenowy"
 msgid "rate plans"
 msgstr "plany cenowe"
 
+msgid "recipient"
+msgstr "odbiorca"
+
 msgid "reference"
 msgstr "numer"
 
@@ -1891,6 +1906,9 @@ msgstr "stan"
 
 msgid "status"
 msgstr "status"
+
+msgid "subject"
+msgstr "temat"
 
 msgid "summary"
 msgstr "podsumowanie"

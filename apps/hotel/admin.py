@@ -20,6 +20,7 @@ from .models import (
     ChannelFeed,
     Client,
     DailyRate,
+    EmailDelivery,
     PricingRule,
     RatePlan,
     Room,
@@ -203,6 +204,20 @@ class BookingEventInline(admin.TabularInline):
         return False
 
 
+class EmailDeliveryInline(admin.TabularInline):
+    model = EmailDelivery
+    extra = 0
+    can_delete = False
+    fields = ("created_at", "attempt", "status", "provider", "provider_message_id", "recipient", "error_message")
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display = (
@@ -222,7 +237,7 @@ class BookingAdmin(admin.ModelAdmin):
     search_fields = ("reference", "client__first_name", "client__last_name", "client__email", "client__phone")
     date_hierarchy = "check_in"
     autocomplete_fields = ("client", "room")
-    inlines = [BookingEventInline]
+    inlines = [BookingEventInline, EmailDeliveryInline]
     readonly_fields = (
         "reference",
         "price_breakdown",

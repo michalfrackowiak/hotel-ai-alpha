@@ -438,6 +438,20 @@ class EmailWebhookView(APIView):
         if event.status in {"bounced", "complained", "failed"}:
             updates["confirmation_email_error"] = event.reason or event.status
         Booking.objects.filter(pk=booking.pk).update(**updates)
+        # Keep the delivery history in sync with the provider's final status.
+        from apps.hotel.models import EmailDelivery
+
+        deliveries = EmailDelivery.objects.filter(booking=booking)
+        if event.message_id:
+            matched = deliveries.filter(provider_message_id=event.message_id).order_by("-created_at").first()
+        else:
+            matched = None
+        latest = matched or deliveries.order_by("-created_at").first()
+        if latest is not None and event.status in EmailDelivery.Status.values:
+            latest.status = event.status
+            if event.status in {"bounced", "complained", "failed"}:
+                latest.error_message = event.reason or event.status
+            latest.save(update_fields=["status", "error_message", "updated_at"])
         return Response(
             {"status": "ok", "reference": booking.reference, "email_status": event.status}
         )

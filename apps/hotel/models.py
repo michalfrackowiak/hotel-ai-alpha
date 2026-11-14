@@ -622,6 +622,39 @@ class Booking(TimeStampedModel):
                 raise ValidationError(_("This room is blocked for the selected dates."))
 
 
+class EmailDelivery(TimeStampedModel):
+    """One attempt to deliver a booking confirmation email.
+
+    Kept as an append-only history so reception can see every attempt and its
+    outcome instead of only the current delivery state on the booking.
+    """
+
+    class Status(models.TextChoices):
+        SENT = "sent", _("Sent")
+        FAILED = "failed", _("Failed")
+        DELIVERED = "delivered", _("Delivered")
+        BOUNCED = "bounced", _("Bounced")
+        COMPLAINED = "complained", _("Complained")
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="email_deliveries")
+    attempt = models.PositiveSmallIntegerField(_("attempt"), default=1)
+    status = models.CharField(_("status"), max_length=20, choices=Status.choices, default=Status.SENT)
+    provider = models.CharField(_("provider"), max_length=40, blank=True, default="")
+    provider_message_id = models.CharField(_("provider message id"), max_length=200, blank=True, default="")
+    recipient = models.EmailField(_("recipient"), blank=True, default="")
+    subject = models.CharField(_("subject"), max_length=255, blank=True, default="")
+    error_message = models.TextField(_("error message"), blank=True, default="")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("email delivery")
+        verbose_name_plural = _("email deliveries")
+        indexes = [models.Index(fields=["booking", "-created_at"], name="emaildelivery_booking_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.booking.reference} · attempt {self.attempt} · {self.status}"
+
+
 class GuestLoginToken(models.Model):
     """Single-use magic-link token for the guest booking account.
 
