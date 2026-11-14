@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import connection
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone, translation
@@ -41,7 +41,7 @@ from apps.hotel.guest_access import (
     reserve_login_request,
     session_email,
 )
-from apps.hotel.models import Booking, BookingEvent, RatePlan, Room, RoomType
+from apps.hotel.models import Booking, BookingEvent, ChannelFeed, RatePlan, Room, RoomBlock, RoomType
 from apps.hotel.notifications import max_email_attempts, send_guest_login_email
 from apps.hotel.pricing import StayError
 
@@ -392,6 +392,18 @@ def ops_dashboard(request):
     recent_events = BookingEvent.objects.select_related("booking").order_by("-created_at", "-pk")[:20]
     dirty_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.DIRTY).select_related("room_type").order_by("number")
     out_of_order_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.OUT_OF_ORDER).select_related("room_type").order_by("number")
+    channel_feeds = (
+        ChannelFeed.objects.filter(is_active=True)
+        .select_related("room", "room__room_type")
+        .order_by("room__number", "name")
+    )
+    channel_feed_errors = channel_feeds.exclude(last_error="")
+    channel_conflicts = sum(feed.conflict_count for feed in channel_feeds)
+    upcoming_blocks = (
+        RoomBlock.objects.filter(check_out__gte=today)
+        .select_related("room", "room__room_type", "feed")
+        .order_by("check_in", "room__number")[:20]
+    )
     return render(
         request,
         "web/ops.html",
@@ -418,8 +430,26 @@ def ops_dashboard(request):
             "dirty_rooms": dirty_rooms,
             "dirty_room_count": dirty_rooms.count(),
             "out_of_order_rooms": out_of_order_rooms,
+            "channel_feeds": channel_feeds,
+            "channel_feed_errors": channel_feed_errors,
+            "channel_feed_error_count": channel_feed_errors.count(),
+            "channel_conflicts": channel_conflicts,
+            "upcoming_blocks": upcoming_blocks,
         },
     )
+
+
+def room_calendar(request, token: str):
+    """Serve a room's signed iCal export feed for an OTA subscription."""
+    from apps.hotel.channel_feeds import resolve_feed_token
+    from apps.hotel.ics import build_room_calendar
+
+    room = resolve_feed_token(token)
+    if room is None:
+        raise Http404("Unknown calendar feed.")
+    response = HttpResponse(build_room_calendar(room), content_type="text/calendar; charset=utf-8")
+    response["Content-Disposition"] = f'inline; filename="room-{room.number}.ics"'
+    return response
 
 
 def healthz(request):

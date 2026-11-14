@@ -15,4 +15,5 @@ urlpatterns = [
     path("my-bookings/login/<str:token>/", views.guest_login, name="guest-login"),
     path("my-bookings/logout/", views.guest_logout, name="guest-logout"),
     path("ops/", views.ops_dashboard, name="ops"),
+    path("calendar/<str:token>.ics", views.room_calendar, name="room-calendar"),
 ]

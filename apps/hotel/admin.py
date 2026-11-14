@@ -14,7 +14,18 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from .booking_service import BookingError, cancel_booking, confirm_booking
-from .models import Booking, BookingEvent, Client, DailyRate, PricingRule, RatePlan, Room, RoomType
+from .models import (
+    Booking,
+    BookingEvent,
+    ChannelFeed,
+    Client,
+    DailyRate,
+    PricingRule,
+    RatePlan,
+    Room,
+    RoomBlock,
+    RoomType,
+)
 
 
 class RoomInline(admin.TabularInline):
@@ -56,6 +67,86 @@ class RoomAdmin(admin.ModelAdmin):
         if mapping and mapping.is_active:
             return format_html('<span style="color:#0a7">●</span> {}', mapping.calendar_id)
         return format_html('<span style="color:#999">—</span>')
+
+
+@admin.register(ChannelFeed)
+class ChannelFeedAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "room",
+        "is_active",
+        "last_synced_at",
+        "last_event_count",
+        "conflict_count",
+        "last_error",
+    )
+    list_filter = ("is_active", "room__room_type")
+    search_fields = ("name", "url", "room__number")
+    autocomplete_fields = ("room",)
+    readonly_fields = (
+        "last_synced_at",
+        "last_error",
+        "last_event_count",
+        "conflict_count",
+        "created_at",
+        "updated_at",
+    )
+    actions = ("sync_selected",)
+    fields = (
+        "name",
+        "room",
+        "url",
+        "is_active",
+        "last_synced_at",
+        "last_error",
+        "last_event_count",
+        "conflict_count",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.action(description=_("Sync selected channel feeds"))
+    def sync_selected(self, request, queryset):
+        from .channel_feeds import sync_feed
+
+        synced = 0
+        for feed in queryset:
+            result = sync_feed(feed)
+            if result.ok:
+                synced += 1
+            else:
+                self.message_user(request, f"{feed.name}: {result.error}", messages.ERROR)
+        if synced:
+            self.message_user(
+                request,
+                _("%(count)s channel feed(s) synced.") % {"count": synced},
+                messages.SUCCESS,
+            )
+
+
+@admin.register(RoomBlock)
+class RoomBlockAdmin(admin.ModelAdmin):
+    list_display = ("room", "stay", "source", "feed", "summary", "external_uid")
+    list_filter = ("source", "room__room_type")
+    search_fields = ("room__number", "summary", "external_uid")
+    autocomplete_fields = ("room", "feed")
+    date_hierarchy = "check_in"
+    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "room",
+        "feed",
+        "check_in",
+        "check_out",
+        "source",
+        "summary",
+        "external_uid",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(description=_("Stay"))
+    def stay(self, obj: RoomBlock) -> str:
+        return f"{obj.check_in:%d %b} → {obj.check_out:%d %b} · {obj.nights}n"
 
 
 @admin.register(Client)

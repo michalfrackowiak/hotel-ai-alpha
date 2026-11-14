@@ -462,3 +462,22 @@ curl -X POST http://localhost:8000/api/v1/chat/sessions/ \
 curl -X POST http://localhost:8000/api/v1/chat/sessions/<KEY>/messages/ \
   -H "Content-Type: application/json" -d '{"message":"A room for two from 12 to 15 December 2026"}'
 ```
+
+## Calendar feeds (channel manager)
+
+### `GET /calendar/<token>.ics`
+
+A signed, token-gated iCal export feed for one physical room. The token is
+produced with `django.core.signing` (salt `hotel.channel_feed`) and resolves
+to a single room; an invalid or expired token returns `404`.
+
+The feed contains one `VEVENT` per blocking booking for that room, with
+pending holds marked `STATUS:TENTATIVE` and confirmed bookings
+`STATUS:CONFIRMED`, plus one `VEVENT` per `RoomBlock` (including channel
+imports and manual blocks). Booking events use the booking reference as the
+UID; block events use `block-<id>`.
+
+OTA import is handled server-side by the `sync_channel_feeds` management
+command and the scheduler sidecar; there is no public import endpoint. See
+`apps/hotel/channel_feeds.py` and `apps/hotel/admin.py` for `ChannelFeed`
+and `RoomBlock`.
