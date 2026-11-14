@@ -5,13 +5,12 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import override
 
 from .access import booking_manage_url
-from .ics import build_booking_ics
+from .email_providers import get_email_provider
 from .models import Booking
 
 logger = logging.getLogger(__name__)
@@ -45,16 +44,9 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
         text_body = render_to_string("hotel/email/booking_confirmation.txt", context)
         html_body = render_to_string("hotel/email/booking_confirmation.html", context)
 
-    message = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[email],
-    )
-    message.attach_alternative(html_body, "text/html")
-    message.attach(f"{booking.reference}.ics", build_booking_ics(booking), "text/calendar")
+    provider = get_email_provider()
     try:
-        message.send(fail_silently=False)
+        result = provider.send(booking, subject=subject, text_body=text_body, html_body=html_body)
     except Exception as exc:  # noqa: BLE001
         Booking.objects.filter(pk=booking.pk).update(
             confirmation_email_status="failed",
@@ -64,16 +56,27 @@ def send_booking_confirmation(booking: Booking, *, force: bool = False) -> bool:
         booking.confirmation_email_error = str(exc)
         raise
 
+    if not result.sent:
+        Booking.objects.filter(pk=booking.pk).update(
+            confirmation_email_status="failed",
+            confirmation_email_error=result.error,
+        )
+        booking.confirmation_email_status = "failed"
+        booking.confirmation_email_error = result.error
+        raise RuntimeError(result.error or "email delivery failed")
+
     sent_at = timezone.now()
     Booking.objects.filter(pk=booking.pk).update(
         confirmation_email_sent_at=sent_at,
         confirmation_email_status="sent",
         confirmation_email_error="",
+        confirmation_email_provider_id=result.provider_message_id,
     )
     booking.confirmation_email_sent_at = sent_at
     booking.confirmation_email_status = "sent"
     booking.confirmation_email_error = ""
-    logger.info("Sent confirmation email for booking %s to %s", booking.reference, email)
+    booking.confirmation_email_provider_id = result.provider_message_id
+    logger.info("Sent confirmation email for booking %s to %s via %s", booking.reference, email, provider.name)
     return True
 
 
