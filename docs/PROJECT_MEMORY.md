@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 · **Version:** v0.5.0 · **Tests:** 167 passing
+**Last updated:** 14 November 2026 · **Version:** v0.5.1 · **Tests:** 180 passing
 
 ## Current state
 
@@ -10,7 +10,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.5.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.5.1` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -23,6 +23,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - The guest booking and voice pages pass an automated accessibility check (`tests/test_accessibility.py`) and an axe-core audit. The booking form has labelled controls and a labelled rate-plan radiogroup; the voice page announces call status through a live region and hides the avatar from assistive technology.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails` every five minutes.
+- Channel manager (v0.5.1): OTA iCal feeds are imported into per-room `RoomBlock` rows through `ChannelFeed`; availability, creation and modification honour them, and `Booking.clean()` rejects overlapping blocks. A signed `/calendar/<token>.ics` feed exports the hotel's blocking bookings (pending holds as `TENTATIVE`) and manual blocks. Conflicts with local blocking bookings are counted on the feed and surfaced on `/ops/`. The scheduler runs `sync_channel_feeds --apply`.
 
 ## Decisions and why
 
@@ -49,7 +50,9 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Fernet encryption for provider keys | Stops API keys appearing in plaintext in SQLite backups or the admin database dump; rotation is a management command. |
 | Database cache for throttling | No Redis dependency for the pilot; the cache table survives restarts and is shared by gunicorn workers. |
 | Email after commit, with an idempotency marker | A mail outage must not roll back a booking, and retries must not spam the guest. |
-| Reconciliation compares payload fields | Event-id-only checks miss edits made in Google Calendar; summary/location/dates/status catch real drift. |
+| Imported OTA reservations become `RoomBlock` rows, not bookings | Keeps the booking write path, availability and modification logic untouched; channel conflicts are counted, not auto-rejected. |
+| Channel feed is per physical room | Matches the per-room availability invariant; one feed per room is the simplest correct mapping for an alpha. |
+| Export feed uses a signed token (`django.core.signing`) | A room calendar URL is a secret subscription endpoint, not a public reference. |
 | Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
 | Policy is hotel-wide, not per rate plan | v0.3.0 has no rate plans yet; a single window and fee-night count matches the pilot's contract and stays explainable. |
 | Fee = first N stored nightly rates, capped at the total | Uses the actual quote (including daily-rate overrides) instead of a fresh calculation, and can never exceed what the guest agreed to pay. |
@@ -208,6 +211,13 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-14 | v0.5.0 | Docker web booking | `HA-P6WR73` created and confirmed from `/book/`, source `web`, email `sent` |
 | 2026-11-14 | v0.5.0 | Docker SES/Postmark webhooks | bounce and delivery matched; `/ops/` showed the booking |
 | 2026-11-14 | v0.5.0 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
+| 2026-11-14 | v0.5.1 | `pytest` | 180 passed |
+| 2026-11-14 | v0.5.1 | `manage.py check` | 0 issues |
+| 2026-11-14 | v0.5.1 | `makemigrations --check` | no changes detected |
+| 2026-11-14 | v0.5.1 | `ruff check .` | clean |
+| 2026-11-14 | v0.5.1 | Polish catalogue | 595 strings extracted, 0 missing |
+| 2026-11-14 | v0.5.1 | `tests/test_channel_manager.py` | 13 passed |
+| 2026-11-14 | v0.5.1 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
 
 Update this table when the release gate is re-run.
 
@@ -219,8 +229,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.5.0 is released and all exit criteria are met. The next milestone is v0.6.0 (distribution and reach). Recommended order:
-
-1. Channel manager (iCal import/export) with two-way reconciliation.
-2. Multi-currency display with an indicative-conversion marker.
-3. Mobile PWA install prompt and offline-safe static shell.
+v0.5.1 (channel manager) is implemented and verified. Next milestone slices: multi-currency display, then mobile PWA install prompt, leading to v0.6.0.

@@ -233,6 +233,9 @@ GOOGLE_CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar"]
 GOOGLE_CALENDAR_CREDENTIALS_FILE = os.getenv("GOOGLE_CALENDAR_CREDENTIALS_FILE", "")
 GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "")
 
+# Channel-manager iCal imports: fail fast so a slow OTA cannot stall the scheduler.
+CHANNEL_FEED_TIMEOUT_SECONDS = float(os.getenv("CHANNEL_FEED_TIMEOUT_SECONDS", "10"))
+
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"

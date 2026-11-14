@@ -7,11 +7,11 @@ from datetime import date
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Booking, RatePlan, Room, RoomType
+from .models import Booking, RatePlan, Room, RoomBlock, RoomType
 from .pricing import Quote, StayError, quote, validate_stay
 
 
-def _blocking_filter():
+def blocking_filter():
     now = timezone.now()
     return Q(status__in=Booking.BLOCKING_STATUSES) | (
         Q(status=Booking.Status.PENDING)
@@ -31,10 +31,18 @@ def booked_room_ids(
         room__room_type=room_type,
         check_in__lt=check_out,
         check_out__gt=check_in,
-    ).filter(_blocking_filter())
+    ).filter(blocking_filter())
     if exclude_booking and exclude_booking.pk:
         queryset = queryset.exclude(pk=exclude_booking.pk)
-    return list(queryset.values_list("room_id", flat=True).distinct())
+    blocked = set(queryset.values_list("room_id", flat=True))
+    blocked.update(
+        RoomBlock.objects.filter(
+            room__room_type=room_type,
+            check_in__lt=check_out,
+            check_out__gt=check_in,
+        ).values_list("room_id", flat=True)
+    )
+    return list(blocked)
 
 
 def available_rooms(

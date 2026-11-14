@@ -11,5 +11,6 @@ while true; do
     python manage.py expire_holds || echo "expire_holds failed; will retry"
     python manage.py reconcile_calendars --apply || echo "reconcile_calendars failed; will retry"
     python manage.py send_booking_emails || echo "send_booking_emails failed; will retry"
+    python manage.py sync_channel_feeds --apply || echo "sync_channel_feeds failed; will retry"
     sleep "$interval"
 done

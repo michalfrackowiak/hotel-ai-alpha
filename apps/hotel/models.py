@@ -104,6 +104,88 @@ class Room(TimeStampedModel):
         return f"{self.number} {self.name}".strip()
 
 
+class ChannelFeed(TimeStampedModel):
+    """An iCal feed imported from an OTA for one physical room.
+
+    Imported reservations are stored as :class:`RoomBlock` rows so availability
+    and the booking write path honour them without creating synthetic bookings.
+    """
+
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="channel_feeds")
+    name = models.CharField(_("name"), max_length=120)
+    url = models.URLField(_("feed URL"), max_length=500)
+    is_active = models.BooleanField(_("active"), default=True)
+    last_synced_at = models.DateTimeField(_("last synced at"), null=True, blank=True)
+    last_error = models.TextField(_("last error"), blank=True, default="")
+    last_event_count = models.PositiveIntegerField(_("last event count"), default=0)
+    conflict_count = models.PositiveIntegerField(_("conflict count"), default=0)
+
+    class Meta:
+        ordering = ["room__number", "name"]
+        verbose_name = _("channel feed")
+        verbose_name_plural = _("channel feeds")
+
+    def __str__(self) -> str:
+        return f"{self.name} · {self.room.number}"
+
+
+class RoomBlock(TimeStampedModel):
+    """Dates during which a physical room cannot be sold.
+
+    Channel imports create ``source=channel`` blocks; reception can add manual
+    blocks for maintenance or offline reservations.
+    """
+
+    class Source(models.TextChoices):
+        CHANNEL = "channel", _("Channel manager")
+        MANUAL = "manual", _("Manual block")
+
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="blocks")
+    feed = models.ForeignKey(
+        ChannelFeed,
+        on_delete=models.CASCADE,
+        related_name="blocks",
+        null=True,
+        blank=True,
+    )
+    check_in = models.DateField(_("check-in"))
+    check_out = models.DateField(_("check-out"))
+    source = models.CharField(_("source"), max_length=20, choices=Source.choices, default=Source.MANUAL)
+    external_uid = models.CharField(_("external UID"), max_length=255, blank=True, default="")
+    summary = models.CharField(_("summary"), max_length=255, blank=True, default="")
+
+    class Meta:
+        ordering = ["check_in", "room__number"]
+        verbose_name = _("room block")
+        verbose_name_plural = _("room blocks")
+        indexes = [
+            models.Index(fields=["room", "check_in", "check_out"], name="roomblock_room_dates_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feed", "external_uid"],
+                condition=models.Q(feed__isnull=False) & ~models.Q(external_uid=""),
+                name="roomblock_feed_uid_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(check_out__gt=models.F("check_in")),
+                name="roomblock_dates_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.room.number} · {self.check_in} → {self.check_out}"
+
+    @property
+    def nights(self) -> int:
+        return max((self.check_out - self.check_in).days, 0)
+
+    def clean(self) -> None:
+        super().clean()
+        if self.check_in and self.check_out and self.check_out <= self.check_in:
+            raise ValidationError({"check_out": _("Check-out must be after check-in.")})
+
+
 class Client(TimeStampedModel):
     class Language(models.TextChoices):
         ENGLISH = "en", _("English")
@@ -532,6 +614,12 @@ class Booking(TimeStampedModel):
             )
             if overlapping.exists():
                 raise ValidationError(_("This room is already booked for the selected dates."))
+            if RoomBlock.objects.filter(
+                room_id=self.room_id,
+                check_in__lt=self.check_out,
+                check_out__gt=self.check_in,
+            ).exists():
+                raise ValidationError(_("This room is blocked for the selected dates."))
 
 
 class GuestLoginToken(models.Model):
