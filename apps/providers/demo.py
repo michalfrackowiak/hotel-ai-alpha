@@ -483,10 +483,9 @@ class DemoProvider(BaseLLMProvider):
         ).format(**self._booking_fields(booking, language))
 
     def _email_asked(self, messages: list[ChatMessage]) -> bool:
-        for message in reversed(messages):
-            if message.role == "assistant":
-                text = (message.content or "").lower()
-                return "confirmation" in text
+        for message in messages:
+            if message.role == "assistant" and "confirmation" in (message.content or "").lower():
+                return True
         return False
 
     def _email_handled(self, messages: list[ChatMessage]) -> bool:
