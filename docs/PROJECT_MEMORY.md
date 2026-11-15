@@ -169,6 +169,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **The browser speech stack is vendor-dependent.** Chrome/Edge are the supported demo browsers; the voice page falls back to chat.
 - **`.env` is not committed.** Keep provider keys, superuser credentials and Google credentials out of git.
 - **Ruff ignores `E501` but enforces import order, unused imports and Django rules.** Run it before pushing; CI does not currently run ruff, so this is on the developer.
+- **Shell scripts need the git exec bit.** `docker/entrypoint.sh` and `docker/scheduler.sh` must stay mode `100755`; a Windows checkout plus a local Docker build hides a `100644` mode, but the Linux CI smoke job fails with `permission denied`. The Dockerfile also runs `chmod +x` as a belt-and-braces fix.
 
 ## Verification log
 
@@ -249,6 +250,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-15 | v0.6.9 | Pages EN/PL (`/`, `/chat/`, `/voice/`, `/book/`, `/my-bookings/`, `/booking/`) | all 200 with matching `lang` |
 | 2026-11-15 | v0.6.9 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
 | 2026-11-15 | v0.6.9 | Docker pages EN/PL | `/`, `/chat/`, `/voice/`, `/book/` all 200 with matching `lang` |
+| 2026-11-15 | v0.6.9 | GitHub Actions CI (`develop`) | green: test, docker and smoke jobs pass after the entrypoint permission fix |
 
 Update this table when the release gate is re-run.
 
