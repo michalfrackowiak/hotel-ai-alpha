@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 22:08+0100\n"
+"POT-Creation-Date: 2026-11-15 15:35+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -36,6 +36,10 @@ msgid "%(count)s channel feed(s) synced."
 msgstr "Zsynchronizowano kanały: %(count)s."
 
 #, python-format
+msgid "%(count)s confirmation SMS message(s) sent."
+msgstr "Wysłano wiadomości SMS z potwierdzeniem: %(count)s."
+
+#, python-format
 msgid "%(count)s confirmation email(s) sent."
 msgstr "Wysłano e-maile potwierdzające: %(count)s."
 
@@ -58,6 +62,10 @@ msgstr "Włączono dostawców: %(count)s."
 #, python-format
 msgid "%(name)s is now the default provider."
 msgstr "%(name)s jest teraz domyślnym dostawcą."
+
+#, python-format
+msgid "%(reference)s: no confirmation SMS was sent."
+msgstr "%(reference)s: nie wysłano SMS-a z potwierdzeniem."
 
 #, python-format
 msgid "%(reference)s: no confirmation email was sent."
@@ -149,6 +157,9 @@ msgstr ""
 "Pytaj po angielsku lub polsku. Asystent sprawdza dostępność na żywo i może zablokować"
 " pokój w niecałą minutę."
 
+msgid "Ask reception"
+msgstr "Zapytaj recepcję"
+
 msgid "Ask the concierge"
 msgstr "Zapytaj konsjerża"
 
@@ -187,9 +198,6 @@ msgstr "Zablokowane"
 
 msgid "Book a room"
 msgstr "Zarezerwuj pokój"
-
-msgid "Book in December"
-msgstr "Rezerwacja w grudniu"
 
 msgid "Book now"
 msgstr "Zarezerwuj teraz"
@@ -424,6 +432,9 @@ msgstr "Potwierdzić tę rezerwację teraz?"
 msgid "Confirm with confidence"
 msgstr "Potwierdź z pewnością"
 
+msgid "Confirmation SMS"
+msgstr "SMS z potwierdzeniem"
+
 msgid "Confirmations without email"
 msgstr "Potwierdzenia bez e-maila"
 
@@ -477,9 +488,6 @@ msgstr "Dostarczony"
 msgid "Delivered emails"
 msgstr "Dostarczone e-maile"
 
-msgid "Deluxe Suite price"
-msgstr "Cena apartamentu Deluxe"
-
 msgid "Demo policy (offline)"
 msgstr "Polityka demo (offline)"
 
@@ -501,8 +509,8 @@ msgstr "Brudne pokoje"
 msgid "Disable selected providers"
 msgstr "Wyłącz wybranych dostawców"
 
-msgid "Do you have a room for two this weekend?"
-msgstr "Czy macie pokój dla dwóch osób w ten weekend?"
+msgid "Do you have a room for two people?"
+msgstr "Czy macie pokój dla dwóch osób?"
 
 msgid "Email"
 msgstr "E-mail"
@@ -688,11 +696,14 @@ msgstr "Nie udało się połączyć z usługą recepcji. Sprawdź połączenie i
 msgid "I did not catch that. Try again, a little closer to the microphone."
 msgstr "Nie usłyszałem tego. Spróbuj ponownie, bliżej mikrofonu."
 
+msgid "I have a question for reception."
+msgstr "Mam pytanie do recepcji."
+
 msgid "I would like to book a room"
 msgstr "Chciałbym zarezerwować pokój"
 
-msgid "I would like to book a room from the 12th to the 15th of December."
-msgstr "Chciałbym zarezerwować pokój od 12 do 15 grudnia."
+msgid "I would like to book a room."
+msgstr "Chciałbym zarezerwować pokój."
 
 #, python-format
 msgid ""
@@ -965,11 +976,11 @@ msgid "Presentation"
 msgstr "Prezentacja"
 
 msgid ""
-"Press the call button and talk naturally. Aurora listens, checks real availability "
-"and confirms your room — in English or Polish."
+"Press the call button and talk naturally. Our receptionist checks real availability "
+"and confirms your room — in Polish or English."
 msgstr ""
-"Naciśnij przycisk połączenia i mów naturalnie. Aurora słucha, sprawdza rzeczywistą "
-"dostępność i potwierdza pokój — po angielsku lub polsku."
+"Naciśnij przycisk połączenia i mów naturalnie. Nasza recepcja sprawdza rzeczywistą "
+"dostępność i potwierdza pokój — po polsku lub angielsku."
 
 msgid "Previous month"
 msgstr "Poprzedni miesiąc"
@@ -1026,6 +1037,9 @@ msgstr "Numer"
 msgid "Refundable"
 msgstr "Zwrotna"
 
+msgid "Resend confirmation SMS"
+msgstr "Wyślij ponownie SMS z potwierdzeniem"
+
 msgid "Resend confirmation email"
 msgstr "Wyślij ponownie e-mail potwierdzający"
 
@@ -1055,8 +1069,8 @@ msgstr "Pokój"
 msgid "Room blocks"
 msgstr "Blokady pokoi"
 
-msgid "Room for two this weekend"
-msgstr "Pokój dla dwóch osób w ten weekend"
+msgid "Room for two"
+msgstr "Pokój dla dwóch"
 
 msgid "Room type"
 msgstr "Typ pokoju"
@@ -1076,6 +1090,9 @@ msgstr "Pokoje są przygotowywane. Zajrzyj wkrótce."
 
 msgid "Rules"
 msgstr "Zasady"
+
+msgid "SMS provider message id"
+msgstr "Identyfikator wiadomości SMS u dostawcy"
 
 msgid "Save changes"
 msgstr "Zapisz zmiany"
@@ -1429,9 +1446,6 @@ msgstr "Numery dni tygodnia muszą być między 0 a 6."
 msgid "Weekend"
 msgstr "Weekendowa"
 
-msgid "What does the Deluxe Suite cost for three nights?"
-msgstr "Ile kosztuje apartament Deluxe na trzy noce?"
-
 msgid "When"
 msgstr "Kiedy"
 
@@ -1480,6 +1494,10 @@ msgstr "Twoja wiadomość"
 
 msgid "Your reservation"
 msgstr "Twoja rezerwacja"
+
+#, python-format
+msgid "Your stay at %(hotel)s is confirmed."
+msgstr "Twój pobyt w %(hotel)s jest potwierdzony."
 
 msgid "access token"
 msgstr "token dostępu"
@@ -1609,6 +1627,21 @@ msgstr "zamknięte"
 
 msgid "closed to arrival"
 msgstr "zamknięte na przyjazd"
+
+msgid "confirmation SMS attempts"
+msgstr "próby wysłania SMS-a z potwierdzeniem"
+
+msgid "confirmation SMS error"
+msgstr "błąd SMS-a z potwierdzeniem"
+
+msgid "confirmation SMS last attempt at"
+msgstr "ostatnia próba wysłania SMS-a z potwierdzeniem"
+
+msgid "confirmation SMS sent at"
+msgstr "SMS z potwierdzeniem wysłany o"
+
+msgid "confirmation SMS status"
+msgstr "status SMS-a z potwierdzeniem"
 
 msgid "confirmation email attempts"
 msgstr "próby wysłania e-maila potwierdzającego"

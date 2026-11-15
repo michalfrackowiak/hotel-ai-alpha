@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -26,6 +27,50 @@ from .models import AgentSettings, Conversation, Message
 from .tools import TOOL_SPECS, ToolExecutor
 
 logger = logging.getLogger(__name__)
+
+EXPLICIT_EN = re.compile(
+    r"\benglish\b|\bangl(?:ielsk\w*|ielsku)\b|\bprze(?:łącz|łącz).*angielsk\w*\b|^\s*2\s*$",
+    re.IGNORECASE,
+)
+EXPLICIT_PL = re.compile(
+    r"\bpolish\b|\bpolsk(?:i|u|im|iego)\b|\bpo polsku\b|^\s*1\s*$",
+    re.IGNORECASE,
+)
+POLISH_DIACRITICS = re.compile(r"[ąćęłńóśźż]", re.IGNORECASE)
+POLISH_WORDS = re.compile(
+    r"\b(tak|nie|proszę|dziękuję|dzień|dobry|pokój|pokoje|rezerwacj\w*|noc\w*|goś\w*|"
+    r"jestem|nazywam|chcę|chciałbym|chciałabym|od|do|dla|na)\b",
+    re.IGNORECASE,
+)
+ENGLISH_WORDS = re.compile(
+    r"\b(yes|no|please|thanks|thank|hello|hi|room|rooms|booking|book|night|nights|guest|guests|"
+    r"from|to|for|the|and|with|my|name|is|email|phone|check.?in|check.?out)\b",
+    re.IGNORECASE,
+)
+
+
+def detect_language(text: str, current: str) -> str:
+    """Return the language the guest is using in ``text``.
+
+    Explicit requests win. Otherwise Polish diacritics or Polish function words
+    switch to Polish, and a clearly English sentence switches to English. The
+    current language is kept when the signal is ambiguous, so names, email
+    addresses and bare numbers never flip the conversation.
+    """
+    text = text or ""
+    if EXPLICIT_EN.search(text):
+        return "en"
+    if EXPLICIT_PL.search(text):
+        return "pl"
+    if POLISH_DIACRITICS.search(text):
+        return "pl"
+    polish_hits = len(POLISH_WORDS.findall(text))
+    english_hits = len(ENGLISH_WORDS.findall(text))
+    if current == "pl" and english_hits >= 2 and polish_hits == 0:
+        return "en"
+    if current == "en" and polish_hits >= 2 and english_hits == 0:
+        return "pl"
+    return current
 
 
 class AgentUnavailableError(Exception):
@@ -145,11 +190,24 @@ class AgentEngine:
         return messages
 
     # ------------------------------------------------------------------- turn
+    def _maybe_switch_language(self, text: str) -> None:
+        detected = detect_language(text, self.conversation.language)
+        if detected != self.conversation.language:
+            logger.info(
+                "Conversation %s switched language %s → %s",
+                self.conversation.pk,
+                self.conversation.language,
+                detected,
+            )
+            self.conversation.language = detected
+            self.conversation.save(update_fields=["language", "updated_at"])
+
     def handle_user_message(self, text: str) -> AgentTurn:
         text = (text or "").strip()
         if not text:
             raise ValueError("The message is empty.")
         self._ensure_provider()
+        self._maybe_switch_language(text)
 
         Message.objects.create(conversation=self.conversation, role=Message.Role.USER, content=text)
         messages = [ChatMessage(role="system", content=self._system_prompt()), *self._history()]

@@ -26,7 +26,7 @@ def _stay_params(room_type, stay_dates) -> dict:
 
 @pytest.mark.django_db
 def test_book_page_renders_start_form(client):
-    response = client.get("/book/")
+    response = client.get("/book/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -46,7 +46,7 @@ def test_book_page_renders_in_polish(client):
 
 @pytest.mark.django_db
 def test_home_page_links_to_direct_booking(client):
-    response = client.get("/")
+    response = client.get("/", HTTP_ACCEPT_LANGUAGE="en")
 
     content = response.content.decode()
     assert 'data-book-url="/book/"' in content
@@ -63,7 +63,11 @@ def test_book_page_shows_quote_and_rate_plans(client, room_type, rooms, stay_dat
         is_refundable=False,
     )
 
-    response = client.get("/book/", _stay_params(room_type, stay_dates) | {"guests": 2})
+    response = client.get(
+        "/book/",
+        _stay_params(room_type, stay_dates) | {"guests": 2},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -127,7 +131,7 @@ def test_book_post_requires_contact(client, room_type, rooms, stay_dates):
         "phone": "",
     }
 
-    response = client.post("/book/", payload)
+    response = client.post("/book/", payload, HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     assert "Please provide an email address or a phone number." in response.content.decode()
@@ -144,6 +148,7 @@ def test_book_page_rejects_invalid_dates(client, room_type, rooms, stay_dates):
             "check_in": check_out.isoformat(),
             "check_out": check_in.isoformat(),
         },
+        HTTP_ACCEPT_LANGUAGE="en",
     )
 
     assert response.status_code == 200
@@ -153,7 +158,9 @@ def test_book_page_rejects_invalid_dates(client, room_type, rooms, stay_dates):
 
 @pytest.mark.django_db
 def test_book_page_reports_no_availability(client, room_type, stay_dates):
-    response = client.get("/book/", _stay_params(room_type, stay_dates))
+    response = client.get(
+        "/book/", _stay_params(room_type, stay_dates), HTTP_ACCEPT_LANGUAGE="en"
+    )
 
     assert response.status_code == 200
     assert "No rooms are available for those dates." in response.content.decode()

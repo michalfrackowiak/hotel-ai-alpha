@@ -324,7 +324,7 @@ def test_availability_skips_a_room_type_that_violates_minimum_stay(
 
 def test_rate_calendar_page_renders_and_saves(staff_client, room_type, rooms):
     url = "/admin/hotel/dailyrate/calendar/?year=2026&month=12"
-    response = staff_client.get(url)
+    response = staff_client.get(url, HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     assert "Rate calendar" in response.content.decode()
@@ -361,7 +361,7 @@ def test_ops_dashboard_lists_today_arrivals(staff_client, room_type, rooms):
     booking = _booking(room_type, today, today + timedelta(days=1))
     confirm_booking(booking.reference, actor="staff", channel="admin")
 
-    response = staff_client.get("/ops/")
+    response = staff_client.get("/ops/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()

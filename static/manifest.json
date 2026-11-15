@@ -1,6 +1,6 @@
 {
-  "name": "Hotel Aurora",
-  "short_name": "Aurora",
+  "name": "Resort Neptun Jastrzębia Góra",
+  "short_name": "Resort Neptun",
   "description": "AI hotel receptionist",
   "start_url": "/",
   "display": "standalone",

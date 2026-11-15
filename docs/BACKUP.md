@@ -1,6 +1,6 @@
 # Backup and restore (SQLite)
 
-Hotel Aurora stores everything in a single SQLite file (`data/db.sqlite3` in
+Resort Neptun Jastrzębia Góra stores everything in a single SQLite file (`data/db.sqlite3` in
 Docker, the path from `DB_PATH`). Backing it up is a file-level operation, but
 it must be done safely so a half-written file is never copied.
 

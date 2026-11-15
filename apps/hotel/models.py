@@ -195,7 +195,7 @@ class Client(TimeStampedModel):
     last_name = models.CharField(_("last name"), max_length=80, blank=True, default="")
     email = models.EmailField(_("email"), blank=True)
     phone = models.CharField(_("phone"), max_length=40, blank=True)
-    language = models.CharField(_("language"), max_length=2, choices=Language.choices, default="en")
+    language = models.CharField(_("language"), max_length=2, choices=Language.choices, default="pl")
     country = models.CharField(_("country"), max_length=2, blank=True)
     marketing_consent = models.BooleanField(_("marketing consent"), default=False)
     notes = models.TextField(_("notes"), blank=True)
@@ -464,7 +464,7 @@ class Booking(TimeStampedModel):
     children = models.PositiveSmallIntegerField(_("children"), default=0)
     status = models.CharField(_("status"), max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
     source = models.CharField(_("source"), max_length=20, choices=Source.choices, default=Source.WEB)
-    language = models.CharField(_("language"), max_length=2, default="en")
+    language = models.CharField(_("language"), max_length=2, default="pl")
     currency = models.CharField(_("currency"), max_length=3, default="PLN")
     total_price = models.DecimalField(_("total price"), max_digits=10, decimal_places=2, default=Decimal("0"))
     price_breakdown = models.JSONField(_("price breakdown"), default=dict, blank=True)
@@ -522,6 +522,29 @@ class Booking(TimeStampedModel):
         null=True,
         blank=True,
         db_index=True,
+    )
+    confirmation_sms_sent_at = models.DateTimeField(_("confirmation SMS sent at"), null=True, blank=True)
+    confirmation_sms_status = models.CharField(
+        _("confirmation SMS status"),
+        max_length=20,
+        choices=[
+            ("pending", _("Pending")),
+            ("sent", _("Sent")),
+            ("failed", _("Failed")),
+        ],
+        default="pending",
+        db_index=True,
+    )
+    confirmation_sms_error = models.TextField(_("confirmation SMS error"), blank=True, default="")
+    confirmation_sms_provider_id = models.CharField(_("SMS provider message id"), max_length=200, blank=True, default="")
+    confirmation_sms_attempts = models.PositiveSmallIntegerField(
+        _("confirmation SMS attempts"),
+        default=0,
+    )
+    confirmation_sms_last_attempt_at = models.DateTimeField(
+        _("confirmation SMS last attempt at"),
+        null=True,
+        blank=True,
     )
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 

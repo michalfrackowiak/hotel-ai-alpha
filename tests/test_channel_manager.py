@@ -7,6 +7,7 @@ from datetime import timedelta
 import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils.translation import override
 
 from apps.hotel.availability import available_rooms
 from apps.hotel.booking_service import BookingError, confirm_booking, create_booking
@@ -220,10 +221,11 @@ def test_booking_clean_rejects_a_room_block(room_type, rooms, stay_dates):
         source=RoomBlock.Source.MANUAL,
     )
 
-    with pytest.raises(ValidationError) as excinfo:
-        booking.full_clean()
+    with override("en"):
+        with pytest.raises(ValidationError) as excinfo:
+            booking.full_clean()
 
-    assert "blocked" in str(excinfo.value)
+        assert "blocked" in str(excinfo.value)
 
 
 def test_sync_counts_conflicts_with_local_bookings(room_type, rooms, stay_dates):

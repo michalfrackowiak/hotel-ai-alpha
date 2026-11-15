@@ -100,7 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en"
+LANGUAGE_CODE = "pl"
 LANGUAGES = [
     ("en", "English"),
     ("pl", "Polski"),
@@ -166,13 +166,13 @@ REST_FRAMEWORK = {
 }
 
 HOTEL = {
-    "name": os.getenv("HOTEL_NAME", "Hotel Aurora"),
-    "tagline": os.getenv("HOTEL_TAGLINE", "Your AI-powered stay in the heart of the city"),
+    "name": os.getenv("HOTEL_NAME", "Resort Neptun Jastrzębia Góra"),
+    "tagline": os.getenv("HOTEL_TAGLINE", "Resort Neptun · Jastrzębia Góra"),
     "public_url": os.getenv("HOTEL_PUBLIC_URL", "http://localhost:8000").rstrip("/"),
     "currency": os.getenv("HOTEL_CURRENCY", "PLN"),
     "tax_rate": Decimal(os.getenv("HOTEL_TAX_RATE", "0.08")),
     "hold_minutes": int(os.getenv("BOOKING_HOLD_MINUTES", "30")),
-    "default_language": os.getenv("HOTEL_DEFAULT_LANGUAGE", "en"),
+    "default_language": os.getenv("HOTEL_DEFAULT_LANGUAGE", "pl"),
     "supported_languages": ["en", "pl"],
     "check_in_time": "15:00",
     "check_out_time": "11:00",
@@ -180,9 +180,9 @@ HOTEL = {
     "advance_booking_days": int(os.getenv("BOOKING_ADVANCE_DAYS", "365")),
     "cancellation_free_days": int(os.getenv("CANCELLATION_FREE_DAYS", "3")),
     "cancellation_fee_nights": int(os.getenv("CANCELLATION_FEE_NIGHTS", "1")),
-    "contact_email": os.getenv("HOTEL_CONTACT_EMAIL", "reception@example.com"),
-    "contact_phone": os.getenv("HOTEL_CONTACT_PHONE", "+48 22 000 00 00"),
-    "address": os.getenv("HOTEL_ADDRESS", "ul. Przykładowa 1, 00-001 Warszawa"),
+    "contact_email": os.getenv("HOTEL_CONTACT_EMAIL", "reception@resort-neptun.example"),
+    "contact_phone": os.getenv("HOTEL_CONTACT_PHONE", "+48 58 000 00 00"),
+    "address": os.getenv("HOTEL_ADDRESS", "ul. Morska 1, 84-104 Jastrzębia Góra"),
     "supported_display_currencies": [
         code.strip().upper()
         for code in os.getenv("SUPPORTED_DISPLAY_CURRENCIES", "PLN,EUR,USD,GBP").split(",")
@@ -220,6 +220,15 @@ SES_ACCESS_KEY_ID = os.getenv("SES_ACCESS_KEY_ID", "")
 SES_SECRET_ACCESS_KEY = os.getenv("SES_SECRET_ACCESS_KEY", "")
 SES_REGION = os.getenv("SES_REGION", "eu-central-1")
 POSTMARK_SERVER_TOKEN = os.getenv("POSTMARK_SERVER_TOKEN", "")
+
+# Booking confirmation SMS. The console provider logs the message instead of
+# sending it, so the scenario works offline; set SMS_PROVIDER=twilio and the
+# Twilio credentials for real delivery.
+BOOKING_SMS_ENABLED = env_bool("BOOKING_SMS_ENABLED", True)
+SMS_PROVIDER = os.getenv("SMS_PROVIDER", "console").lower().strip()
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER", "")
 
 # Retry policy for confirmation emails. Failed sends are retried by the
 # scheduler with exponential backoff until they succeed or hit the cap.

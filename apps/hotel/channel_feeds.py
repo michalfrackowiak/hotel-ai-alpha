@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 FEED_TOKEN_SALT = "hotel.channel_feed"
 FEED_TOKEN_MAX_AGE = 60 * 60 * 24 * 365 * 5
-FEED_USER_AGENT = "HotelAurora/1.0 channel-sync"
+FEED_USER_AGENT = "ResortNeptun/1.0 channel-sync"
 
 
 @dataclass(frozen=True)

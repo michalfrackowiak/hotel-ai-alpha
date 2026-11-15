@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of **14 November 2026**.
+Status as of **15 November 2026**.
 
 | Phase | Milestone | Status |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Status as of **14 November 2026**.
 | 10 | Revenue and delivery hardening | ✅ Complete (v0.4.0) |
 | 11 | Guest experience and polish | ✅ Complete (v0.5.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.6.8** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices and agent improvements (post-confirmation email offer, flexible natural-language date parsing).
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.6.9** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing) and the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery.
 
 ---
 
@@ -262,3 +262,23 @@ Theme: **distribution and reach**. The guest journey is complete and accessible;
 ### Release process
 
 Follow [BRANCHING.md](BRANCHING.md): branch `feature/v0.6.0-*` from `develop`, keep CI green, update this roadmap, `docs/PROJECT_MEMORY.md`, release notes and the next-milestone plan before merging to `main` and tagging `v0.6.0`.
+
+---
+
+## Milestone v0.6.9 — released
+
+Theme: **the guided booking scenario**. The conversation now follows the reception script step by step, starts in Polish and offers English, and closes with a choice of email or SMS confirmation.
+
+### Delivered
+
+- [x] Seven-step scenario shared by chat and voice: welcome/language, arrival date, departure date or duration, guest count, availability and room selection, confirmation prompt, delivery choice
+- [x] Default language Polish with dynamic switching to English mid-conversation
+- [x] Pluggable SMS delivery: offline console provider by default, optional Twilio adapter
+- [x] Booking SMS status fields, admin fieldset and **Resend confirmation SMS** action
+- [x] `send_confirmation_sms` and `transfer_to_human` agent tools
+- [x] Resort Neptun Jastrzębia Góra branding and updated `.env.example`
+- [x] Migrations `agents.0003`/`0004` and `hotel.0014`, including a prompt-refresh data migration
+- [x] 17 new Polish strings; catalogue at 617 extracted, all translated
+- [x] Rewritten end-to-end demo tests for the sequential flow, SMS, Polish and handover
+
+**Exit criteria:** a guest can book by chat or voice through the seven steps, in Polish or English, and receive the confirmation by email or SMS. **All met in v0.6.9.**

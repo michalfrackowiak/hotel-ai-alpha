@@ -13,11 +13,11 @@ def client() -> Client:
 
 @pytest.mark.django_db
 def test_home_page_renders(client):
-    response = client.get("/")
+    response = client.get("/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Hotel Aurora" in content
+    assert "Resort Neptun Jastrzębia Góra" in content
     assert "Check availability" in content
 
 
@@ -53,7 +53,7 @@ def test_chat_and_voice_pages_render(client):
 
 @pytest.mark.django_db
 def test_booking_lookup_page_renders(client):
-    response = client.get("/booking/")
+    response = client.get("/booking/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -63,7 +63,7 @@ def test_booking_lookup_page_renders(client):
 
 @pytest.mark.django_db
 def test_guest_account_page_renders_in_both_languages(client):
-    english = client.get("/my-bookings/")
+    english = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
     polish = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="pl")
 
     assert english.status_code == 200
@@ -76,7 +76,7 @@ def test_guest_account_page_renders_in_both_languages(client):
 
 @pytest.mark.django_db
 def test_unknown_booking_shows_not_found(client):
-    response = client.get("/booking/HA-NOPE00/")
+    response = client.get("/booking/HA-NOPE00/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 404
     assert "could not find" in response.content.decode().lower()
@@ -90,7 +90,7 @@ def test_booking_detail_requires_a_token(client):
     from apps.hotel.models import Booking
 
     booking = Booking.objects.get()
-    response = client.get(f"/booking/{booking.reference}/")
+    response = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 403
     assert "invalid or has expired" in response.content.decode().lower()
@@ -105,7 +105,7 @@ def test_booking_detail_renders_seeded_booking(client):
     from apps.hotel.models import Booking
 
     booking = Booking.objects.get()
-    response = client.get(booking_manage_path(booking))
+    response = client.get(booking_manage_path(booking), HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -123,12 +123,16 @@ def test_booking_lookup_requires_matching_contact(client):
 
     booking = Booking.objects.get()
 
-    missing = client.get("/booking/", {"reference": booking.reference})
+    missing = client.get("/booking/", {"reference": booking.reference}, HTTP_ACCEPT_LANGUAGE="en")
     wrong = client.get(
-        "/booking/", {"reference": booking.reference, "contact": "someone@example.com"}
+        "/booking/",
+        {"reference": booking.reference, "contact": "someone@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
     )
     right = client.get(
-        "/booking/", {"reference": booking.reference, "contact": "anna.kowalska@example.com"}
+        "/booking/",
+        {"reference": booking.reference, "contact": "anna.kowalska@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
     )
 
     assert missing.status_code == 200

@@ -95,7 +95,7 @@ def load_existing() -> Catalog:
     if PO_PATH.exists():
         with PO_PATH.open("rb") as handle:
             return read_po(handle)
-    return Catalog(locale="pl", project="Hotel Aurora", charset="utf-8")
+    return Catalog(locale="pl", project="Resort Neptun", charset="utf-8")
 
 
 def main() -> None:
@@ -104,9 +104,9 @@ def main() -> None:
 
     catalog = Catalog(
         locale="pl",
-        project="Hotel Aurora",
+        project="Resort Neptun",
         version="0.1.0",
-        copyright_holder="Hotel Aurora",
+        copyright_holder="Resort Neptun",
         charset="utf-8",
         fuzzy=False,
     )

@@ -224,7 +224,7 @@ def test_ops_dashboard_shows_email_delivery(booking, client):
         ]
     )
 
-    response = client.get("/ops/")
+    response = client.get("/ops/", HTTP_ACCEPT_LANGUAGE="en")
 
     assert response.status_code == 200
     content = response.content.decode()

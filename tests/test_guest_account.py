@@ -50,7 +50,9 @@ def _login_path(message) -> str:
 
 @pytest.mark.django_db
 def test_requesting_a_link_sends_one_email(client, anna):
-    response = client.post("/my-bookings/", {"email": "Anna@Example.com"})
+    response = client.post(
+        "/my-bookings/", {"email": "Anna@Example.com"}, HTTP_ACCEPT_LANGUAGE="en"
+    )
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -62,7 +64,9 @@ def test_requesting_a_link_sends_one_email(client, anna):
 
 @pytest.mark.django_db
 def test_unknown_email_gets_the_same_neutral_response(client, anna):
-    response = client.post("/my-bookings/", {"email": "nobody@example.com"})
+    response = client.post(
+        "/my-bookings/", {"email": "nobody@example.com"}, HTTP_ACCEPT_LANGUAGE="en"
+    )
 
     assert response.status_code == 200
     assert "sign-in link is on its way" in response.content.decode()
@@ -106,7 +110,7 @@ def test_a_magic_link_can_only_be_used_once(client, anna):
     first = client.get(path)
     assert first.status_code == 302
 
-    second = Client().get(path)
+    second = Client().get(path, HTTP_ACCEPT_LANGUAGE="en")
     assert second.status_code == 400
     assert "invalid, already used or expired" in second.content.decode()
 
@@ -176,8 +180,12 @@ def test_signed_in_guest_cannot_open_someone_elses_booking(client, room_type, ro
 
 @pytest.mark.django_db
 def test_login_requests_are_rate_limited_per_email(client, anna):
-    first = client.post("/my-bookings/", {"email": "anna@example.com"})
-    second = client.post("/my-bookings/", {"email": "anna@example.com"})
+    first = client.post(
+        "/my-bookings/", {"email": "anna@example.com"}, HTTP_ACCEPT_LANGUAGE="en"
+    )
+    second = client.post(
+        "/my-bookings/", {"email": "anna@example.com"}, HTTP_ACCEPT_LANGUAGE="en"
+    )
 
     assert first.status_code == 200
     assert second.status_code == 200

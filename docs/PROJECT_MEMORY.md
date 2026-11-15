@@ -2,15 +2,19 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 14 November 2026 — **Version:** v0.6.8 — **Tests:** 188 passing
+**Last updated:** 15 November 2026 — **Version:** v0.6.9 — **Tests:** 189 passing
 
 ## Current state
 
-- Phases 0–11 are complete. The app books a room end-to-end by chat and voice in English and Polish, emails a bilingual confirmation and keeps per-room calendars in sync.
+- Phases 0–11 are complete. The app books a room end-to-end by chat and voice in Polish and English, emails or texts a confirmation and keeps per-room calendars in sync.
+- The conversation follows a seven-step reception script shared by chat and voice: welcome/language, arrival date, departure date or duration, guest count, availability and room selection, confirmation prompt, then a choice of email or SMS delivery. Polish is the default; the engine switches to English when the guest asks.
+- The demo hotel is branded **Resort Neptun Jastrzębia Góra**; the assistant is still called **Aurora**.
+- Confirmation SMS is delivered through a pluggable provider layer: the offline `console` provider by default, or Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Delivery state is stored on the booking and shown in the admin.
+- Non-booking enquiries and explicit requests for a receptionist call `transfer_to_human`, which records a handover request in the conversation state.
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.6.8` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.6.9` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -25,7 +29,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails` every five minutes.
 - Channel manager (v0.5.1): OTA iCal feeds are imported into per-room `RoomBlock` rows through `ChannelFeed`; availability, creation and modification honour them, and `Booking.clean()` rejects overlapping blocks. A signed `/calendar/<token>.ics` feed exports the hotel's blocking bookings (pending holds as `TENTATIVE`) and manual blocks. Conflicts with local blocking bookings are counted on the feed and surfaced on `/ops/`. The scheduler runs `sync_channel_feeds --apply`.
 
-- After confirmation, the agent offers to send the booking confirmation email: it can use a known email or ask for one and send it via the `send_confirmation_email` tool (demo and LLM tool path).
+- After confirmation, the agent asks whether the guest wants the confirmation by email or SMS. It can use a known address/number or ask for one, then sends through `send_confirmation_email` or `send_confirmation_sms` (demo and LLM tool path).
 - Demo/provider date parsing accepts natural inputs (e.g. “20th of November”, ranges without year, “from tomorrow for 5 days” / “od jutra na 3 noce”); tool date parsing is tolerant as a safety net.
 
 ## Decisions and why
@@ -58,6 +62,11 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Export feed uses a signed token (`django.core.signing`) | A room calendar URL is a secret subscription endpoint, not a public reference. |
 | Haru full-duplex model not integrated | Requires a 12 GB GPU, no Polish support, no tool calling; incompatible with the alpha's CPU stack and booking agent. See `docs/research/haru-voice-model.md`. |
 | Deterministic flexible date parsing | Demo/provider parsing and tolerant tool-date handling cover natural booking inputs (ordinals, ranges without year, relative start + duration) without adding an SLM dependency, preserving the offline/CPU-only fallback. |
+| Polish is the default language | The pilot property is in Poland; a Polish greeting with an explicit English option matches how guests arrive and avoids forcing a language switch. The engine flips the stored conversation language when the guest asks. |
+| SMS goes through a provider layer with a console default | Keeps the seven-step scenario and the tests working offline without credentials, while leaving a real Twilio adapter behind the same `SmsProvider` interface. |
+| SMS delivery state lives on the booking | Mirrors the email design: the confirmation marker makes retries idempotent, the status/error/provider-id fields feed the admin and API, and a failure never rolls back a reservation. |
+| Handover is a recorded state change, not a channel-specific path | `transfer_to_human` stores the reason in `conversation.state` so chat and voice share one implementation and reception can see why the guest was escalated. |
+| Prompt refresh migration only touches the old defaults | Existing databases pick up the seven-step prompts without overwriting an operator's customised text. |
 | Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
 | Policy is hotel-wide, not per rate plan | v0.3.0 has no rate plans yet; a single window and fee-night count matches the pilot's contract and stays explainable. |
 | Fee = first N stored nightly rates, capped at the total | Uses the actual quote (including daily-rate overrides) instead of a fresh calculation, and can never exceed what the guest agreed to pay. |
@@ -136,6 +145,10 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **Confirmation retries respect the stored backoff.** `send_pending_confirmation_emails()` skips bookings whose `next_retry_at` is in the future or that have reached `EMAIL_MAX_ATTEMPTS`. `--force` is the deliberate override; do not remove the filters from the scheduler path.
 - **Every send attempt updates the retry fields.** `send_booking_confirmation()` must increment `confirmation_email_attempts`, stamp `confirmation_email_last_attempt_at`, and set or clear `confirmation_email_next_retry_at`; otherwise the dashboard and scheduler drift from reality.
 - **Webhook payloads are normalised in `email_webhooks.py`.** Keep SES/SNS and Postmark field names there, not in the API view. The view only resolves the booking and writes the status.
+- **SMS delivery follows the same after-commit and idempotency rules as email.** `send_booking_confirmation_sms()` owns `confirmation_sms_sent_at` and the status/attempt fields; a send failure must never roll back the booking. `force=True` is the deliberate resend path (admin action), not the default.
+- **`ConsoleSmsProvider.outbox` is class-level.** Tests reset it through the autouse fixture in `tests/conftest.py`; do not assert across tests without a reset.
+- **The default language is Polish.** Web tests that assert English copy must pass `HTTP_ACCEPT_LANGUAGE="en"` or wrap the call in `translation.override("en")`; otherwise they see the Polish catalogue.
+- **Language switching is detected before each turn.** `apps/agents/engine.py` flips `conversation.language` on an explicit request for English/Polish; the demo provider and prompts then render in that language. Do not hard-code a language in a channel path.
 - **Guest pages must pass `tests/test_accessibility.py`.** It is a structural gate: one `<h1>`, a `<main>` landmark, a skip link, labelled controls, named buttons and links, no positive tabindex and no focusable content under `aria-hidden`. Add new guest-facing pages to the test rather than weakening a rule.
 - **Do not put a fixed `aria-label` on the voice call button.** Its visible label switches between "Start call" and "End call"; a static accessible name breaks WCAG Label in Name. Name the button from its visible text and announce status changes through the `role="status"` region.
 - **Pending bookings are skipped by `sync_booking` before any event record is created.** This is intentional and tested.
@@ -223,6 +236,19 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-14 | v0.5.1 | Polish catalogue | 595 strings extracted, 0 missing |
 | 2026-11-14 | v0.5.1 | `tests/test_channel_manager.py` | 13 passed |
 | 2026-11-14 | v0.5.1 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
+| 2026-11-14 | v0.6.8 | `pytest` | 188 passed |
+| 2026-11-14 | v0.6.8 | `manage.py check` | 0 issues |
+| 2026-11-14 | v0.6.8 | `makemigrations --check` | no changes detected |
+| 2026-11-14 | v0.6.8 | `ruff check .` | clean |
+| 2026-11-15 | v0.6.9 | `pytest -o addopts=""` | 189 passed |
+| 2026-11-15 | v0.6.9 | `manage.py check` | 0 issues |
+| 2026-11-15 | v0.6.9 | `makemigrations --check --dry-run` | no changes detected |
+| 2026-11-15 | v0.6.9 | `ruff check .` | clean |
+| 2026-11-15 | v0.6.9 | Polish catalogue | 617 strings extracted, 617 translated, compiled |
+| 2026-11-15 | v0.6.9 | Demo flow (chat + voice) | availability → hold → confirm → email/SMS exercised in EN and PL |
+| 2026-11-15 | v0.6.9 | Pages EN/PL (`/`, `/chat/`, `/voice/`, `/book/`, `/my-bookings/`, `/booking/`) | all 200 with matching `lang` |
+| 2026-11-15 | v0.6.9 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
+| 2026-11-15 | v0.6.9 | Docker pages EN/PL | `/`, `/chat/`, `/voice/`, `/book/` all 200 with matching `lang` |
 
 Update this table when the release gate is re-run.
 
@@ -231,11 +257,8 @@ Update this table when the release gate is re-run.
 - Colour contrast: add automated checks to the accessibility gate, or keep as manual review?
 - Email history: per-message view vs. only current delivery state.
 - Scheduler: load-test with a large backlog.
+- SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?
 
 ## Next move
 
-v0.6.0 is released. All must-haves (channel manager, multi-currency display, PWA install prompt) are shipped. The next milestone (v0.7.0) would pick up the "should have" items; no scope has been committed yet.
-| 2026-11-14 | v0.6.8 | `pytest` | 188 passed |
-| 2026-11-14 | v0.6.8 | `manage.py check` | 0 issues |
-| 2026-11-14 | v0.6.8 | `makemigrations --check` | no changes detected |
-| 2026-11-14 | v0.6.8 | `ruff check .` | clean |
+v0.6.9 is released: the guided seven-step scenario, Polish-first language handling and email/SMS confirmation delivery are shipped. The next milestone (v0.7.0) would pick up the remaining "should have" items; no scope has been committed yet.

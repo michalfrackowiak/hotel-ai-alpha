@@ -1,6 +1,6 @@
 # Architecture
 
-Hotel Aurora is a Django 5.2 application with a provider-agnostic AI conversation layer. The same domain services and tools are used by the website, the REST API, the chat concierge and the voice concierge.
+Resort Neptun Jastrzębia Góra is a Django 5.2 application with a provider-agnostic AI conversation layer. The same domain services and tools are used by the website, the REST API, the chat concierge and the voice concierge.
 
 ## System context
 
@@ -18,6 +18,7 @@ flowchart LR
     Calendar --> Google[Google Calendar<br/>one calendar per room]
     Calendar --> Fake[Fake calendar<br/>demo/tests]
     Hotel --> Mail[Confirmation email<br/>SMTP / console]
+    Hotel --> SMS[Confirmation SMS<br/>console / Twilio]
     Scheduler[Hold cleanup scheduler] --> Hotel
     Staff[Reception staff] --> Ops[Ops dashboard / admin]
     Ops --> Hotel
@@ -29,7 +30,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email, admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email and SMS, admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
@@ -130,7 +131,8 @@ Every transition appends a `BookingEvent` with the actor (`guest`, `staff`, `age
 - The web lookup never exposes a booking from a reference alone: it redirects to a signed link only when the contact matches. Rotating `Booking.access_token` revokes every link.
 - `/my-bookings/` is a passwordless guest account. `apps.hotel.guest_access` stores only a SHA-256 hash of a single-use, 30-minute token. The request page always returns the same neutral message; an email is sent only when the address already has a booking. A signed-in session can open any booking whose client email matches, and the detail view issues that booking's normal signed token so confirm/modify/cancel keep working.
 - `apps.hotel.notifications` renders an English or Polish confirmation with `apps.hotel.ics` and sends it after commit. `confirmation_email_sent_at` makes retries idempotent; `send_booking_emails` retries undelivered confirmations. The same notification module renders the guest magic-link email through the configured provider.
-- Email and calendar failures are logged and never roll back a reservation.
+- `apps.hotel.sms_providers` delivers a short confirmation text through a pluggable `SmsProvider`. The default `console` provider records the message in the log and `ConsoleSmsProvider.outbox` so demos and tests work offline; `twilio` posts to the Twilio Messages API when configured. `send_booking_confirmation_sms()` owns the `confirmation_sms_sent_at` marker and the status/attempt fields on the booking.
+- Email, SMS and calendar failures are logged and never roll back a reservation.
 
 ### Availability
 
@@ -198,6 +200,9 @@ The model can only affect the world through these tools:
 | `confirm_booking` | Confirm a hold |
 | `get_booking` | Read a booking by reference |
 | `cancel_booking` | Cancel a booking, with an optional reason and note |
+| `send_confirmation_email` | Send or resend the confirmation email, optionally storing an address |
+| `send_confirmation_sms` | Send a short confirmation SMS, optionally storing a phone number |
+| `transfer_to_human` | Record a handover request for a receptionist |
 
 Tool handlers are defensive: invalid arguments and domain errors become `{"ok": false, "error": ...}` results instead of exceptions, so the model can recover in the next turn.
 
@@ -212,7 +217,7 @@ The engine stores every user, assistant and tool message. `conversation_history(
 - default provider, tool-iteration limit, hold duration;
 - STT/TTS provider names and voice names.
 
-The system prompt is assembled at request time with runtime context: hotel name, today's date, currency, check-in/out times, hold duration, channel and active room types. The guest language is appended as an explicit instruction.
+The system prompt is assembled at request time with runtime context: hotel name, today's date, currency, check-in/out times, hold duration, channel and active room types. The guest language is appended as an explicit instruction. The default language is Polish; the engine detects an explicit request for English (or Polish) before each turn and updates `conversation.language`, so the prompt and the demo policy reply in the chosen language.
 
 ## Voice
 

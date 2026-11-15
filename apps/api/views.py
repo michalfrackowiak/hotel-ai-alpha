@@ -177,7 +177,7 @@ class BookingCreateView(APIView):
                 adults=data.get("adults", 2),
                 children=data.get("children", 0),
                 source=data.get("source", "web"),
-                language=data.get("language", "en"),
+                language=data.get("language", "pl"),
                 special_requests=data.get("special_requests", ""),
                 rate_plan=data.get("rate_plan") or None,
             )
@@ -281,7 +281,7 @@ class ChatSessionCreateView(APIView):
         try:
             conversation = start_conversation(
                 channel=serializer.validated_data.get("channel", Conversation.Channel.CHAT),
-                language=serializer.validated_data.get("language", "en"),
+                language=serializer.validated_data.get("language", "pl"),
             )
         except AgentUnavailableError as exc:
             raise ApiError("agent_disabled", str(exc), status_code=503) from exc
@@ -370,7 +370,7 @@ class VoiceTranscribeView(APIView):
             provider = get_stt_provider(settings_obj.voice_stt_provider)
             text = provider.transcribe(
                 audio.read(),
-                language=serializer.validated_data.get("language", "en"),
+                language=serializer.validated_data.get("language", "pl"),
                 filename=audio.name or "audio.webm",
                 content_type=audio.content_type or "audio/webm",
             )
@@ -392,7 +392,7 @@ class VoiceSpeakView(APIView):
             provider = get_tts_provider(settings_obj.voice_tts_provider)
             audio, content_type = provider.synthesize(
                 serializer.validated_data["text"],
-                language=serializer.validated_data.get("language", "en"),
+                language=serializer.validated_data.get("language", "pl"),
                 voice=serializer.validated_data.get("voice", ""),
             )
         except SpeechProviderError as exc:

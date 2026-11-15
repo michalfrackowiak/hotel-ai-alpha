@@ -91,6 +91,7 @@ class BookingSerializer(serializers.ModelSerializer):
     cancellation_reason_display = serializers.CharField(source="get_cancellation_reason_display", read_only=True)
     cancelled_by_display = serializers.CharField(source="get_cancelled_by_display", read_only=True)
     confirmation_email_status = serializers.CharField(source="get_confirmation_email_status_display", read_only=True)
+    confirmation_sms_status = serializers.CharField(source="get_confirmation_sms_status_display", read_only=True)
     cancellation = serializers.SerializerMethodField()
     calendar = serializers.SerializerMethodField()
     manage_token = serializers.SerializerMethodField()
@@ -138,6 +139,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "cancelled_at",
             "confirmation_email_status",
             "confirmation_email_error",
+            "confirmation_sms_status",
+            "confirmation_sms_error",
         )
 
     def get_manage_token(self, obj: Booking) -> str:
@@ -172,7 +175,7 @@ class BookingCreateSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
     email = serializers.EmailField(required=False, allow_blank=True, default="")
     phone = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
-    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en", required=False)
+    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="pl", required=False)
     source = serializers.ChoiceField(
         choices=["web", "chat", "voice", "api"], default="web", required=False
     )
@@ -216,7 +219,7 @@ class BookingCancelSerializer(serializers.Serializer):
 
 
 class ChatSessionCreateSerializer(serializers.Serializer):
-    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en", required=False)
+    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="pl", required=False)
     channel = serializers.ChoiceField(
         choices=Conversation.Channel.values, default=Conversation.Channel.CHAT, required=False
     )
@@ -227,10 +230,10 @@ class ChatMessageCreateSerializer(serializers.Serializer):
 
 
 class VoiceTranscribeSerializer(serializers.Serializer):
-    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en", required=False)
+    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="pl", required=False)
 
 
 class VoiceSpeakSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=2000)
-    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en", required=False)
+    language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="pl", required=False)
     voice = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")

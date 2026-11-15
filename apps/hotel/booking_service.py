@@ -118,8 +118,9 @@ def find_or_create_client(
     last_name: str,
     email: str = "",
     phone: str = "",
-    language: str = "en",
+    language: str = "",
 ) -> Client:
+    language = normalize_language(language)
     email = (email or "").strip().lower()
     phone = (phone or "").strip()
     first_name = (first_name or "").strip() or "Guest"
@@ -184,7 +185,7 @@ def create_booking(
     adults: int = 2,
     children: int = 0,
     source: str = Booking.Source.WEB,
-    language: str = "en",
+    language: str = "",
     special_requests: str = "",
     room: Room | None = None,
     rate_plan=None,

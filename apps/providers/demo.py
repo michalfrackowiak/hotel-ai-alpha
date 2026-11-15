@@ -1,8 +1,10 @@
 """Offline demo policy.
 
 This connector implements a small, deterministic receptionist so the alpha can
-be demonstrated (and tested) without any API key. It exercises exactly the same
-tools as the LLM connectors: availability → pricing → hold → confirmation.
+be demonstrated (and tested) without any API key. It follows the same
+conversation scenario as the LLM connectors: language selection, check-in,
+check-out/duration, guest count, availability, room selection, confirmation,
+delivery method (email or SMS), contact collection and a warm closing.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from django.conf import settings
 from django.utils import timezone
 
 from .base import (
@@ -39,13 +42,47 @@ MONTHS = {
     "december": 12, "dec": 12, "grudnia": 12, "grudzień": 12,
 }
 
+POLISH_ORDINALS = {
+    "pierwszego": 1, "drugiego": 2, "trzeciego": 3, "czwartego": 4,
+    "piątego": 5, "szóstego": 6, "siódmego": 7, "ósmego": 8,
+    "dziewiątego": 9, "dziesiątego": 10, "jedenastego": 11,
+    "dwunastego": 12, "trzynastego": 13, "czternastego": 14,
+    "piętnastego": 15, "szesnastego": 16, "siedemnastego": 17,
+    "osiemnastego": 18, "dziewiętnastego": 19, "dwudziestego": 20,
+    "dwudziestego pierwszego": 21, "dwudziestego drugiego": 22,
+    "dwudziestego trzeciego": 23, "dwudziestego czwartego": 24,
+    "dwudziestego piątego": 25, "dwudziestego szóstego": 26,
+    "dwudziestego siódmego": 27, "dwudziestego ósmego": 28,
+    "dwudziestego dziewiątego": 29, "trzydziestego": 30,
+    "trzydziestego pierwszego": 31,
+}
+
+WORD_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "jeden": 1, "jedna": 1, "jedno": 1, "dwa": 2, "dwie": 2, "dwoje": 2,
+    "trzy": 3, "cztery": 4, "pięć": 5, "sześć": 6, "siedem": 7,
+    "osiem": 8, "dziewięć": 9, "dziesięć": 10,
+}
+
 AFFIRMATIVE = re.compile(
     r"\b(yes|yeah|yep|sure|ok|okay|confirm|confirmed|book it|go ahead|"
     r"tak|potwierdzam|zgoda|rezerwuj|proszę|dobrze)\b",
     re.IGNORECASE,
 )
-NEGATIVE = re.compile(r"\b(no|nope|not now|later|nie|nie trzeba|nie chc�T)\b", re.IGNORECASE)
+NEGATIVE = re.compile(
+    r"\b(no|nope|not now|later|nie|nie trzeba|nie chcę|rezygnuję)\b",
+    re.IGNORECASE,
+)
 CANCEL_INTENT = re.compile(r"\b(cancel|cancelled|anuluj|anulować|odwołaj|odwołać)\b", re.IGNORECASE)
+HANDOVER_INTENT = re.compile(
+    r"\b(complaint|complain|invoice|refund|reklamac\w*|skarg\w*|faktur\w*|zwrot\w*|"
+    r"praca|job|konferencj\w*|event|grupa|group|parking|recepcj\w*|human|człowiek|"
+    r"pracownik|inna sprawa|other matter)\b",
+    re.IGNORECASE,
+)
+EMAIL_CHOICE = re.compile(r"\b(e-?mail|mail|emailem|mailem)\b", re.IGNORECASE)
+SMS_CHOICE = re.compile(r"\b(sms|phone|telefon|numer|komórk\w*|text|tekst)\b", re.IGNORECASE)
 REFERENCE = re.compile(r"\bHA-[A-Z0-9]{6}\b", re.IGNORECASE)
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
 PHONE = re.compile(r"(?<![\d])(\+?\d[\d\s()\-]{7,}\d)(?![\d])")
@@ -54,6 +91,7 @@ GUESTS = re.compile(
 )
 NIGHTS = re.compile(r"(\d+)\s*(?:night|nights|noc|noce|nocy)", re.IGNORECASE)
 FOR_N = re.compile(r"\b(?:for|dla)\s+(\d+)\b", re.IGNORECASE)
+BARE_NUMBER = re.compile(r"^\s*(\d{1,2})\s*$")
 STOPWORDS = {
     "email", "e-mail", "mail", "phone", "telephone", "tel", "number", "numer",
     "is", "jest", "my", "moje", "name", "imię", "nazwisko", "and", "i",
@@ -94,58 +132,21 @@ class DemoProvider(BaseLLMProvider):
         users = [message for message in messages if message.role == "user"]
         last_user = users[-1].content if users else ""
         history = "\n".join(message.content for message in users)
-        slots = self._extract_slots(history, last_user)
+        slots = self._extract_slots(history, last_user, messages)
 
         results = self._tool_results(messages)
         availability = results.get("check_availability")
         created = results.get("create_booking")
         confirmed = results.get("confirm_booking")
         cancelled = results.get("cancel_booking")
+        email_result = results.get("send_confirmation_email")
+        sms_result = results.get("send_confirmation_sms")
+        handover = results.get("transfer_to_human")
 
         if cancelled:
             if cancelled.get("ok"):
                 return self._text(self._cancelled(language, cancelled.get("booking", {})), language)
             return self._text(self._error(language, cancelled), language)
-
-        if confirmed:
-            if not confirmed.get("ok"):
-                return self._text(self._error(language, confirmed), language)
-            booking = confirmed.get("booking", {})
-            if not self._email_asked(messages):
-                return self._text(
-                    self._confirmed(language, booking) + " " + self._ask_email(language, booking),
-                    language,
-                )
-            email_result = results.get("send_confirmation_email")
-            if email_result is not None:
-                if email_result.get("ok"):
-                    return self._text(self._email_sent(language, email_result.get("email", "")), language)
-                return self._text(self._error(language, email_result), language)
-            # Email already asked but not handled yet: continue below.
-
-        # Email confirmation flow after a completed booking.
-        confirmed_booking = (confirmed or {}).get("booking") or {}
-        ref = confirmed_booking.get("reference") or ""
-        if ref and self._email_asked(messages) and not self._email_handled(messages):
-            if NEGATIVE.search(last_user or ""):
-                return self._text(self._email_declined(language), language)
-            email_match = EMAIL.search(last_user or "")
-            if email_match:
-                return self._tool("send_confirmation_email", {"reference": ref, "email": email_match.group(0)}, language)
-            if self._is_affirmative(last_user or ""):
-                booking_email = slots["email"]
-                if booking_email:
-                    return self._tool("send_confirmation_email", {"reference": ref, "email": booking_email}, language)
-                return self._text(self._ask_email_address(language), language)
-            # Fall through to availability handling otherwise.
-
-        if created:
-            if not created.get("ok"):
-                return self._text(self._error(language, created), language)
-            booking = created.get("booking", {})
-            if self._last_is_tool(messages) or not self._is_affirmative(last_user):
-                return self._text(self._ask_confirm(language, booking), language)
-            return self._tool("confirm_booking", {"reference": booking.get("reference")}, language)
 
         reference_match = REFERENCE.search(history)
         if reference_match and CANCEL_INTENT.search(last_user):
@@ -155,59 +156,68 @@ class DemoProvider(BaseLLMProvider):
                 language,
             )
 
-        availability_data = self._fresh_availability(availability, slots)
-        options = (availability_data or {}).get("options") or []
+        if handover is not None:
+            if handover.get("ok"):
+                return self._text(self._handover(language), language)
+            return self._text(self._error(language, handover), language)
 
-        if availability is not None and availability_data is None:
-            # Dates changed since the last search: search again.
-            if slots["check_in"] and slots["check_out"]:
+        if email_result is not None:
+            if email_result.get("ok"):
+                return self._text(self._closing_email(language, email_result.get("email", "")), language)
+            return self._text(self._error(language, email_result), language)
+
+        if sms_result is not None:
+            if sms_result.get("ok"):
+                return self._text(self._closing_sms(language, sms_result.get("phone", "")), language)
+            return self._text(self._error(language, sms_result), language)
+
+        if confirmed is not None:
+            if not confirmed.get("ok"):
+                return self._text(self._error(language, confirmed), language)
+            booking = confirmed.get("booking", {})
+            method = self._delivery_method(messages, history, booking)
+            if method == "sms":
+                phone = slots["phone"] or booking.get("guest_phone") or ""
+                if not phone:
+                    return self._text(self._ask_phone(language), language)
                 return self._tool(
-                    "check_availability",
-                    {
-                        "check_in": slots["check_in"].isoformat(),
-                        "check_out": slots["check_out"].isoformat(),
-                        "guests": slots["guests"],
-                    },
+                    "send_confirmation_sms",
+                    {"reference": booking.get("reference"), "phone": phone},
                     language,
                 )
-
-        if availability is not None and not availability.get("ok"):
-            return self._text(self._error(language, availability), language)
-
-        if availability_data is not None and not options:
-            return self._text(self._no_availability(language, slots), language)
-
-        contact = slots["email"] or slots["phone"]
-        if slots["check_in"] and slots["check_out"] and options and contact:
-            if slots["check_in"] >= slots["check_out"]:
-                return self._text(self._ask_dates(language), language)
-            room_type = self._pick_room_type(last_user, options, slots)
+            email = slots["email"] or booking.get("guest_email") or ""
+            if not email:
+                return self._text(self._ask_email_address(language), language)
             return self._tool(
-                "create_booking",
-                {
-                    "room_type": room_type,
-                    "check_in": slots["check_in"].isoformat(),
-                    "check_out": slots["check_out"].isoformat(),
-                    "first_name": slots["first_name"] or "Guest",
-                    "last_name": slots["last_name"],
-                    "email": slots["email"],
-                    "phone": slots["phone"],
-                    "adults": slots["guests"],
-                    "children": 0,
-                },
+                "send_confirmation_email",
+                {"reference": booking.get("reference"), "email": email},
                 language,
             )
 
-        if options and self._last_is_tool(messages):
-            return self._text(self._offer(language, availability_data, slots), language)
+        if created is not None:
+            if not created.get("ok"):
+                return self._text(self._error(language, created), language)
+            booking = created.get("booking", {})
+            return self._tool("confirm_booking", {"reference": booking.get("reference")}, language)
 
-        if options and contact:
-            return self._text(self._offer(language, availability_data, slots), language)
+        # Step 2: check-in date, with an explicit handover path.
+        if not slots["check_in"]:
+            if self._is_language_selection(last_user):
+                return self._text(self._ask_check_in(language), language)
+            if HANDOVER_INTENT.search(last_user or ""):
+                return self._tool("transfer_to_human", {"reason": last_user[:200]}, language)
+            return self._text(self._ask_check_in(language), language)
 
-        if options and not contact:
-            return self._text(self._ask_contact(language, slots), language)
+        # Step 3: check-out date or duration.
+        if not slots["check_out"]:
+            return self._text(self._ask_check_out(language), language)
 
-        if slots["check_in"] and slots["check_out"]:
+        # Step 4: guest count.
+        if not slots["guests_explicit"]:
+            return self._text(self._ask_guests(language), language)
+
+        availability_data = self._fresh_availability(availability, slots)
+        if availability_data is None:
             return self._tool(
                 "check_availability",
                 {
@@ -218,7 +228,60 @@ class DemoProvider(BaseLLMProvider):
                 language,
             )
 
-        return self._text(self._ask_dates(language), language)
+        if availability is not None and not availability.get("ok"):
+            return self._text(self._error(language, availability), language)
+
+        options = (availability_data or {}).get("options") or []
+        if not options:
+            return self._text(self._no_availability(language), language)
+
+        # Step 5: room selection.
+        room_choice = self._room_choice_after(messages, options)
+        if not room_choice:
+            return self._text(self._offer(language, availability_data), language)
+
+        # Step 6: read the details back and ask for explicit confirmation.
+        confirmation = self._confirmation_state(messages)
+        if confirmation == "declined":
+            return self._text(self._declined(language), language)
+        if confirmation != "confirmed":
+            return self._text(
+                self._ask_confirm(language, availability_data, room_choice, slots),
+                language,
+            )
+
+        # Step 7: delivery method and contact collection.
+        method = self._delivery_method(messages, history)
+        if not method:
+            return self._text(self._ask_delivery_method(language), language)
+
+        if method == "sms":
+            contact = slots["phone"]
+            if not contact:
+                return self._text(self._ask_phone(language), language)
+        else:
+            contact = slots["email"]
+            if not contact:
+                return self._text(self._ask_email_address(language), language)
+
+        if not slots["first_name"]:
+            return self._text(self._ask_name(language), language)
+
+        return self._tool(
+            "create_booking",
+            {
+                "room_type": room_choice,
+                "check_in": slots["check_in"].isoformat(),
+                "check_out": slots["check_out"].isoformat(),
+                "first_name": slots["first_name"] or "Guest",
+                "last_name": slots["last_name"],
+                "email": slots["email"],
+                "phone": slots["phone"],
+                "adults": slots["guests"],
+                "children": 0,
+            },
+            language,
+        )
 
     # ------------------------------------------------------------------ tools
     def _tool_results(self, messages: list[ChatMessage]) -> dict[str, dict[str, Any]]:
@@ -253,16 +316,48 @@ class DemoProvider(BaseLLMProvider):
     def _is_affirmative(text: str) -> bool:
         return bool(AFFIRMATIVE.search(text or ""))
 
-    # ------------------------------------------------------------------ slots
-    def _extract_slots(self, history: str, latest: str) -> dict[str, Any]:
-        check_in, check_out = self._extract_dates(latest)
-        if not check_in:
-            check_in, check_out = self._extract_dates(history)
+    @staticmethod
+    def _is_negative(text: str) -> bool:
+        return bool(NEGATIVE.search(text or ""))
 
-        email = (EMAIL.search(latest) or EMAIL.search(history))
+    # ------------------------------------------------------------------ slots
+    def _extract_slots(
+        self,
+        history: str,
+        latest: str,
+        messages: list[ChatMessage] | None = None,
+    ) -> dict[str, Any]:
+        messages = messages or []
+        latest_in, latest_out = self._extract_dates(latest)
+        history_in, history_out = self._extract_dates(history)
+        asked_check_out = self._asked_check_out(messages)
+
+        if asked_check_out and latest_in and not latest_out:
+            # A single date after "what is your departure date?" is the check-out.
+            check_in, check_out = history_in, latest_in
+        elif asked_check_out and not latest_in and history_in:
+            # "Three nights" as the answer to the departure question.
+            nights = self._duration_nights(latest.lower())
+            check_in = history_in
+            check_out = history_in + timedelta(days=nights) if nights else None
+        else:
+            check_in = latest_in or history_in
+            check_out = latest_out
+            if not check_out and history_out and check_in and history_out > check_in:
+                check_out = history_out
+        if check_in and not check_out:
+            nights = self._duration_nights(latest.lower())
+            if nights:
+                check_out = check_in + timedelta(days=nights)
+
+        email = EMAIL.search(latest) or EMAIL.search(history)
         phone_text = self._strip_dates(latest) or self._strip_dates(history)
         phone = PHONE.search(phone_text) if phone_text else None
-        guests = self._first_int(GUESTS, latest) or self._first_int(GUESTS, history) or 2
+        guests = self._first_int(GUESTS, latest) or self._first_int(GUESTS, history)
+        guests_explicit = guests is not None
+        if guests is None and self._asked_guests(messages):
+            guests = self._bare_count(latest)
+            guests_explicit = guests is not None
         first_name, last_name = self._extract_name(history, latest)
 
         return {
@@ -270,7 +365,8 @@ class DemoProvider(BaseLLMProvider):
             "check_out": check_out,
             "email": email.group(0) if email else "",
             "phone": phone.group(1).strip() if phone else "",
-            "guests": max(1, min(guests, 8)),
+            "guests": max(1, min(guests or 2, 8)),
+            "guests_explicit": guests_explicit,
             "first_name": first_name,
             "last_name": last_name,
             "room_type": self._extract_room_type(history),
@@ -341,6 +437,22 @@ class DemoProvider(BaseLLMProvider):
                 if month:
                     found.append(self._date_without_year(today, month, int(match.group(2))))
 
+        # Polish ordinal day names, with or without a month.
+        if not found:
+            for word, day in POLISH_ORDINALS.items():
+                match = re.search(rf"\b{word}\b(?:\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+))?", lowered)
+                if not match:
+                    continue
+                month = MONTHS.get(match.group(1) or "")
+                found.append(self._date_without_year(today, month or today.month, day))
+
+        # "12.07" (day.month) without a year.
+        if not found:
+            for match in re.finditer(r"\b(\d{1,2})\.(\d{1,2})\b", lowered):
+                day, month = int(match.group(1)), int(match.group(2))
+                if 1 <= day <= 31 and 1 <= month <= 12:
+                    found.append(self._date_without_year(today, month, day))
+
         dates: list[date] = []
         for item in found:
             if item and item not in dates:
@@ -375,6 +487,13 @@ class DemoProvider(BaseLLMProvider):
                         delta = amount * 7 if unit.startswith("tygod") else amount
                         dates = [today + timedelta(days=delta)]
 
+        # A bare English ordinal such as "the 20th" means the current month.
+        if not dates:
+            match = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)\b", lowered)
+            if match:
+                dates = [self._date_without_year(today, today.month, int(match.group(1)))]
+
+        dates = [item for item in dates if item is not None]
         if len(dates) >= 2:
             return dates[0], dates[1]
         if len(dates) == 1:
@@ -401,7 +520,7 @@ class DemoProvider(BaseLLMProvider):
     def _duration_nights(text: str) -> int | None:
         # Prefer explicit "for/stay/na N nights/days" phrasing as a stay length.
         for match in re.finditer(
-            r"\b(?:for|stay(?:ing)?|na|pobyt)\s+(\d+)\s*"
+            r"\b(?:for|stay(?:ing)?|na|pobyt|przez)\s+(\d+)\s*"
             r"(?:night|nights|noc|noce|nocy|day|days|dni|dzie(?:ń|ni))\b",
             text or "",
             re.IGNORECASE,
@@ -409,6 +528,8 @@ class DemoProvider(BaseLLMProvider):
             value = int(match.group(1))
             if 1 <= value <= 30:
                 return value
+        if re.search(r"\b(?:for|na)\s+(?:a\s+)?week\b|\b(?:for|na)\s+tydzie(?:ń|n)\b", text or "", re.IGNORECASE):
+            return 7
         match = NIGHTS.search(text or "")
         if match:
             value = int(match.group(1))
@@ -435,6 +556,34 @@ class DemoProvider(BaseLLMProvider):
         match = pattern.search(text or "")
         return int(match.group(1)) if match else None
 
+    @staticmethod
+    def _bare_count(text: str) -> int | None:
+        match = BARE_NUMBER.match(text or "")
+        if match:
+            value = int(match.group(1))
+            return value if 1 <= value <= 8 else None
+        lowered = (text or "").lower().strip(" .,!?:;")
+        for word, value in WORD_NUMBERS.items():
+            if re.search(rf"\b{word}\b", lowered):
+                return value
+        return None
+
+    @staticmethod
+    def _asked_guests(messages: list[ChatMessage]) -> bool:
+        for message in reversed(messages):
+            if message.role == "assistant":
+                text = (message.content or "").lower()
+                return "number of guests" in text or "liczbę osób" in text
+        return False
+
+    @staticmethod
+    def _asked_check_out(messages: list[ChatMessage]) -> bool:
+        for message in reversed(messages):
+            if message.role == "assistant":
+                text = (message.content or "").lower()
+                return "departure date" in text or "datę wyjazdu" in text
+        return False
+
     def _extract_name(self, text: str, latest: str = "") -> tuple[str, str]:
         for source in (latest, text):
             match = re.search(
@@ -453,19 +602,32 @@ class DemoProvider(BaseLLMProvider):
             if name[0]:
                 return name
 
-        email_match = EMAIL.search(text or "") or EMAIL.search(latest or "")
-        if email_match:
-            prefix = (text or "")[: email_match.start()]
-            words = [
-                word.strip(" ,.;:-")
-                for word in re.split(r"\s+", prefix)
-                if word.strip(" ,.;:-").lower() not in STOPWORDS
-            ]
-            words = [word for word in words if word and word[0].isupper()]
-            if len(words) >= 2:
-                return words[-2], words[-1]
-            if words:
-                return words[-1], ""
+        for source in (latest, text):
+            email_match = EMAIL.search(source or "")
+            if email_match:
+                name = self._name_before(source or "", email_match.start())
+                if name[0]:
+                    return name
+            phone_match = PHONE.search(self._strip_dates(source or ""))
+            if phone_match:
+                name = self._name_before(source or "", phone_match.start())
+                if name[0]:
+                    return name
+        return "", ""
+
+    @staticmethod
+    def _name_before(text: str, end: int) -> tuple[str, str]:
+        prefix = text[:end]
+        words = [
+            word.strip(" ,.;:-")
+            for word in re.split(r"\s+", prefix)
+            if word.strip(" ,.;:-").lower() not in STOPWORDS
+        ]
+        words = [word for word in words if word and word[0].isupper()]
+        if len(words) >= 2:
+            return words[-2], words[-1]
+        if words:
+            return words[-1], ""
         return "", ""
 
     @staticmethod
@@ -489,12 +651,56 @@ class DemoProvider(BaseLLMProvider):
             return "standard-double"
         return ""
 
-    def _pick_room_type(self, latest: str, options: list[dict], slots: dict) -> str:
+    def _room_choice_after(self, messages: list[ChatMessage], options: list[dict]) -> str:
+        index = None
+        for position, message in enumerate(messages):
+            if message.role == "tool" and message.name == "check_availability":
+                index = position
+        if index is None:
+            return ""
+        for message in reversed(messages[index + 1 :]):
+            if message.role != "user":
+                continue
+            choice = self._pick_room_type(message.content or "", options)
+            if choice:
+                return choice
+        return ""
+
+    def _pick_room_type(self, latest: str, options: list[dict]) -> str:
+        lowered = (latest or "").lower()
         available = [option.get("room_type") for option in options if option.get("room_type")]
-        preferred = self._extract_room_type(latest) or slots.get("room_type")
-        if preferred and preferred in available:
-            return preferred
-        return available[0] if available else "standard-double"
+
+        for option in options:
+            slug = option.get("room_type") or ""
+            name = (option.get("name") or "").lower()
+            if slug and slug.replace("-", " ") in lowered:
+                return slug
+            if name and name in lowered:
+                return slug
+
+        wants_suite = any(word in lowered for word in ("suite", "apartament", "deluxe", "luksus"))
+        wants_standard = any(word in lowered for word in ("standard", "podstaw", "double"))
+        for option in options:
+            slug = option.get("room_type") or ""
+            name = (option.get("name") or "").lower()
+            if wants_suite and ("suite" in name or "deluxe" in slug):
+                return slug
+            if wants_standard and ("standard" in name or "double" in slug):
+                return slug
+
+        if re.search(r"\b(first|pierwsz\w*)\b", lowered) and len(options) >= 1:
+            return available[0]
+        if re.search(r"\b(second|drug\w*)\b", lowered) and len(options) >= 2:
+            return available[1]
+        if re.search(r"\b(third|trzec\w*)\b", lowered) and len(options) >= 3:
+            return available[2]
+
+        number = BARE_NUMBER.match(lowered.strip())
+        if number:
+            position = int(number.group(1))
+            if 1 <= position <= len(available):
+                return available[position - 1]
+        return ""
 
     @staticmethod
     def _language(system: str, messages: list[ChatMessage]) -> str:
@@ -507,6 +713,84 @@ class DemoProvider(BaseLLMProvider):
         ):
             return "pl"
         return "en"
+
+    # --------------------------------------------------------------- delivery
+    @staticmethod
+    def _method_from_text(text: str) -> str:
+        lowered = (text or "").lower()
+        sms = SMS_CHOICE.search(lowered)
+        email = EMAIL_CHOICE.search(lowered)
+        if sms and email:
+            return "sms" if sms.start() > email.start() else "email"
+        if sms:
+            return "sms"
+        if email:
+            return "email"
+        return ""
+
+    def _delivery_method(
+        self,
+        messages: list[ChatMessage],
+        history: str,
+        booking: dict | None = None,
+    ) -> str:
+        index = None
+        for position, message in enumerate(messages):
+            if message.role != "assistant":
+                continue
+            text = (message.content or "").lower()
+            if "sms" in text and ("email" in text or "e-mail" in text):
+                index = position
+        if index is not None:
+            for message in messages[index + 1 :]:
+                if message.role != "user":
+                    continue
+                method = self._method_from_text(message.content or "")
+                if method:
+                    return method
+                if EMAIL.search(message.content or ""):
+                    return "email"
+                if PHONE.search(self._strip_dates(message.content or "")):
+                    return "sms"
+        method = self._method_from_text(history)
+        if method:
+            return method
+        if booking:
+            if booking.get("guest_phone") and not booking.get("guest_email"):
+                return "sms"
+            if booking.get("guest_email") and not booking.get("guest_phone"):
+                return "email"
+        return ""
+
+    @staticmethod
+    def _is_language_selection(text: str) -> bool:
+        return bool(
+            re.search(r"^\s*(1|2)\s*$", text or "")
+            or re.search(r"\b(english|polish|polski|po polsku)\b", text or "", re.IGNORECASE)
+        )
+
+    @staticmethod
+    def _is_confirm_prompt(text: str) -> bool:
+        lowered = (text or "").lower()
+        return "shall i confirm" in lowered or "czy potwierdzić" in lowered
+
+    def _confirmation_state(self, messages: list[ChatMessage]) -> str:
+        index = None
+        for position, message in enumerate(messages):
+            if message.role == "assistant" and self._is_confirm_prompt(message.content or ""):
+                index = position
+        if index is None:
+            return "not_asked"
+        for message in messages[index + 1 :]:
+            if message.role != "user":
+                continue
+            text = message.content or ""
+            if self._is_negative(text):
+                return "declined"
+            if self._is_affirmative(text):
+                return "confirmed"
+            return "unclear"
+        return "asked"
 
     # ------------------------------------------------------------------ copy
     @staticmethod
@@ -524,80 +808,149 @@ class DemoProvider(BaseLLMProvider):
             model=self.config.model,
         )
 
-    def _ask_dates(self, language: str) -> str:
+    def _ask_check_in(self, language: str) -> str:
         return self._t(
             language,
-            "I'd be happy to help with a reservation. Could you tell me your arrival and departure dates, "
-            "and how many guests will be staying?",
-            "Chętnie pomogę w rezerwacji. Proszę podaj datę przyjazdu i wyjazdu oraz liczbę gości.",
+            "If you would like to check availability, prices or make a reservation, please tell me your "
+            "planned arrival date. If you are calling about another matter, stay on the line and I will "
+            "connect you with a receptionist.",
+            "Jeżeli chcesz dowiedzieć się o dostępność, ceny lub dokonać rezerwacji, proszę podaj planowany "
+            "termin przyjazdu. Jeżeli dzwonisz w innej sprawie, pozostań na linii lub napisz, a połączę Cię "
+            "z pracownikiem recepcji.",
         )
 
-    def _ask_confirm(self, language: str, booking: dict) -> str:
+    def _ask_check_out(self, language: str) -> str:
         return self._t(
             language,
-            "I've placed a temporary hold: {room}, {check_in} to {check_out}, {nights} night(s), "
-            "total {total} {currency}. Your reference is {reference}. Shall I confirm the booking?",
-            "Wstępnie zablokowałam dla Ciebie: {room}, od {check_in} do {check_out}, {nights} noc(y), "
-            "razem {total} {currency}. Numer rezerwacji to {reference}. Czy potwierdzić rezerwację?",
-        ).format(**self._booking_fields(booking, language))
+            "Please give me your departure date or tell me how many nights you plan to stay.",
+            "Podaj datę wyjazdu lub informację, na ile nocy planujesz pobyt.",
+        )
 
-    def _confirmed(self, language: str, booking: dict) -> str:
+    def _ask_guests(self, language: str) -> str:
         return self._t(
             language,
-            "Your booking is confirmed. Reference {reference}: {room}, {check_in} to {check_out}, "
-            "total {total} {currency}. We look forward to welcoming you.",
-            "Rezerwacja potwierdzona. Numer {reference}: {room}, od {check_in} do {check_out}, "
-            "razem {total} {currency}. Do zobaczenia w hotelu.",
-        ).format(**self._booking_fields(booking, language))
+            "Please tell me the total number of guests (adults and children) for the reservation.",
+            "Podaj łączną liczbę osób (dorosłych i dzieci), dla których mamy przygotować rezerwację.",
+        )
 
-    def _email_asked(self, messages: list[ChatMessage]) -> bool:
-        for message in messages:
-            if message.role == "assistant" and "confirmation" in (message.content or "").lower():
-                return True
-        return False
+    def _offer(self, language: str, availability: dict) -> str:
+        options = availability.get("options") or []
+        lines: list[str] = []
+        for option in options[:3]:
+            lines.append(
+                self._t(
+                    language,
+                    "{name}: {total} {currency} total for {nights} night(s)",
+                    "{name}: {total} {currency} za pobyt ({nights} noc(y))",
+                ).format(
+                    name=option.get("name", ""),
+                    total=option.get("total", ""),
+                    currency=option.get("currency", ""),
+                    nights=option.get("nights", ""),
+                )
+            )
+        intro = self._t(
+            language,
+            "I have checked availability. For {check_in} to {check_out} we have: {options}. "
+            "Which option would you like to select?",
+            "Sprawdziłam dostępność. Na wybrany termin mamy następujące wolne pokoje: {options}. "
+            "Którą opcję chciałbyś wybrać?",
+        )
+        return intro.format(
+            check_in=self._fmt_date(availability.get("check_in"), language),
+            check_out=self._fmt_date(availability.get("check_out"), language),
+            options="; ".join(lines),
+        )
 
-    def _email_handled(self, messages: list[ChatMessage]) -> bool:
-        for message in reversed(messages):
-            if message.role == "tool" and message.name == "send_confirmation_email":
-                return True
-            if message.role == "assistant":
-                text = (message.content or "").lower()
-                return "not sending" in text or "nie b\u0119d\u0119 wysy\u0142a\u0107" in text
-        return False
-
-    def _ask_email(self, language: str, booking: dict) -> str:
-        email = (booking.get("guest_email") or "").strip()
-        if email:
-            return self._t(
-                language,
-                "Would you like the booking confirmation sent to {email}?",
-                "Czy wys\u0142a\u0107 potwierdzenie rezerwacji na adres {email}?",
-            ).format(email=email)
+    def _ask_confirm(
+        self,
+        language: str,
+        availability: dict,
+        room_choice: str,
+        slots: dict,
+    ) -> str:
+        option = next(
+            (item for item in availability.get("options") or [] if item.get("room_type") == room_choice),
+            {},
+        )
         return self._t(
             language,
-            "Would you like me to email you the booking confirmation?",
-            "Czy mam wys\u0142a\u0107 potwierdzenie rezerwacji e-mailem?",
+            "You have selected {room} from {check_in} to {check_out} for {guests} guests, total "
+            "{total} {currency}. Shall I confirm your reservation?",
+            "Wybrałeś {room} w terminie od {check_in} do {check_out} dla {guests} osób, łącznie "
+            "{total} {currency}. Czy potwierdzić rezerwację?",
+        ).format(
+            room=option.get("name") or room_choice,
+            check_in=self._fmt_date(availability.get("check_in"), language),
+            check_out=self._fmt_date(availability.get("check_out"), language),
+            guests=slots["guests"],
+            total=option.get("total", ""),
+            currency=option.get("currency", ""),
+        )
+
+    def _ask_delivery_method(self, language: str) -> str:
+        return self._t(
+            language,
+            "Your reservation is ready to be confirmed. Would you like the confirmation sent to your "
+            "email address or by SMS to your phone number?",
+            "Rezerwacja jest gotowa do potwierdzenia. Czy chcesz, aby potwierdzenie zostało wysłane "
+            "na adres e-mail, czy na numer telefonu przez SMS?",
         )
 
     def _ask_email_address(self, language: str) -> str:
         return self._t(
             language,
-            "Of course. Which email address should I send the confirmation to?",
-            "Jasne. Na kt\u00f3ry adres e-mail mam wys\u0142a\u0107 potwierdzenie?",
+            "Please type or dictate your email address, and tell me your first and last name.",
+            "Proszę podaj lub podyktuj swój adres e-mail oraz imię i nazwisko.",
         )
 
-    def _email_sent(self, language: str, email: str) -> str:
+    def _ask_phone(self, language: str) -> str:
         return self._t(
             language,
-            "I've sent the confirmation email to {email}.",
-            "Wys\u0142ano potwierdzenie rezerwacji na adres {email}.",
-        ).format(email=email)
+            "Please give me the phone number for the SMS confirmation, and tell me your first and last name.",
+            "Proszę podaj numer telefonu, na który mamy wysłać potwierdzenie SMS-em, oraz imię i nazwisko.",
+        )
 
-    def _email_declined(self, language: str) -> str:
+    def _ask_name(self, language: str) -> str:
         return self._t(
             language,
-            "No problem, I won't send an email. Your booking is confirmed.",
-            "Jasne, nie b\u0119d\u0119 wysy\u0142a\u0107 e-maila. Rezerwacja jest potwierdzona.",
+            "Thank you. What is your first and last name?",
+            "Dziękuję. Jak masz na imię i nazwisko?",
+        )
+
+    def _closing_email(self, language: str, email: str) -> str:
+        hotel = settings.HOTEL["name"]
+        return self._t(
+            language,
+            "Your reservation is fully confirmed. We have sent the details to {email}. "
+            "Thank you for choosing {hotel} and have a wonderful stay!",
+            "Twoja rezerwacja została w pełni potwierdzona. Wysłaliśmy szczegóły na adres {email}. "
+            "Dziękujemy za wybór {hotel} i życzymy miłego pobytu!",
+        ).format(email=email, hotel=hotel)
+
+    def _closing_sms(self, language: str, phone: str) -> str:
+        hotel = settings.HOTEL["name"]
+        return self._t(
+            language,
+            "Your reservation is fully confirmed. We have sent a confirmation text message to {phone}. "
+            "Thank you for choosing {hotel} and see you soon!",
+            "Twoja rezerwacja została w pełni potwierdzona. Wysłaliśmy SMS z potwierdzeniem na numer {phone}. "
+            "Dziękujemy za wybór {hotel} i do zobaczenia!",
+        ).format(phone=phone, hotel=hotel)
+
+    def _declined(self, language: str) -> str:
+        hotel = settings.HOTEL["name"]
+        return self._t(
+            language,
+            "Thank you for your call, and feel free to contact {hotel} again. Goodbye!",
+            "Dziękuję za rozmowę i zapraszam do ponownego kontaktu z {hotel}. Do widzenia!",
+        ).format(hotel=hotel)
+
+    def _handover(self, language: str) -> str:
+        return self._t(
+            language,
+            "Redirecting you to a reception employee. Please hold.",
+            "Przekierowuję do pracownika recepcji. Proszę czekać.",
         )
 
     def _cancelled(self, language: str, booking: dict) -> str:
@@ -609,54 +962,7 @@ class DemoProvider(BaseLLMProvider):
             "Rezerwacja {reference} została anulowana. Opłata za anulowanie: {fee} {currency}.",
         ).format(reference=booking.get("reference", ""), fee=fee, currency=currency)
 
-    def _booking_fields(self, booking: dict, language: str) -> dict:
-        return {
-            "reference": booking.get("reference", ""),
-            "room": booking.get("room_type_name") or booking.get("room_type", ""),
-            "check_in": self._fmt_date(booking.get("check_in"), language),
-            "check_out": self._fmt_date(booking.get("check_out"), language),
-            "nights": booking.get("nights", ""),
-            "total": booking.get("total", ""),
-            "currency": booking.get("currency", ""),
-        }
-
-    def _offer(self, language: str, availability: dict, slots: dict) -> str:
-        options = availability.get("options") or []
-        lines: list[str] = []
-        for option in options[:3]:
-            lines.append(
-                self._t(
-                    language,
-                    "{name}: {total} {currency} for {nights} night(s)",
-                    "{name}: {total} {currency} za {nights} noc(y)",
-                ).format(
-                    name=option.get("name", ""),
-                    total=option.get("total", ""),
-                    currency=option.get("currency", ""),
-                    nights=option.get("nights", ""),
-                )
-            )
-        intro = self._t(
-            language,
-            "For {check_in} to {check_out} I can offer: {options}. Which room would you like? "
-            "To place a hold I also need your full name and an email address or phone number.",
-            "Na termin od {check_in} do {check_out} mogę zaproponować: {options}. Który pokój wybierasz? "
-            "Aby zablokować rezerwację, potrzebuję jeszcze imienia i nazwiska oraz adresu e-mail lub telefonu.",
-        )
-        return intro.format(
-            check_in=self._fmt_date(availability.get("check_in"), language),
-            check_out=self._fmt_date(availability.get("check_out"), language),
-            options="; ".join(lines),
-        )
-
-    def _ask_contact(self, language: str, slots: dict) -> str:
-        return self._t(
-            language,
-            "Great choice. To place the hold I still need your full name and an email address or phone number.",
-            "Dobry wybór. Aby zablokować rezerwację, potrzebuję jeszcze imienia i nazwiska oraz adresu e-mail lub telefonu.",
-        )
-
-    def _no_availability(self, language: str, slots: dict) -> str:
+    def _no_availability(self, language: str) -> str:
         return self._t(
             language,
             "I'm sorry, there are no rooms available for those dates. Would you like to try different dates?",

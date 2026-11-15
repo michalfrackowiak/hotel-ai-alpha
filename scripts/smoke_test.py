@@ -1,4 +1,4 @@
-"""End-to-end smoke test for a running Hotel Aurora instance.
+"""End-to-end smoke test for a running Resort Neptun instance.
 
 Usage::
 

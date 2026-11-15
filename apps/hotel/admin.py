@@ -231,9 +231,18 @@ class BookingAdmin(admin.ModelAdmin):
         "cancellation_fee",
         "hold_state",
         "confirmation_email_status",
+        "confirmation_sms_status",
         "created_at",
     )
-    list_filter = ("status", "source", "language", "cancelled_by", "room__room_type", "check_in")
+    list_filter = (
+        "status",
+        "source",
+        "language",
+        "cancelled_by",
+        "room__room_type",
+        "check_in",
+        "confirmation_sms_status",
+    )
     search_fields = ("reference", "client__first_name", "client__last_name", "client__email", "client__phone")
     date_hierarchy = "check_in"
     autocomplete_fields = ("client", "room")
@@ -247,14 +256,35 @@ class BookingAdmin(admin.ModelAdmin):
         "confirmed_at",
         "cancelled_at",
         "cancellation_fee",
+        "confirmation_sms_provider_id",
+        "confirmation_sms_last_attempt_at",
     )
-    actions = ("confirm_selected", "cancel_selected", "sync_calendar", "resend_confirmation")
+    actions = (
+        "confirm_selected",
+        "cancel_selected",
+        "sync_calendar",
+        "resend_confirmation",
+        "resend_confirmation_sms",
+    )
     fieldsets = (
         (None, {"fields": ("reference", "status", "source", "language")}),
         (_("Guest"), {"fields": ("client",)}),
         (_("Stay"), {"fields": ("room", "check_in", "check_out", "adults", "children")}),
         (_("Price"), {"fields": ("currency", "total_price", "price_breakdown")}),
         (_("Extras"), {"fields": ("special_requests", "hold_expires_at", "external_event_id")}),
+        (
+            _("Confirmation SMS"),
+            {
+                "fields": (
+                    "confirmation_sms_status",
+                    "confirmation_sms_sent_at",
+                    "confirmation_sms_error",
+                    "confirmation_sms_provider_id",
+                    "confirmation_sms_attempts",
+                    "confirmation_sms_last_attempt_at",
+                )
+            },
+        ),
         (
             _("Cancellation"),
             {"fields": ("cancelled_at", "cancelled_by", "cancellation_reason", "cancellation_note", "cancellation_fee")},
@@ -342,6 +372,31 @@ class BookingAdmin(admin.ModelAdmin):
             self.message_user(
                 request,
                 _("%(count)s confirmation email(s) sent.") % {"count": sent},
+                messages.SUCCESS,
+            )
+
+    @admin.action(description=_("Resend confirmation SMS"))
+    def resend_confirmation_sms(self, request, queryset):
+        from apps.hotel.notifications import send_booking_confirmation_sms
+
+        sent = 0
+        for booking in queryset:
+            try:
+                if send_booking_confirmation_sms(booking, force=True):
+                    sent += 1
+                else:
+                    self.message_user(
+                        request,
+                        _("%(reference)s: no confirmation SMS was sent.")
+                        % {"reference": booking.reference},
+                        messages.WARNING,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                self.message_user(request, f"{booking.reference}: {exc}", messages.ERROR)
+        if sent:
+            self.message_user(
+                request,
+                _("%(count)s confirmation SMS message(s) sent.") % {"count": sent},
                 messages.SUCCESS,
             )
 

@@ -1,4 +1,4 @@
-"""Polish translations for the Hotel Aurora UI and admin.
+"""Polish translations for the Resort Neptun UI and admin.
 
 Keep the keys identical to the extracted msgids. Run
 ``scripts/update_translations.py`` after editing this file.
@@ -824,4 +824,29 @@ TRANSLATIONS: dict[str, str] = {
     "room block": "blokada pokoju",
     "room blocks": "blokady pokoi",
     "external UID": "zewnętrzny UID",
+    # Booking scenario, SMS delivery and handover (v0.6.9)
+    "%(count)s confirmation SMS message(s) sent.": (
+        "Wysłano wiadomości SMS z potwierdzeniem: %(count)s."
+    ),
+    "%(reference)s: no confirmation SMS was sent.": (
+        "%(reference)s: nie wysłano SMS-a z potwierdzeniem."
+    ),
+    "Ask reception": "Zapytaj recepcję",
+    "Confirmation SMS": "SMS z potwierdzeniem",
+    "Do you have a room for two people?": "Czy macie pokój dla dwóch osób?",
+    "I have a question for reception.": "Mam pytanie do recepcji.",
+    "I would like to book a room.": "Chciałbym zarezerwować pokój.",
+    "Press the call button and talk naturally. Our receptionist checks real availability and confirms your room — in Polish or English.": (
+        "Naciśnij przycisk połączenia i mów naturalnie. Nasza recepcja sprawdza rzeczywistą "
+        "dostępność i potwierdza pokój — po polsku lub angielsku."
+    ),
+    "Resend confirmation SMS": "Wyślij ponownie SMS z potwierdzeniem",
+    "Room for two": "Pokój dla dwóch",
+    "SMS provider message id": "Identyfikator wiadomości SMS u dostawcy",
+    "Your stay at %(hotel)s is confirmed.": "Twój pobyt w %(hotel)s jest potwierdzony.",
+    "confirmation SMS attempts": "próby wysłania SMS-a z potwierdzeniem",
+    "confirmation SMS error": "błąd SMS-a z potwierdzeniem",
+    "confirmation SMS last attempt at": "ostatnia próba wysłania SMS-a z potwierdzeniem",
+    "confirmation SMS sent at": "SMS z potwierdzeniem wysłany o",
+    "confirmation SMS status": "status SMS-a z potwierdzeniem",
 }

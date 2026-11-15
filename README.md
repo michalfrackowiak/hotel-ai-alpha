@@ -1,6 +1,6 @@
-# Hotel Aurora · AI Reception Alpha
+# Resort Neptun Jastrzębia Góra · AI Reception Alpha
 
-An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **English and Polish**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, emails a bilingual confirmation and mirrors it into a per-room Google Calendar.
+An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **Polish and English**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, sends a bilingual confirmation by email or SMS and mirrors it into a per-room Google Calendar.
 
 > **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
@@ -20,6 +20,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails, email delivery health and recent booking events.
 - **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment. Failed sends retry with exponential backoff from the scheduler, and the `/ops/` dashboard tracks delivered, failed, bounced and complained messages.
+- **Confirmation SMS** through a pluggable provider layer: the offline console provider by default, Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Delivery status is stored on the booking and visible in the admin.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
@@ -158,7 +159,18 @@ Chrome and Edge are recommended. If a browser does not support speech recognitio
 
 For server-side speech, set `voice_stt_provider` / `voice_tts_provider` to `openai` in **Admin → Agent settings** and provide `OPENAI_API_KEY`. The endpoints `/api/v1/voice/transcribe/` and `/api/v1/voice/speak/` are already implemented.
 
-After a booking is confirmed, the agent offers to email the confirmation. If the guest agrees and no email is on file, it asks for one and sends the confirmation to that address (`send_confirmation_email` tool).
+After a booking is confirmed, the agent asks whether the guest wants the confirmation by email or SMS. It collects the matching contact detail if it is missing and calls `send_confirmation_email` or `send_confirmation_sms`. The conversation defaults to Polish and switches to English when the guest asks for English.
+
+### Confirmation SMS
+
+SMS delivery goes through `apps/hotel/sms_providers.py`:
+
+| `SMS_PROVIDER` | Behaviour | Needs |
+| --- | --- | --- |
+| `console` (default) | Records the message in the log and `ConsoleSmsProvider.outbox`; works offline and in tests. | Nothing |
+| `twilio` | Posts to the Twilio Messages API. | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
+
+Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts` and `confirmation_sms_sent_at`. The admin shows the status and offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
 
 ---
 
@@ -265,7 +277,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
-- SMS notifications are not sent.
+- SMS delivery ships with a console provider for offline demos and an optional Twilio adapter; there is no inbound SMS or delivery-receipt webhook yet.
 - The demo policy is intentionally rule-based; use a real provider for open-ended conversation.
 
 ---

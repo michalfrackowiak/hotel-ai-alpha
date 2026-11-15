@@ -4,9 +4,9 @@ Working notes for coding agents in this repository. Read this first, then reach 
 
 ## What this is
 
-Hotel Aurora is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat, voice or the public web form in English and Polish. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
+Resort Neptun Jastrzębia Góra is a Django 5.2 + DRF alpha of an AI hotel receptionist. Guests book by chat, voice or the public web form in Polish and English. Availability, pricing and bookings come from Django models; an LLM only chooses which tools to call. SQLite, Docker, no Node build step.
 
-Current release: **v0.6.8**, 188 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
+Current release: **v0.6.9**, 189 tests passing. The next milestone is planned in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Commands
 
@@ -44,6 +44,8 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 - **Calendar sync runs after commit.** Keep `transaction.on_commit`; a calendar failure must never roll back a reservation. Pending bookings are skipped before an event record is created.
 - **Confirmation email also runs after commit.** Keep the `confirmation_email_sent_at` marker so retries are idempotent; never send from inside the booking transaction.
 - **Email retries use stored backoff.** `send_booking_confirmation()` owns the attempt counter and `next_retry_at`; `send_pending_confirmation_emails()` must keep honouring them unless `--force` is explicit.
+- **Confirmation SMS mirrors email.** `send_booking_confirmation_sms()` owns the `confirmation_sms_sent_at` marker and status/attempt fields; send failures never roll back a booking. Delivery goes through `apps/hotel/sms_providers.py`; the `console` provider is the offline default and `ConsoleSmsProvider.outbox` is class-level (reset it in tests).
+- **Polish is the default language.** `LANGUAGE_CODE`, the model defaults and `HOTEL["default_language"]` are `pl`; the engine switches `conversation.language` on an explicit request. Tests that assert English copy must request English.
 - **Provider webhooks are normalised in `apps/hotel/email_webhooks.py`.** SES (including SNS wrappers) and Postmark payloads become one status; the API view only resolves the booking and writes it.
 - **A booking reference is not a secret.** Guest-facing read/confirm/cancel paths go through `apps/hotel/access.py`. The API accepts `token`, `X-Booking-Token` or Bearer; the web lookup requires reference + email/phone.
 - **Guest magic links are single-use and stored hashed.** `/my-bookings/` always returns the same neutral response, whether or not the email has a booking. Never log or display the raw token.

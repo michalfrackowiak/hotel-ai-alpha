@@ -1,0 +1,9 @@
+{% load i18n %}{% autoescape off %}{% blocktrans with hotel=hotel.name %}Your stay at {{ hotel }} is confirmed.{% endblocktrans %}
+{% trans "Reference" %}: {{ booking.reference }}
+{% trans "Check-in" %}: {{ booking.check_in|date:"d.m.Y" }}
+{% trans "Check-out" %}: {{ booking.check_out|date:"d.m.Y" }}
+{% trans "Room" %}: {{ booking.room.number }} · {{ booking.room_type.name }}
+{% trans "Total" %}: {{ booking.total_price }} {{ booking.currency }}
+{{ manage_url }}
+{{ hotel.contact_phone }}
+{% endautoescape %}

@@ -56,10 +56,13 @@ def deluxe_room(deluxe_suite) -> Room:
 def fake_calendar():
     """Keep the fake provider's class-level event store isolated per test."""
     from apps.calendar_sync.providers import FakeCalendarProvider
+    from apps.hotel.sms_providers import ConsoleSmsProvider
 
     FakeCalendarProvider.reset()
+    ConsoleSmsProvider.reset()
     yield
     FakeCalendarProvider.reset()
+    ConsoleSmsProvider.reset()
 
 
 @pytest.fixture

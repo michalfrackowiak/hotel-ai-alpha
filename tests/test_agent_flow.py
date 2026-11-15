@@ -9,8 +9,9 @@ import pytest
 from django.utils import timezone
 
 from apps.agents.engine import AgentEngine, start_conversation
-from apps.agents.models import Conversation, Message
+from apps.agents.models import Conversation
 from apps.hotel.models import Booking, Room, RoomType
+from apps.hotel.sms_providers import ConsoleSmsProvider
 
 
 def _dates():
@@ -22,40 +23,94 @@ def _run(conversation: Conversation, message: str):
     return AgentEngine(conversation).handle_user_message(message)
 
 
-@pytest.mark.django_db
-def test_demo_agent_offers_and_sends_confirmation_email(room_type, rooms):
-    check_in, check_out = _dates()
-    conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
-
-    _run(conversation, f"from {check_in.isoformat()} to {check_out.isoformat()} for 2 guests")
-    _run(conversation, "Anna Kowalska, anna@example.com")
-    confirmed = _run(conversation, "Yes, please confirm.")
-    assert "confirmation" in confirmed.content.lower()
-
-    sent = _run(conversation, "Yes, please send it.")
-    assert any(
-        call["name"] == "send_confirmation_email" and call["ok"] for call in sent.tool_calls
+def _start_stay(conversation: Conversation, check_in, check_out, guests: int = 2):
+    """Share the whole stay in one message and return the offer turn."""
+    return _run(
+        conversation,
+        f"I would like to book a room from {check_in.isoformat()} to {check_out.isoformat()} "
+        f"for {guests} guests.",
     )
-    assert sent.tool_calls[0]["arguments"]["email"] == "anna@example.com"
-
-    done = _run(conversation, "Great")
-    assert "sent the confirmation email" in done.content.lower()
 
 
 @pytest.mark.django_db
-def test_demo_agent_asks_for_email_when_only_phone_given(room_type, rooms):
+def test_demo_agent_collects_stay_then_books_and_emails(room_type, rooms):
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en", channel=Conversation.Channel.CHAT)
+
+    offer = _start_stay(conversation, check_in, check_out)
+    assert offer.error == ""
+    assert any(call["name"] == "check_availability" and call["ok"] for call in offer.tool_calls)
+    assert "Which option would you like to select?" in offer.content
+
+    confirm = _run(conversation, "The Standard Double, please.")
+    assert "Shall I confirm your reservation?" in confirm.content
+    assert not Booking.objects.exists()
+
+    delivery = _run(conversation, "Yes, please confirm.")
+    assert "email address or by SMS" in delivery.content
+    assert not Booking.objects.exists()
+
+    contact = _run(conversation, "Email, please.")
+    assert "email address" in contact.content.lower()
+
+    done = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert any(
+        call["name"] == "send_confirmation_email" and call["ok"] for call in done.tool_calls
+    )
+    assert "sent the details to anna@example.com" in done.content
+
+    booking = Booking.objects.get()
+    assert booking.status == Booking.Status.CONFIRMED
+    assert booking.client.first_name == "Anna"
+    assert booking.client.last_name == "Kowalska"
+    assert booking.client.email == "anna@example.com"
+    assert booking.confirmation_email_sent_at is not None
+    assert booking.confirmation_email_status == "sent"
+
+
+@pytest.mark.django_db
+def test_demo_agent_sends_confirmation_sms(room_type, rooms):
     check_in, check_out = _dates()
     conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
 
-    _run(conversation, f"from {check_in.isoformat()} to {check_out.isoformat()} for 2 guests")
-    _run(conversation, "my phone number is +48-510-378-4222")
+    _start_stay(conversation, check_in, check_out)
+    _run(conversation, "The Standard Double, please.")
     _run(conversation, "Yes, please confirm.")
+    ask_phone = _run(conversation, "SMS, please.")
+    assert "phone number" in ask_phone.content.lower()
 
-    asked = _run(conversation, "Yes")
-    assert "which email address" in asked.content.lower()
+    done = _run(conversation, "Anna Kowalska, +48 510 378 422")
+    assert any(
+        call["name"] == "send_confirmation_sms" and call["ok"] for call in done.tool_calls
+    )
+    assert "confirmation text message to +48 510 378 422" in done.content
 
-    sent = _run(conversation, "anna@example.com")
-    assert any(call["name"] == "send_confirmation_email" and call["ok"] for call in sent.tool_calls)
+    booking = Booking.objects.get()
+    assert booking.status == Booking.Status.CONFIRMED
+    assert booking.client.phone == "+48 510 378 422"
+    assert booking.confirmation_sms_sent_at is not None
+    assert booking.confirmation_sms_status == "sent"
+
+    assert len(ConsoleSmsProvider.outbox) == 1
+    sms = ConsoleSmsProvider.outbox[0]
+    assert sms.to == "+48 510 378 422"
+    assert booking.reference in sms.body
+
+
+@pytest.mark.django_db
+def test_demo_agent_asks_for_departure_and_guest_count_in_order(room_type, rooms):
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en")
+
+    arrival = _run(conversation, f"I would like to book a room. My arrival is {check_in.isoformat()}.")
+    assert "departure date" in arrival.content.lower()
+
+    departure = _run(conversation, f"My departure is {check_out.isoformat()}.")
+    assert "total number of guests" in departure.content.lower()
+
+    guests = _run(conversation, "2 guests")
+    assert any(call["name"] == "check_availability" and call["ok"] for call in guests.tool_calls)
+    assert "Which option would you like to select?" in guests.content
 
 
 @pytest.mark.django_db
@@ -71,58 +126,21 @@ def test_demo_agent_books_deluxe_suite_by_name(room_type, rooms):
     check_in, check_out = _dates()
     conversation = start_conversation(language="en", channel=Conversation.Channel.VOICE)
 
-    first = _run(
-        conversation,
-        f"Do you have a room for 2 guests from {check_in.isoformat()} to {check_out.isoformat()}?",
-    )
-    assert first.tool_calls and first.tool_calls[0]["name"] == "check_availability"
+    offer = _start_stay(conversation, check_in, check_out)
+    assert "Deluxe Suite" in offer.content
 
-    second = _run(conversation, "I'm picking the deluxe suit")
-    assert "full name" in second.content.lower() or "email" in second.content.lower()
+    second = _run(conversation, "I'm picking the Deluxe Suite")
+    assert "Shall I confirm your reservation?" in second.content
     assert not any(call["name"] == "create_booking" for call in second.tool_calls)
 
-    third = _run(conversation, "Anna Kowalska, anna@example.com")
-    assert any(call["name"] == "create_booking" and call["ok"] for call in third.tool_calls)
+    _run(conversation, "Yes, please confirm.")
+    _run(conversation, "Email, please.")
+    done = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert any(call["name"] == "create_booking" and call["ok"] for call in done.tool_calls)
 
     booking = Booking.objects.get()
     assert booking.room.room_type.slug == "deluxe-suite"
-
-    fourth = _run(conversation, "Yes, please confirm.")
-    assert fourth.booking_reference == booking.reference
-    booking.refresh_from_db()
     assert booking.status == Booking.Status.CONFIRMED
-
-
-@pytest.mark.django_db
-def test_demo_agent_books_a_room_in_english(room_type, rooms):
-    check_in, check_out = _dates()
-    conversation = start_conversation(language="en")
-    assert conversation.language == "en"
-    assert conversation.messages.filter(role=Message.Role.ASSISTANT).exists()
-
-    first = _run(
-        conversation,
-        f"Do you have a room for 2 guests from {check_in.isoformat()} to {check_out.isoformat()}?",
-    )
-    assert first.error == ""
-    assert "Which room" in first.content or "offer" in first.content.lower()
-    assert first.tool_calls[0]["name"] == "check_availability"
-
-    second = _run(conversation, "My name is Anna Kowalska, anna@example.com")
-    assert "confirm" in second.content.lower()
-    assert any(call["name"] == "create_booking" and call["ok"] for call in second.tool_calls)
-
-    booking = Booking.objects.get()
-    assert booking.status == Booking.Status.PENDING
-    assert booking.client.first_name == "Anna"
-
-    third = _run(conversation, "Yes, please confirm.")
-    assert "confirmed" in third.content.lower()
-    assert third.booking_reference == booking.reference
-
-    booking.refresh_from_db()
-    assert booking.status == Booking.Status.CONFIRMED
-    assert booking.source == Booking.Source.CHAT
 
 
 @pytest.mark.django_db
@@ -130,20 +148,25 @@ def test_demo_agent_books_a_room_in_polish(room_type, rooms):
     conversation = start_conversation(language="pl")
     assert conversation.language == "pl"
 
-    first = _run(
+    offer = _run(
         conversation,
-        "Czy macie pokój dla 2 gości od 12 grudnia 2026 do 15 grudnia 2026?",
+        "Chcę zarezerwować pokój od 12 grudnia 2026 do 15 grudnia 2026 dla 2 gości.",
     )
-    assert first.error == ""
-    assert any(call["name"] == "check_availability" for call in first.tool_calls)
+    assert offer.error == ""
+    assert any(call["name"] == "check_availability" for call in offer.tool_calls)
+    assert "Którą opcję chciałbyś wybrać?" in offer.content
 
-    second = _run(conversation, "Nazywam się Anna Kowalska, anna@example.com")
-    assert "potwierdz" in second.content.lower()
-    assert any(call["name"] == "create_booking" and call["ok"] for call in second.tool_calls)
+    confirm = _run(conversation, "Standard Double, proszę.")
+    assert "Czy potwierdzić rezerwację?" in confirm.content
 
-    third = _run(conversation, "Tak, potwierdzam.")
-    assert "potwierdzona" in third.content.lower()
-    assert third.booking_reference
+    delivery = _run(conversation, "Tak, potwierdzam.")
+    assert "e-mail" in delivery.content.lower()
+    assert "sms" in delivery.content.lower()
+
+    _run(conversation, "E-mail, proszę.")
+    done = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert any(call["name"] == "send_confirmation_email" and call["ok"] for call in done.tool_calls)
+    assert "Wysłaliśmy szczegóły" in done.content
 
     booking = Booking.objects.get()
     assert booking.language == "pl"
@@ -151,29 +174,35 @@ def test_demo_agent_books_a_room_in_polish(room_type, rooms):
 
 
 @pytest.mark.django_db
-def test_bare_name_reply_is_understood(room_type, rooms):
-    check_in, check_out = _dates()
-    conversation = start_conversation(language="en")
+def test_demo_agent_switches_language_mid_conversation(room_type, rooms):
+    conversation = start_conversation(language="pl")
+    assert conversation.language == "pl"
 
-    _run(
-        conversation,
-        f"I need a room for 2 guests from {check_in.isoformat()} to {check_out.isoformat()}.",
-    )
-    reply = _run(conversation, "Anna Kowalska, anna@example.com")
-
-    assert any(call["name"] == "create_booking" and call["ok"] for call in reply.tool_calls)
-    booking = Booking.objects.get()
-    assert booking.client.first_name == "Anna"
-    assert booking.client.last_name == "Kowalska"
+    reply = _run(conversation, "English, please.")
+    conversation.refresh_from_db()
+    assert conversation.language == "en"
+    assert "arrival date" in reply.content.lower()
 
 
 @pytest.mark.django_db
-def test_demo_agent_asks_for_dates_when_missing(room_type, rooms):
+def test_demo_agent_hands_over_non_booking_request(room_type, rooms):
+    conversation = start_conversation(language="en")
+
+    reply = _run(conversation, "I have a complaint about my invoice.")
+    assert any(call["name"] == "transfer_to_human" and call["ok"] for call in reply.tool_calls)
+    assert "Redirecting you to a reception employee" in reply.content
+
+    conversation.refresh_from_db()
+    assert conversation.state["handover_requested"]["reason"]
+
+
+@pytest.mark.django_db
+def test_demo_agent_asks_for_arrival_date_when_missing(room_type, rooms):
     conversation = start_conversation(language="en")
     turn = _run(conversation, "Hello, I would like a room.")
 
     assert turn.error == ""
-    assert "dates" in turn.content.lower()
+    assert "arrival date" in turn.content.lower()
 
 
 @pytest.mark.django_db

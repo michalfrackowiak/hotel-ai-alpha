@@ -156,7 +156,7 @@ class Conversation(TimeStampedModel):
 
     session_key = models.CharField(max_length=64, unique=True, default=new_session_key, editable=False)
     channel = models.CharField(_("channel"), max_length=10, choices=Channel.choices, default=Channel.CHAT)
-    language = models.CharField(_("language"), max_length=2, default="en")
+    language = models.CharField(_("language"), max_length=2, default="pl")
     client = models.ForeignKey(
         Client, on_delete=models.SET_NULL, null=True, blank=True, related_name="conversations"
     )

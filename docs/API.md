@@ -168,7 +168,7 @@ Creates a **pending hold**. This does not confirm the reservation.
 }
 ```
 
-`email` or `phone` is required. `source` is one of `web`, `chat`, `voice`, `api`. `language` is `en` or `pl`.
+`email` or `phone` is required. `source` is one of `web`, `chat`, `voice`, `api`. `language` is `en` or `pl` and defaults to `pl`.
 
 Response `201`:
 
@@ -227,9 +227,15 @@ Response `201`:
   "manage_url": "http://localhost:8000/booking/HA-7KQ2M4/?token=eyJzYWx0Ijoi...",
   "created_at": "2026-11-13T10:15:00+01:00",
   "confirmed_at": null,
-  "cancelled_at": null
+  "cancelled_at": null,
+  "confirmation_email_status": "not_sent",
+  "confirmation_email_error": "",
+  "confirmation_sms_status": "not_sent",
+  "confirmation_sms_error": ""
 }
 ```
+
+`confirmation_email_status` and `confirmation_sms_status` report the delivery state of the confirmation messages (`not_sent`, `sent`, `failed`, or a provider status such as `delivered`/`bounced`). `confirmation_sms_status` is only meaningful when `BOOKING_SMS_ENABLED` is on; the offline console provider reports `sent` without calling an external service.
 
 Store `manage_token`/`manage_url` with the booking. The token is signed, scoped to one booking and contains a random per-booking secret, so rotating `Booking.access_token` revokes every link for that booking.
 
@@ -310,14 +316,14 @@ Availability and the price are re-checked in one transaction, excluding the book
 { "language": "pl", "channel": "chat" }
 ```
 
-`channel` is `chat` or `voice`. Response `201`:
+`channel` is `chat` or `voice`; `language` is `en` or `pl` and defaults to `pl`. Response `201`:
 
 ```json
 {
   "session_key": "4f2c9b1d8e7a4c6b9f0a2d3e5c7b8a1f",
   "channel": "chat",
   "language": "pl",
-  "greeting": "Dzień dobry, tu Hotel Aurora. ...",
+  "greeting": "Dzień dobry, tu Resort Neptun Jastrzębia Góra. ...",
   "provider": { "name": "Demo policy (offline)", "type": "demo", "model": "demo-policy-v1" }
 }
 ```

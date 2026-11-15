@@ -11,6 +11,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from apps.hotel.availability import availability_for_agent, search_availability
 from apps.hotel.booking_service import (
@@ -22,7 +23,7 @@ from apps.hotel.booking_service import (
     resolve_room_type,
 )
 from apps.hotel.cancellation import cancellation_preview
-from apps.hotel.notifications import send_booking_confirmation
+from apps.hotel.notifications import send_booking_confirmation, send_booking_confirmation_sms
 from apps.hotel.pricing import StayError, quote
 
 from .models import AgentSettings, Conversation
@@ -156,6 +157,35 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "required": ["reference"],
         },
     },
+    {
+        "name": "send_confirmation_sms",
+        "description": (
+            "Send a short booking confirmation SMS to the guest's phone. Optionally update the "
+            "guest's phone number first. Only call after the guest chose SMS and gave a phone number."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reference": {"type": "string", "description": "Booking reference, e.g. HA-7KQ2M4."},
+                "phone": {"type": "string", "description": "Optional phone number to store and send to."},
+            },
+            "required": ["reference"],
+        },
+    },
+    {
+        "name": "transfer_to_human",
+        "description": (
+            "Hand the conversation to a reception employee. Use when the guest asks about something "
+            "other than a booking, or explicitly asks for a human. Do not use it while a booking is "
+            "still in progress unless the guest insists."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reason": {"type": "string", "description": "Short summary of why the guest needs a human."},
+            },
+        },
+    },
 ]
 
 TOOL_NAMES = [spec["name"] for spec in TOOL_SPECS]
@@ -189,6 +219,8 @@ def booking_payload(booking) -> dict:
         "guest_name": booking.client.full_name,
         "guest_email": booking.client.email,
         "guest_phone": booking.client.phone,
+        "confirmation_email_status": booking.confirmation_email_status,
+        "confirmation_sms_status": booking.confirmation_sms_status,
         "source": booking.source,
         "can_confirm": booking.can_confirm,
         "can_cancel": booking.can_cancel,
@@ -373,6 +405,33 @@ class ToolExecutor:
             "email": booking.client.email,
             "reference": booking.reference,
         }
+
+    def _tool_send_confirmation_sms(self, reference: str, phone: str = "") -> dict:
+        booking = get_booking(reference)
+        if phone:
+            booking.client.phone = phone.strip()
+            booking.client.save(update_fields=["phone", "updated_at"])
+        booking.refresh_from_db()
+        if not (booking.client.phone or "").strip():
+            return error_payload("contact_required", "A phone number is required to send the SMS.")
+        try:
+            sent = send_booking_confirmation_sms(booking, force=True)
+        except Exception as exc:  # noqa: BLE001
+            return error_payload("sms_failed", str(exc))
+        return {
+            "ok": True,
+            "sent": bool(sent),
+            "phone": booking.client.phone,
+            "reference": booking.reference,
+        }
+
+    def _tool_transfer_to_human(self, reason: str = "") -> dict:
+        self.conversation.state["handover_requested"] = {
+            "reason": (reason or "").strip(),
+            "at": timezone.now().isoformat(),
+        }
+        self.conversation.save(update_fields=["state", "updated_at"])
+        return {"ok": True, "handover": True, "reason": (reason or "").strip()}
 
     # --------------------------------------------------------------- helpers
     @staticmethod
