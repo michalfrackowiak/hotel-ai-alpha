@@ -173,6 +173,8 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **Ruff ignores `E501` but enforces import order, unused imports and Django rules.** Run it before pushing; CI does not currently run ruff, so this is on the developer.
 - **Shell scripts need the git exec bit.** `docker/entrypoint.sh` and `docker/scheduler.sh` must stay mode `100755`; a Windows checkout plus a local Docker build hides a `100644` mode, but the Linux CI smoke job fails with `permission denied`. The Dockerfile also runs `chmod +x` as a belt-and-braces fix.
 - **Colour tokens have contrast floors.** `--gold` is decorative; use `--gold-ink` for text on light backgrounds, `--focus-ring` for focus outlines and `--line-strong` for control borders. `tests/test_accessibility.py` fails if a pair drops below 4.5:1 (text) or 3:1 (focus rings and control borders).
+- **Demo provider guest count must survive turns.** `_asked_guests` only looked at the last assistant message, which after a tool call is empty, so a bare-number answer ("2") was forgotten and the agent re-asked guests forever. Recover the count by scanning the full message list for the guest question and the answer that followed it.
+- **Bare "1"/"2" are language choices only at the start.** `detect_language` used to treat any bare "2" as "English", which flipped a Polish conversation to English when the guest answered the guest-count question with "2". Number-based switching is now disabled once the conversation has user messages.
 
 ## Verification log
 
