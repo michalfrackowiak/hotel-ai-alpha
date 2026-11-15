@@ -56,7 +56,7 @@ The gate for any change is: `pytest` green, `manage.py check` clean, `ruff check
 - **The agent affects the world only through tools.** Tool handlers return `{"ok": false, "error": ...}` on bad input or domain errors instead of raising.
 - **The demo provider is the offline fallback.** It must keep working without API keys and must stay in sync with the tool schemas. It takes no `language` tool argument.
 - **Chat and voice share one conversation engine.** Add behaviour to the engine/tools, not to a channel-specific path.
-- **Accessibility is gated by `tests/test_accessibility.py`.** The booking and voice pages must keep labelled controls, one `<h1>`, a `<main>` landmark, a skip link and no positive tabindex; add new guest-facing pages to the check.
+- **Accessibility is gated by `tests/test_accessibility.py`.** The booking and voice pages must keep labelled controls, one `<h1>`, a `<main>` landmark, a skip link and no positive tabindex; add new guest-facing pages to the check. Design tokens must meet WCAG AA (4.5:1 text, 3:1 focus rings and control borders); use `--gold-ink` for gold text on light backgrounds.
 - **Polish translations are generated.** Edit `scripts/pl_translations.py`, then run `scripts/update_translations.py` and `scripts/compile_translations.py`. Commit the `.po` and `.mo`.
 - **Admin model forms use explicit `fields`.** `ruff` rule `DJ007` rejects `fields = "__all__"`.
 - **Secrets stay out of git.** `.env`, `data/`, `staticfiles/`, provider keys and Google credentials are ignored; keep them that way.

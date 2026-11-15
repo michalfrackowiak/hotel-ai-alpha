@@ -25,6 +25,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Bounce, complaint and delivery webhooks are normalised for SES (including SNS-wrapped payloads) and Postmark in `apps.hotel.email_webhooks`; the booking is matched by reference or provider message id.
 - `/ops/` shows delivered, failed and bounced/complained email counts plus a table of problem deliveries with attempts, next retry and last error.
 - The guest booking and voice pages pass an automated accessibility check (`tests/test_accessibility.py`) and an axe-core audit. The booking form has labelled controls and a labelled rate-plan radiogroup; the voice page announces call status through a live region and hides the avatar from assistive technology.
+- The same check audits the design tokens in `static/css/app.css` for WCAG AA contrast: 4.5:1 for text (including semantic badges and alpha text over the dark hero, call card and footer) and 3:1 for focus rings and control borders.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
 - The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails` every five minutes.
 - Channel manager (v0.5.1): OTA iCal feeds are imported into per-room `RoomBlock` rows through `ChannelFeed`; availability, creation and modification honour them, and `Booking.clean()` rejects overlapping blocks. A signed `/calendar/<token>.ics` feed exports the hotel's blocking bookings (pending holds as `TENTATIVE`) and manual blocks. Conflicts with local blocking bookings are counted on the feed and surfaced on `/ops/`. The scheduler runs `sync_channel_feeds --apply`.
@@ -85,6 +86,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Webhooks are normalised per provider before the view | SES (including SNS wrappers) and Postmark speak different payloads; keeping that translation in `email_webhooks` keeps the API view small and testable. |
 | Provider message id is the fallback lookup key | Provider callbacks often omit our booking reference, so `confirmation_email_provider_id` lets a bounce still find the right reservation. |
 | Accessibility is checked with a stdlib HTML audit in pytest | The repo has no Node build step, so the CI gate parses rendered pages for labels, landmarks, heading order and ARIA misuse; axe-core remains the manual cross-check. |
+| Contrast is computed from the design tokens, not hardcoded pairs | Parsing `app.css` and compositing alpha colours over their real backdrop keeps the gate honest when tokens change; a short hardcoded list missed the semantic badges and the light-on-dark text. |
 | Voice call status is a live region, not an aria-label on the button | The button's visible label changes from "Start call" to "End call"; a fixed `aria-label` would go stale and break Label in Name. |
 
 ## Runbook
@@ -170,6 +172,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **`.env` is not committed.** Keep provider keys, superuser credentials and Google credentials out of git.
 - **Ruff ignores `E501` but enforces import order, unused imports and Django rules.** Run it before pushing; CI does not currently run ruff, so this is on the developer.
 - **Shell scripts need the git exec bit.** `docker/entrypoint.sh` and `docker/scheduler.sh` must stay mode `100755`; a Windows checkout plus a local Docker build hides a `100644` mode, but the Linux CI smoke job fails with `permission denied`. The Dockerfile also runs `chmod +x` as a belt-and-braces fix.
+- **Colour tokens have contrast floors.** `--gold` is decorative; use `--gold-ink` for text on light backgrounds, `--focus-ring` for focus outlines and `--line-strong` for control borders. `tests/test_accessibility.py` fails if a pair drops below 4.5:1 (text) or 3:1 (focus rings and control borders).
 
 ## Verification log
 
@@ -256,7 +259,7 @@ Update this table when the release gate is re-run.
 
 ## Open questions for v0.7.0
 
-- Colour contrast: add automated checks to the accessibility gate, or keep as manual review?
+- ~~Colour contrast: add automated checks to the accessibility gate, or keep as manual review?~~ Resolved: the token audit now enforces WCAG AA for text, focus rings and control borders.
 - Email history: per-message view vs. only current delivery state.
 - Scheduler: load-test with a large backlog.
 - SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?

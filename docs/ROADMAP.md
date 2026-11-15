@@ -249,7 +249,7 @@ Theme: **distribution and reach**. The guest journey is complete and accessible;
 
 ### Should have
 
-- [x] Colour-contrast audit of the guest pages and a manual screen-reader pass for the voice flow (automated token-level contrast gate in `tests/test_accessibility.py`).
+- [x] Colour-contrast audit of the guest pages and a manual screen-reader pass for the voice flow (automated token audit in `tests/test_accessibility.py` checks text, semantic badges, alpha text over dark surfaces, focus rings and control borders).
 - [x] A per-message email history view rather than only the current delivery state (`EmailDelivery` model, admin inline, webhook sync).
 - [x] Load-test the scheduler and retry queue with a large backlog (`tests/test_scheduler_load.py`).
 

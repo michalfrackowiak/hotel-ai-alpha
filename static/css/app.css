@@ -6,9 +6,9 @@
 :root {
   --ink: #1d1b16;
   --ink-soft: #4b463c;
-  --muted: #756e5d;
+  --muted: #6f6858;
   --line: #e4ddcd;
-  --line-strong: #d3c9b3;
+  --line-strong: #8f8879;
   --cream: #f8f4ea;
   --cream-deep: #f1ebdc;
   --paper: #fffdf8;
@@ -16,7 +16,9 @@
   --forest-deep: #0b2c25;
   --forest-soft: #1d5a4b;
   --gold: #c49a45;
+  --gold-ink: #80642c;
   --gold-soft: #e4c98a;
+  --focus-ring: #a0803b;
   --danger: #a63d2f;
   --danger-soft: #f7e6e2;
   --success: #2f6b4f;
@@ -89,7 +91,7 @@ button, input, select, textarea {
 button { cursor: pointer; }
 
 :focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -137,7 +139,7 @@ button { cursor: pointer; }
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--gold-ink);
   margin-bottom: 0.75rem;
 }
 
@@ -678,7 +680,7 @@ button { cursor: pointer; }
   display: inline-block;
   font-family: var(--serif);
   font-size: 0.95rem;
-  color: var(--gold);
+  color: var(--gold-ink);
   letter-spacing: 0.1em;
   margin-bottom: 0.6rem;
 }
@@ -1341,7 +1343,7 @@ button { cursor: pointer; }
 
 .call-hint {
   font-size: 0.74rem;
-  color: rgba(244, 239, 227, 0.5);
+  color: rgba(244, 239, 227, 0.62);
   margin: 0;
   max-width: 34ch;
 }
