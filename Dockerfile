@@ -19,6 +19,8 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+RUN chmod +x /app/docker/entrypoint.sh /app/docker/scheduler.sh
+
 RUN groupadd --system app \
     && useradd --system --gid app --create-home app \
     && mkdir -p /app/data /app/staticfiles \
