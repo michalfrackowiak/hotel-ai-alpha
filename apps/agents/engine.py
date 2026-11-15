@@ -49,7 +49,7 @@ ENGLISH_WORDS = re.compile(
 )
 
 
-def detect_language(text: str, current: str) -> str:
+def detect_language(text: str, current: str, allow_number_switch: bool = True) -> str:
     """Return the language the guest is using in ``text``.
 
     Explicit requests win. Otherwise Polish diacritics or Polish function words
@@ -58,10 +58,15 @@ def detect_language(text: str, current: str) -> str:
     addresses and bare numbers never flip the conversation.
     """
     text = text or ""
-    if EXPLICIT_EN.search(text):
+    if re.search(r"\benglish\b|\bangl(?:ielsk\w*|ielsku)\b|\bprze(?:łącz|łącz).*angielsk\w*\b", text, re.IGNORECASE):
         return "en"
-    if EXPLICIT_PL.search(text):
+    if re.search(r"\bpolish\b|\bpolsk(?:i|u|im|iego)\b|\bpo polsku\b", text, re.IGNORECASE):
         return "pl"
+    if allow_number_switch:
+        if re.match(r"^\s*2\s*$", text):
+            return "en"
+        if re.match(r"^\s*1\s*$", text):
+            return "pl"
     if POLISH_DIACRITICS.search(text):
         return "pl"
     polish_hits = len(POLISH_WORDS.findall(text))
@@ -191,7 +196,8 @@ class AgentEngine:
 
     # ------------------------------------------------------------------- turn
     def _maybe_switch_language(self, text: str) -> None:
-        detected = detect_language(text, self.conversation.language)
+        has_prior_user = self.conversation.messages.filter(role=Message.Role.USER).exists()
+        detected = detect_language(text, self.conversation.language, allow_number_switch=not has_prior_user)
         if detected != self.conversation.language:
             logger.info(
                 "Conversation %s switched language %s → %s",

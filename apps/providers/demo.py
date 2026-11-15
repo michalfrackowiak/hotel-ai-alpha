@@ -354,10 +354,9 @@ class DemoProvider(BaseLLMProvider):
         phone_text = self._strip_dates(latest) or self._strip_dates(history)
         phone = PHONE.search(phone_text) if phone_text else None
         guests = self._first_int(GUESTS, latest) or self._first_int(GUESTS, history)
+        if guests is None:
+            guests = self._guest_count_from_history(messages)
         guests_explicit = guests is not None
-        if guests is None and self._asked_guests(messages):
-            guests = self._bare_count(latest)
-            guests_explicit = guests is not None
         first_name, last_name = self._extract_name(history, latest)
 
         return {
@@ -571,15 +570,41 @@ class DemoProvider(BaseLLMProvider):
     @staticmethod
     def _asked_guests(messages: list[ChatMessage]) -> bool:
         for message in reversed(messages):
-            if message.role == "assistant":
+            if message.role == "assistant" and (message.content or "").strip():
                 text = (message.content or "").lower()
                 return "number of guests" in text or "liczbę osób" in text
         return False
 
     @staticmethod
+    def _guest_count_from_history(messages: list[ChatMessage]) -> int | None:
+        # Recover a guest count that was given as a bare number (or word) in
+        # reply to the "number of guests" question, even after the conversation
+        # has moved on to availability, room selection or confirmation. Scanning
+        # the full message list (rather than only the last assistant turn) keeps
+        # the count stable across turns.
+        result: int | None = None
+        i = 0
+        length = len(messages)
+        while i < length:
+            message = messages[i]
+            if message.role == "assistant" and (
+                "number of guests" in (message.content or "").lower()
+                or "liczbę osób" in (message.content or "").lower()
+            ):
+                j = i + 1
+                while j < length and messages[j].role != "assistant":
+                    if messages[j].role == "user":
+                        count = DemoProvider._bare_count(messages[j].content or "")
+                        if count is not None:
+                            result = count
+                    j += 1
+            i += 1
+        return result
+
+    @staticmethod
     def _asked_check_out(messages: list[ChatMessage]) -> bool:
         for message in reversed(messages):
-            if message.role == "assistant":
+            if message.role == "assistant" and (message.content or "").strip():
                 text = (message.content or "").lower()
                 return "departure date" in text or "datę wyjazdu" in text
         return False
