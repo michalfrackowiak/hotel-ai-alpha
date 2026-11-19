@@ -548,6 +548,12 @@ class Booking(TimeStampedModel):
         null=True,
         blank=True,
     )
+    confirmation_sms_next_retry_at = models.DateTimeField(
+        _("confirmation SMS next retry at"),
+        null=True,
+        blank=True,
+        db_index=True,
+    )
     external_event_id = models.CharField(_("calendar event id"), max_length=255, blank=True)
 
     class Meta:

@@ -78,6 +78,10 @@
       <span class="ops-card__value">{{ sms_failed_count }}</span>
       <span class="ops-card__label">{% trans "SMS delivery failures" %}</span>
     </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ sms_retry_count }}</span>
+      <span class="ops-card__label">{% trans "SMS waiting to retry" %}</span>
+    </div>
   </div>
 
   <section class="ops-section">
@@ -237,7 +241,7 @@
     <h2>{% trans "SMS delivery" %}</h2>
     {% if problem_sms %}
       <table class="ops-table">
-        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempts" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempts" %}</th><th>{% trans "Next retry" %}</th><th>{% trans "Last error" %}</th></tr></thead>
         <tbody>
           {% for booking in problem_sms %}
             <tr>
@@ -245,6 +249,7 @@
               <td>{{ booking.client.phone|default:"—" }}</td>
               <td>{{ booking.get_confirmation_sms_status_display }}</td>
               <td>{{ booking.confirmation_sms_attempts }}</td>
+              <td>{% if booking.confirmation_sms_next_retry_at %}{{ booking.confirmation_sms_next_retry_at|date:"d M H:i" }}{% else %}-{% endif %}</td>
               <td>{{ booking.confirmation_sms_error|default:"—"|truncatechars:60 }}</td>
             </tr>
           {% endfor %}
