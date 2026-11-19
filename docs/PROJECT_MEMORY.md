@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 19 November 2026 - **Version:** v0.7.0 - **Tests:** 221 passing
+**Last updated:** 19 November 2026 - **Version:** v0.7.0 - **Tests:** 222 passing
 
 ## Current state
 
@@ -293,4 +293,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 SMS retry/backoff parity** is complete on `develop` (PR #4, CI green, merge `5418604`): automatic SMS retry/backoff state, scheduler/command parity with email (`send_booking_sms`), and ops/admin visibility/tests/docs. No release has been cut. Next: choose the next v0.8.0/release slice (or prepare a release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
+v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 (unreleased, on `develop`)** includes SMS retry/backoff parity (PR #4) and follow-up scheduler load coverage for pending SMS retries (`tests/test_scheduler_load.py`). No release has been cut. Next: choose the next slice (or prepare a v0.8.0 release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
