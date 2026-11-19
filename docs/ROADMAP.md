@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of **15 November 2026**.
+Status as of **19 November 2026**.
 
 | Phase | Milestone | Status |
 | --- | --- | --- |
