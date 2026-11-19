@@ -46,10 +46,12 @@ from apps.hotel.models import (
     BookingEvent,
     ChannelFeed,
     EmailDelivery,
+    InboundSmsMessage,
     RatePlan,
     Room,
     RoomBlock,
     RoomType,
+    SmsDelivery,
 )
 from apps.hotel.notifications import max_email_attempts, send_guest_login_email
 from apps.hotel.pricing import StayError
@@ -402,6 +404,22 @@ def ops_dashboard(request):
         EmailDelivery.objects.select_related("booking")
         .order_by("-created_at", "-pk")[:20]
     )
+    sms_delivered_count = Booking.objects.filter(confirmation_sms_status="delivered").count()
+    sms_failed_count = Booking.objects.filter(confirmation_sms_status__in=("failed", "undelivered")).count()
+    sms_sent_count = Booking.objects.filter(confirmation_sms_status="sent").count()
+    problem_sms = (
+        Booking.objects.filter(confirmation_sms_status__in=("failed", "undelivered"))
+        .select_related("client")
+        .order_by("-updated_at")[:20]
+    )
+    sms_history = (
+        SmsDelivery.objects.select_related("booking")
+        .order_by("-created_at", "-pk")[:20]
+    )
+    inbound_sms = (
+        InboundSmsMessage.objects.select_related("booking", "booking__client")
+        .order_by("-received_at", "-created_at")[:20]
+    )
     recent_events = BookingEvent.objects.select_related("booking").order_by("-created_at", "-pk")[:20]
     dirty_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.DIRTY).select_related("room_type").order_by("number")
     out_of_order_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.OUT_OF_ORDER).select_related("room_type").order_by("number")
@@ -434,6 +452,12 @@ def ops_dashboard(request):
             "email_retry_count": email_retry_count,
             "problem_emails": problem_emails,
             "email_history": email_history,
+            "sms_delivered_count": sms_delivered_count,
+            "sms_failed_count": sms_failed_count,
+            "sms_sent_count": sms_sent_count,
+            "problem_sms": problem_sms,
+            "sms_history": sms_history,
+            "inbound_sms": inbound_sms,
             "recent_events": recent_events,
             "arrival_count": arrivals.count(),
             "departure_count": departures.count(),

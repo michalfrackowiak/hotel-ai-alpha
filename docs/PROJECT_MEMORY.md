@@ -2,14 +2,14 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 19 November 2026 - **Version:** v0.6.10 - **Tests:** 193 passing
+**Last updated:** 19 November 2026 - **Version:** v0.6.10 (v0.7.0 in progress) - **Tests:** 212 passing
 
 ## Current state
 
 - Phases 0–11 are complete. The app books a room end-to-end by chat and voice in Polish and English, emails or texts a confirmation and keeps per-room calendars in sync.
 - The conversation follows a seven-step reception script shared by chat and voice: welcome/language, arrival date, departure date or duration, guest count, availability and room selection, confirmation prompt, then a choice of email or SMS delivery. Polish is the default; the engine switches to English when the guest asks.
 - The demo hotel is branded **Resort Neptun Jastrzębia Góra**; the assistant is still called **Aurora**.
-- Confirmation SMS is delivered through a pluggable provider layer: the offline `console` provider by default, or Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Delivery state is stored on the booking and shown in the admin.
+- Confirmation SMS is delivered through a pluggable provider layer: the offline `console` provider by default, or Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded as a `SmsDelivery` row; the booking stores the current SMS delivery state/attempt metadata. Provider delivery-receipt webhooks (`POST /api/v1/sms/webhooks/<provider>/`, gated by `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret` when configured) update the booking and matching/latest delivery, and inbound guest replies are stored as `InboundSmsMessage` records (linked to a booking by normalized phone when possible). Read-only SMS delivery history and inbound replies are shown in `/ops/` and the admin.
 - Non-booking enquiries and explicit requests for a receptionist call `transfer_to_human`, which records a handover request in the conversation state.
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
@@ -65,7 +65,8 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 | Deterministic flexible date parsing | Demo/provider parsing and tolerant tool-date handling cover natural booking inputs (ordinals, ranges without year, relative start + duration) without adding an SLM dependency, preserving the offline/CPU-only fallback. |
 | Polish is the default language | The pilot property is in Poland; a Polish greeting with an explicit English option matches how guests arrive and avoids forcing a language switch. The engine flips the stored conversation language when the guest asks. |
 | SMS goes through a provider layer with a console default | Keeps the seven-step scenario and the tests working offline without credentials, while leaving a real Twilio adapter behind the same `SmsProvider` interface. |
-| SMS delivery state lives on the booking | Mirrors the email design: the confirmation marker makes retries idempotent, the status/error/provider-id fields feed the admin and API, and a failure never rolls back a reservation. |
+| SMS delivery state and history live on the booking and `SmsDelivery` | Mirrors the email design: the confirmation marker makes retries idempotent, current status/error/provider-id/attempt fields feed the admin and API, and every attempt is recorded as a `SmsDelivery` row. Provider receipts refine the matching/latest row and current status; failures never roll back a reservation. |
+| SMS webhooks are normalised and best-effort matched | Twilio/generic receipt and inbound payloads are parsed in `apps.hotel.sms_webhooks`; the API view authenticates with `SMS_WEBHOOK_SECRET` when set, matches receipts by reference or provider message id, stores inbound replies even when unmatched, and links a reply to a booking by normalized phone when a recent match exists. Unknown receipts are acknowledged. |
 | Handover is a recorded state change, not a channel-specific path | `transfer_to_human` stores the reason in `conversation.state` so chat and voice share one implementation and reception can see why the guest was escalated. |
 | Prompt refresh migration only touches the old defaults | Existing databases pick up the seven-step prompts without overwriting an operator's customised text. |
 | Cancellation policy in `apps.hotel.cancellation` | The page, API, agent tools and write path must quote the same fee; duplicating the rule in four places guarantees drift. |
@@ -147,7 +148,8 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **Confirmation retries respect the stored backoff.** `send_pending_confirmation_emails()` skips bookings whose `next_retry_at` is in the future or that have reached `EMAIL_MAX_ATTEMPTS`. `--force` is the deliberate override; do not remove the filters from the scheduler path.
 - **Every send attempt updates the retry fields.** `send_booking_confirmation()` must increment `confirmation_email_attempts`, stamp `confirmation_email_last_attempt_at`, and set or clear `confirmation_email_next_retry_at`; otherwise the dashboard and scheduler drift from reality.
 - **Webhook payloads are normalised in `email_webhooks.py`.** Keep SES/SNS and Postmark field names there, not in the API view. The view only resolves the booking and writes the status.
-- **SMS delivery follows the same after-commit and idempotency rules as email.** `send_booking_confirmation_sms()` owns `confirmation_sms_sent_at` and the status/attempt fields; a send failure must never roll back the booking. `force=True` is the deliberate resend path (admin action), not the default.
+- **SMS delivery follows the same after-commit and idempotency rules as email.** `send_booking_confirmation_sms()` owns `confirmation_sms_sent_at`, the current status/attempt/error/provider-id fields, and appends a `SmsDelivery` row for each attempt; a send failure must never roll back the booking. `force=True` is the deliberate resend path (admin action), not the default. There is no automatic SMS retry scheduler.
+- **SMS webhooks match receipts best-effort.** `/api/v1/sms/webhooks/<provider>/` requires `X-Sms-Webhook-Secret` when `SMS_WEBHOOK_SECRET` is set, resolves receipts by booking reference or provider message id (booking field or `SmsDelivery` row, falling back to the latest delivery), updates booking and matching/latest `SmsDelivery`, and returns ignored for unknown receipts. Inbound replies are always stored as `InboundSmsMessage` and linked to a booking only when a normalized phone match is found among recent bookings.
 - **`ConsoleSmsProvider.outbox` is class-level.** Tests reset it through the autouse fixture in `tests/conftest.py`; do not assert across tests without a reset.
 - **The default language is Polish.** Web tests that assert English copy must pass `HTTP_ACCEPT_LANGUAGE="en"` or wrap the call in `translation.override("en")`; otherwise they see the Polish catalogue.
 - **Language switching is detected before each turn.** `apps/agents/engine.py` flips `conversation.language` on an explicit request for English/Polish; the demo provider and prompts then render in that language. Do not hard-code a language in a channel path.
@@ -271,6 +273,11 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 622 strings extracted, all translated and compiled |
 | 2026-11-19 | v0.7.0 (unreleased) | `/ops/` EN + PL | email-history section renders in both languages; staff-only gate unchanged |
 | 2026-11-19 | v0.7.0 (unreleased) | Scheduler load (`tests/test_scheduler_load.py`) | 200 stale holds and 100 pending confirmation emails processed within budget (2 tests passed) |
+| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `pytest` | 212 passed (includes 11 new SMS send/receipt/inbound/auth/ops/admin tests) |
+| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `manage.py check` | 0 issues |
+| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `makemigrations --check --dry-run` | no changes detected (0015 applied to models) |
+| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `ruff check .` | clean |
+| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | Polish catalogue | 642 strings extracted, 643 translated and compiled |
 
 Update this table when the release gate is re-run.
 
@@ -279,8 +286,8 @@ Update this table when the release gate is re-run.
 - ~~Colour contrast: add automated checks to the accessibility gate, or keep as manual review?~~ Resolved: the token audit now enforces WCAG AA for text, focus rings and control borders.
 - ~~Email history: per-message view vs. only current delivery state.~~ Resolved on `feature/v0.7.0-email-history`: each send/retry already appends one `EmailDelivery` row; `/ops/` now shows the last 20 rows and the admin has a read-only list with `subject`. Provider webhooks update the matching row's final status in place — one row per attempt, not per status transition — so the history stays append-only per attempt.
 - ~~Scheduler: load-test with a large backlog.~~ Resolved: `tests/test_scheduler_load.py` now covers 200 expired holds and 100 pending confirmation emails; both complete well within the 10 s budget (no scheduler code changes required).
-- SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?
+- ~~SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?~~ Resolved on `feature/v0.7.0-sms-receipts-replies`: each send appends a `SmsDelivery` row, provider receipts update booking/current delivery status via `/api/v1/sms/webhooks/<provider>/`, and inbound replies are stored as `InboundSmsMessage` records (linked by phone when possible) with read-only surfacing in `/ops/` and the admin.
 
 ## Next move
 
-v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The v0.7.0 email-history slice is merged to `develop` and the scheduler backlog load test is covered on `fix/v0.7.0-scheduler-load-test`; no release has been cut. The remaining candidate item is SMS inbound replies and delivery-receipt webhooks (design decision).
+v0.6.10 is released. On `develop`, the v0.7.0 email-history slice and scheduler backlog load test are merged. On `feature/v0.7.0-sms-receipts-replies`, SMS delivery receipts and inbound replies are implemented (models/migration, webhook endpoint/auth, ops/admin visibility, tests, translations, docs) with the full gate green locally; commit/push, open a PR to `develop`, and watch CI. No release has been cut. After merge, decide any remaining v0.7.0 scope and follow [BRANCHING.md](BRANCHING.md) for the release.

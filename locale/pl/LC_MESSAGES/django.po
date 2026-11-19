@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-19 16:11+0100\n"
+"POT-Creation-Date: 2026-11-19 19:24+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -488,6 +488,9 @@ msgstr "Usunięte"
 msgid "Delivered"
 msgstr "Dostarczony"
 
+msgid "Delivered SMS"
+msgstr "Dostarczone SMS-y"
+
 msgid "Delivered emails"
 msgstr "Dostarczone e-maile"
 
@@ -636,6 +639,9 @@ msgstr ""
 "Bezpłatne anulowanie do %(date)s. Po tym terminie zostanie naliczona opłata za "
 "%(nights)s noc(y)."
 
+msgid "From"
+msgstr "Od"
+
 msgid "Generation"
 msgstr "Generowanie"
 
@@ -730,6 +736,9 @@ msgstr ""
 msgid "Ignored an invalid rate for %(room)s on %(date)s."
 msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
 
+msgid "Inbound SMS replies"
+msgstr "Przychodzące odpowiedzi SMS"
+
 msgid "Inspected"
 msgstr "Sprawdzony"
 
@@ -796,6 +805,9 @@ msgstr "Blokada ręczna"
 msgid "Maximum stay allowed for a booking that includes this night. 0 means no maximum."
 msgstr "Maksymalny pobyt dozwolony dla rezerwacji obejmującej tę noc. 0 oznacza brak maksimum."
 
+msgid "Message"
+msgstr "Wiadomość"
+
 msgid "Messages"
 msgstr "Wiadomości"
 
@@ -844,6 +856,12 @@ msgstr "Następna próba"
 msgid "Night"
 msgstr "Noc"
 
+msgid "No SMS delivery problems."
+msgstr "Brak problemów z dostarczaniem SMS."
+
+msgid "No SMS messages logged yet."
+msgstr "Brak zapisanych wiadomości SMS."
+
 msgid "No active holds."
 msgstr "Brak aktywnych rezerwacji wstępnych."
 
@@ -876,6 +894,9 @@ msgstr "Brak zaplanowanych wyjazdów na dziś."
 
 msgid "No emails logged yet."
 msgstr "Brak zapisanych e-maili."
+
+msgid "No inbound SMS replies yet."
+msgstr "Brak przychodzących odpowiedzi SMS."
 
 msgid "No microphone was found or audio capture failed."
 msgstr "Nie znaleziono mikrofonu lub przechwytywanie dźwięku nie powiodło się."
@@ -1031,6 +1052,9 @@ msgstr "Gotowe"
 msgid "Ready when you are"
 msgstr "Gotowe, kiedy chcesz"
 
+msgid "Received at"
+msgstr "Odebrano"
+
 msgid "Recent booking events"
 msgstr "Ostatnie zdarzenia rezerwacji"
 
@@ -1100,6 +1124,18 @@ msgstr "Pokoje są przygotowywane. Zajrzyj wkrótce."
 msgid "Rules"
 msgstr "Zasady"
 
+msgid "SMS deliveries"
+msgstr "dostawy SMS"
+
+msgid "SMS delivery"
+msgstr "Dostarczanie SMS"
+
+msgid "SMS delivery failures"
+msgstr "Błędy dostarczania SMS"
+
+msgid "SMS history"
+msgstr "Historia SMS"
+
 msgid "SMS provider message id"
 msgstr "Identyfikator wiadomości SMS u dostawcy"
 
@@ -1129,6 +1165,9 @@ msgstr "Wyślij link do logowania"
 
 msgid "Sent"
 msgstr "Wysłany"
+
+msgid "Sent SMS awaiting receipt"
+msgstr "Wysłane SMS-y oczekujące na potwierdzenie"
 
 msgid "Sent at"
 msgstr "Wysłano"
@@ -1410,6 +1449,9 @@ msgstr "Dwa sposoby na przytulny pobyt"
 msgid "Type"
 msgstr "Typ"
 
+msgid "Undelivered"
+msgstr "Niedostarczony"
+
 msgid "Unknown rate plan."
 msgstr "Nieznany plan cenowy."
 
@@ -1558,6 +1600,9 @@ msgstr "cena bazowa za noc"
 
 msgid "beds"
 msgstr "łóżka"
+
+msgid "body"
+msgstr "treść"
 
 msgid "booking"
 msgstr "rezerwacja"
@@ -1787,6 +1832,9 @@ msgstr "piętro"
 msgid "from"
 msgstr "od"
 
+msgid "from number"
+msgstr "numer nadawcy"
+
 msgid "greeting (English)"
 msgstr "powitanie (angielskie)"
 
@@ -1810,6 +1858,12 @@ msgstr "blokada wygasa o"
 
 msgid "housekeeping status"
 msgstr "status sprzątania"
+
+msgid "inbound SMS message"
+msgstr "przychodząca wiadomość SMS"
+
+msgid "inbound SMS messages"
+msgstr "przychodzące wiadomości SMS"
 
 msgid "kind"
 msgstr "rodzaj"
@@ -1904,6 +1958,9 @@ msgstr "plan cenowy"
 msgid "rate plans"
 msgstr "plany cenowe"
 
+msgid "received at"
+msgstr "odebrano"
+
 msgid "recipient"
 msgstr "odbiorca"
 
@@ -1990,6 +2047,9 @@ msgstr "dostawca zamiany tekstu na mowę"
 
 msgid "timeout (seconds)"
 msgstr "limit czasu (sekundy)"
+
+msgid "to number"
+msgstr "numer odbiorcy"
 
 msgid "token hash"
 msgstr "skrót tokenu"

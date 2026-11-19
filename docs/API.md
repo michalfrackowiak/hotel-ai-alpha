@@ -235,7 +235,7 @@ Response `201`:
 }
 ```
 
-`confirmation_email_status` and `confirmation_sms_status` report the delivery state of the confirmation messages (`not_sent`, `sent`, `failed`, or a provider status such as `delivered`/`bounced`). `confirmation_sms_status` is only meaningful when `BOOKING_SMS_ENABLED` is on; the offline console provider reports `sent` without calling an external service.
+`confirmation_email_status` and `confirmation_sms_status` report the current delivery state of the confirmation messages. Email statuses are `not_sent`, `pending`, `sent`, `delivered`, `bounced`, `complained` or `failed`. SMS statuses are `pending`, `sent`, `delivered`, `undelivered` or `failed` (`confirmation_sms_status` is only meaningful when `BOOKING_SMS_ENABLED` is on; the offline console provider reports `sent` without calling an external service). A new booking starts without delivery attempts; the fields reflect the latest known outcome and any provider error.
 
 Store `manage_token`/`manage_url` with the booking. The token is signed, scoped to one booking and contains a random per-booking secret, so rotating `Booking.access_token` revokes every link for that booking.
 
@@ -424,7 +424,41 @@ reference returns `404`; an unknown message id returns `200` with
 
 The update sets `confirmation_email_status` to `delivered`, `bounced`,
 `complained` or `failed`, and records the reason in `confirmation_email_error`
-for bounces, complaints and failures.
+for bounces, complaints and failures. The matching (or latest) `EmailDelivery`
+row is updated with the same final status and error.
+
+## SMS delivery webhooks
+
+`POST /api/v1/sms/webhooks/<provider>/` accepts delivery receipts and inbound
+guest replies from the SMS provider. Set `SMS_WEBHOOK_SECRET` to require the
+`X-Sms-Webhook-Secret` header; with no secret configured the endpoint accepts
+anonymous calls (local demos only).
+
+**Delivery receipts** update the booking's current SMS state and the matching
+(or latest) `SmsDelivery` attempt. The booking is matched by
+`reference`/`booking_reference` when the payload carries one, otherwise by the
+provider message id stored on the booking or on a `SmsDelivery` row. An unknown
+receipt returns `200` with `{"status": "ignored"}` so providers do not retry
+forever.
+
+**Inbound replies** are stored as `InboundSmsMessage` records (with the sender,
+recipient, body, provider and provider message id). When the sender's phone
+number matches a recent booking's client phone, the reply is linked to that
+booking; unmatched replies are still stored with no booking. The endpoint
+returns `{"status": "ok", "type": "inbound", ...}`.
+
+| Provider | Payload | Mapping |
+| --- | --- | --- |
+| `twilio` | Twilio status callback / inbound form-encoded or JSON fields | receipt: `MessageStatus`/`SmsStatus` (`sent`, `delivered`, `failed`, `undelivered`), `MessageSid`, `ErrorCode`/`ErrorMessage`; inbound: `From`, `To`, `Body`, `MessageSid` |
+| any / `generic` | Generic JSON | receipt: `event`/`type` or `status`/`message_status`, `message_id`, optional `booking_reference`/`reference`, `reason`/`error`; inbound: `event` = `inbound`/`reply`/`received` with `from`/`body` (or equivalent) |
+
+Receipt updates set `confirmation_sms_status` to `sent`, `delivered`,
+`undelivered` or `failed`, record the reason in `confirmation_sms_error` for
+failures and clear it on delivery, and sync the corresponding `SmsDelivery`
+row. A sent attempt is recorded as an `SmsDelivery` row by
+`send_booking_confirmation_sms()`; delivery receipts refine that history. Reply
+history and delivery attempts are visible as read-only records in `/ops/` and
+the admin.
 
 ## Throttling
 

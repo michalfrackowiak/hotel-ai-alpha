@@ -18,7 +18,7 @@ flowchart LR
     Calendar --> Google[Google Calendar<br/>one calendar per room]
     Calendar --> Fake[Fake calendar<br/>demo/tests]
     Hotel --> Mail[Confirmation email<br/>SMTP / console]
-    Hotel --> SMS[Confirmation SMS<br/>console / Twilio]
+    Hotel --> SMS[Confirmation SMS<br/>console / Twilio / webhooks]
     Scheduler[Hold cleanup scheduler] --> Hotel
     Staff[Reception staff] --> Ops[Ops dashboard / admin]
     Ops --> Hotel
@@ -30,7 +30,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email and SMS, admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email and SMS (including delivery history and inbound replies), admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
@@ -131,7 +131,8 @@ Every transition appends a `BookingEvent` with the actor (`guest`, `staff`, `age
 - The web lookup never exposes a booking from a reference alone: it redirects to a signed link only when the contact matches. Rotating `Booking.access_token` revokes every link.
 - `/my-bookings/` is a passwordless guest account. `apps.hotel.guest_access` stores only a SHA-256 hash of a single-use, 30-minute token. The request page always returns the same neutral message; an email is sent only when the address already has a booking. A signed-in session can open any booking whose client email matches, and the detail view issues that booking's normal signed token so confirm/modify/cancel keep working.
 - `apps.hotel.notifications` renders an English or Polish confirmation with `apps.hotel.ics` and sends it after commit. `confirmation_email_sent_at` makes retries idempotent; `send_booking_emails` retries undelivered confirmations. Each send or retry appends an `EmailDelivery` row; provider webhooks update the matching row's final status. `/ops/` shows the last 20 deliveries and the admin exposes a read-only list. The same notification module renders the guest magic-link email through the configured provider.
-- `apps.hotel.sms_providers` delivers a short confirmation text through a pluggable `SmsProvider`. The default `console` provider records the message in the log and `ConsoleSmsProvider.outbox` so demos and tests work offline; `twilio` posts to the Twilio Messages API when configured. `send_booking_confirmation_sms()` owns the `confirmation_sms_sent_at` marker and the status/attempt fields on the booking.
+- `apps.hotel.sms_providers` delivers a short confirmation text through a pluggable `SmsProvider`. The default `console` provider records the message in the log and `ConsoleSmsProvider.outbox` so demos and tests work offline; `twilio` posts to the Twilio Messages API when configured. `send_booking_confirmation_sms()` owns the `confirmation_sms_sent_at` marker and the status/attempt fields on the booking, and appends an `SmsDelivery` row for each attempt.
+- `apps.hotel.sms_webhooks` normalises provider delivery receipts and inbound replies. The `/api/v1/sms/webhooks/<provider>/` endpoint (optionally protected by `SMS_WEBHOOK_SECRET`) updates the booking and matching/latest `SmsDelivery` on a receipt, and stores inbound replies as `InboundSmsMessage` records (linked to a booking when the sender phone can be matched). `/ops/` and the admin expose SMS delivery history and inbound replies as read-only staff views.
 - Email, SMS and calendar failures are logged and never roll back a reservation.
 
 ### Availability

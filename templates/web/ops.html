@@ -66,6 +66,18 @@
       <span class="ops-card__value">{{ email_retry_count }}</span>
       <span class="ops-card__label">{% trans "Emails waiting to retry" %}</span>
     </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ sms_delivered_count }}</span>
+      <span class="ops-card__label">{% trans "Delivered SMS" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ sms_sent_count }}</span>
+      <span class="ops-card__label">{% trans "Sent SMS awaiting receipt" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ sms_failed_count }}</span>
+      <span class="ops-card__label">{% trans "SMS delivery failures" %}</span>
+    </div>
   </div>
 
   <section class="ops-section">
@@ -218,6 +230,72 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No emails logged yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "SMS delivery" %}</h2>
+    {% if problem_sms %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempts" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <tbody>
+          {% for booking in problem_sms %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.phone|default:"—" }}</td>
+              <td>{{ booking.get_confirmation_sms_status_display }}</td>
+              <td>{{ booking.confirmation_sms_attempts }}</td>
+              <td>{{ booking.confirmation_sms_error|default:"—"|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No SMS delivery problems." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "SMS history" %}</h2>
+    {% if sms_history %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Sent at" %}</th><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempt" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <tbody>
+          {% for delivery in sms_history %}
+            <tr>
+              <td>{{ delivery.created_at|date:"d M H:i" }}</td>
+              <td>{{ delivery.booking.reference }}</td>
+              <td>{{ delivery.recipient|default:"—" }}</td>
+              <td>{{ delivery.get_status_display }}</td>
+              <td>{{ delivery.attempt }}</td>
+              <td>{{ delivery.error_message|default:"—"|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No SMS messages logged yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Inbound SMS replies" %}</h2>
+    {% if inbound_sms %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Received at" %}</th><th>{% trans "From" %}</th><th>{% trans "Reference" %}</th><th>{% trans "Message" %}</th></tr></thead>
+        <tbody>
+          {% for message in inbound_sms %}
+            <tr>
+              <td>{{ message.received_at|date:"d M H:i" }}</td>
+              <td>{{ message.from_number|default:"—" }}</td>
+              <td>{% if message.booking %}{{ message.booking.reference }}{% else %}—{% endif %}</td>
+              <td>{{ message.body|default:"—"|truncatechars:120 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No inbound SMS replies yet." %}</p>
     {% endif %}
   </section>
 
