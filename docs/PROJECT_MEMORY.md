@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 19 November 2026 - **Version:** v0.7.0 (release in preparation) - **Tests:** 212 passing
+**Last updated:** 19 November 2026 - **Version:** v0.7.0 - **Tests:** 212 passing
 
 ## Current state
 
@@ -291,4 +291,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.7.0 scope is complete on `develop` (email history PR #1, scheduler backlog load tests PR #2, SMS delivery receipts and inbound replies PR #3). Release preparation is in progress on `release/v0.7.0`: version bumped, roadmap/project memory updated, and `docs/releases/v0.7.0.md` added. Next: run the full release gate (pytest, manage.py check, ruff, `makemigrations --check --dry-run`, Docker/`/healthz`, EN/PL smoke as applicable), then follow [BRANCHING.md](BRANCHING.md) to merge `release/v0.7.0` into `main`, tag `v0.7.0`, and merge `main` back into `develop`. No tag or release merge has been completed yet.
+v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`); `main` and `develop` are in sync. All roadmap items listed for v0.7.0 are complete (email history, scheduler backlog load coverage, SMS delivery receipts and inbound replies). Next milestone scope is not yet defined — choose the next slice (e.g. SMS retry/backoff parity, payments/deposits, broader operational or guest-experience work) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before starting implementation.
