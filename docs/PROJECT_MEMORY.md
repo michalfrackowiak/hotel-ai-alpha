@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 15 November 2026 - **Version:** v0.6.9 - **Tests:** 193 passing
+**Last updated:** 15 November 2026 - **Version:** v0.6.10 - **Tests:** 193 passing
 
 ## Current state
 
@@ -14,7 +14,7 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.6.9` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.6.10` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -256,11 +256,11 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-15 | v0.6.9 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
 | 2026-11-15 | v0.6.9 | Docker pages EN/PL | `/`, `/chat/`, `/voice/`, `/book/` all 200 with matching `lang` |
 | 2026-11-15 | v0.6.9 | GitHub Actions CI (`develop`) | green: test, docker and smoke jobs pass after the entrypoint permission fix |
-| 2026-11-15 | post-v0.6.9 (develop) | `pytest` | 193 passed (3 new guest-count/language regressions) |
-| 2026-11-15 | post-v0.6.9 (develop) | `manage.py check` | 0 issues |
-| 2026-11-15 | post-v0.6.9 (develop) | `makemigrations --check --dry-run` | no changes detected |
-| 2026-11-15 | post-v0.6.9 (develop) | `ruff check .` | clean |
-| 2026-11-15 | post-v0.6.9 (develop) | Demo flow EN + PL | bare "2" guest answer asks the count once and completes the booking; PL stays Polish |
+| 2026-11-15 | v0.6.10 | `pytest` | 193 passed (3 new guest-count/language regressions) |
+| 2026-11-15 | v0.6.10 | `manage.py check` | 0 issues |
+| 2026-11-15 | v0.6.10 | `makemigrations --check --dry-run` | no changes detected |
+| 2026-11-15 | v0.6.10 | `ruff check .` | clean |
+| 2026-11-15 | v0.6.10 | Demo flow EN + PL | bare "2" guest answer asks the count once and completes the booking; PL stays Polish |
 
 Update this table when the release gate is re-run.
 
@@ -273,4 +273,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.6.9 is released: the guided seven-step scenario, Polish-first language handling and email/SMS confirmation delivery are shipped. The next milestone (v0.7.0) would pick up the remaining "should have" items; no scope has been committed yet.
+v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The next milestone (v0.7.0) would pick up the remaining "should have" items; no scope has been committed yet.
