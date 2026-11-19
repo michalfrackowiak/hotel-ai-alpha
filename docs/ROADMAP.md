@@ -304,7 +304,7 @@ Theme: **operational visibility**. Reception can trace confirmation delivery and
 
 ## Milestone v0.8.0 - complete on develop (unreleased)
 
-Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SMS messages are retried automatically with exponential backoff, with scheduler/command support and operational visibility. Merged to `develop` via PR #4 (CI green); no release cut.
+Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SMS messages are retried automatically with exponential backoff, with scheduler/command support and operational visibility. Merged to `develop` via PR #4 and PR #5 (CI green); no release cut.
 
 ### Delivered
 
