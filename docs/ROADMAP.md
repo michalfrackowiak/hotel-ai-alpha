@@ -285,9 +285,9 @@ Theme: **the guided booking scenario**. The conversation now follows the recepti
 
 ---
 
-## Milestone v0.7.0 â€” in progress
+## Milestone v0.7.0 — in progress
 
-Theme: **operational visibility**. Reception can see what happened to each confirmation email, not just the latest status on the booking.
+Theme: **operational visibility**. Reception can trace confirmation delivery and guest replies, not just the latest status on a booking.
 
 ### In progress
 
@@ -296,6 +296,6 @@ Theme: **operational visibility**. Reception can see what happened to each confi
 - [x] Tests for send/retry rows, webhook sync by message id or latest row, a webhook with no delivery row, ops display in EN/PL and admin read-only permissions
 - [x] Polish catalogue updated for the new ops copy
 - [x] Scheduler: load-test with a large backlog (`tests/test_scheduler_load.py` covers 200 expired holds and 100 pending confirmation emails)
-- [ ] SMS: decide on inbound replies and delivery-receipt webhooks for the pilot
+- [x] SMS: per-attempt `SmsDelivery` history and provider delivery-receipt webhooks (`/api/v1/sms/webhooks/<provider>/`, `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret`) that update booking and delivery status; inbound guest SMS replies stored as `InboundSmsMessage` records and matched to a booking by phone when possible; read-only SMS delivery/reply history in `/ops/` and the admin
 
-**Exit criteria:** reception can trace every confirmation attempt from `/ops/` or the admin, in both languages. No release has been cut yet; follow [BRANCHING.md](BRANCHING.md) before merging `feature/v0.7.0-email-history`.
+**Exit criteria:** reception can trace every confirmation attempt and inbound SMS reply from `/ops/` or the admin, in both languages. No release has been cut yet; follow [BRANCHING.md](BRANCHING.md) before merging feature branches.

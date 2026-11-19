@@ -530,6 +530,8 @@ class Booking(TimeStampedModel):
         choices=[
             ("pending", _("Pending")),
             ("sent", _("Sent")),
+            ("delivered", _("Delivered")),
+            ("undelivered", _("Undelivered")),
             ("failed", _("Failed")),
         ],
         default="pending",
@@ -676,6 +678,74 @@ class EmailDelivery(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.booking.reference} · attempt {self.attempt} · {self.status}"
+
+
+class SmsDelivery(TimeStampedModel):
+    """One attempt to deliver a booking confirmation SMS.
+
+    Kept as an append-only history so reception can see every attempt and its
+    outcome, including provider delivery receipts.
+    """
+
+    class Status(models.TextChoices):
+        SENT = "sent", _("Sent")
+        FAILED = "failed", _("Failed")
+        DELIVERED = "delivered", _("Delivered")
+        UNDELIVERED = "undelivered", _("Undelivered")
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="sms_deliveries")
+    attempt = models.PositiveSmallIntegerField(_("attempt"), default=1)
+    status = models.CharField(_("status"), max_length=20, choices=Status.choices, default=Status.SENT)
+    provider = models.CharField(_("provider"), max_length=40, blank=True, default="")
+    provider_message_id = models.CharField(_("provider message id"), max_length=200, blank=True, default="")
+    recipient = models.CharField(_("recipient"), max_length=40, blank=True, default="")
+    body = models.TextField(_("body"), blank=True, default="")
+    error_message = models.TextField(_("error message"), blank=True, default="")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("SMS delivery")
+        verbose_name_plural = _("SMS deliveries")
+        indexes = [models.Index(fields=["booking", "-created_at"], name="smsdelivery_booking_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.booking.reference} · attempt {self.attempt} · {self.status}"
+
+
+class InboundSmsMessage(TimeStampedModel):
+    """A text message sent by a guest to the hotel number.
+
+    Used to record inbound replies to confirmation texts. When the sender's
+    phone number can be matched, the message is linked to the most recent
+    relevant booking.
+    """
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inbound_sms_messages",
+    )
+    from_number = models.CharField(_("from number"), max_length=40, blank=True, default="")
+    to_number = models.CharField(_("to number"), max_length=40, blank=True, default="")
+    body = models.TextField(_("body"), blank=True, default="")
+    provider = models.CharField(_("provider"), max_length=40, blank=True, default="")
+    provider_message_id = models.CharField(_("provider message id"), max_length=200, blank=True, default="")
+    received_at = models.DateTimeField(_("received at"), default=timezone.now)
+
+    class Meta:
+        ordering = ["-received_at", "-created_at"]
+        verbose_name = _("inbound SMS message")
+        verbose_name_plural = _("inbound SMS messages")
+        indexes = [
+            models.Index(fields=["-received_at"], name="inboundsms_received_idx"),
+            models.Index(fields=["booking", "-received_at"], name="inboundsms_booking_idx"),
+        ]
+
+    def __str__(self) -> str:
+        who = self.from_number or "—"
+        return f"{who} · {self.received_at:%Y-%m-%d %H:%M}"
 
 
 class GuestLoginToken(models.Model):

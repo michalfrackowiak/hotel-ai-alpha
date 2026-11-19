@@ -455,3 +455,120 @@ class EmailWebhookView(APIView):
         return Response(
             {"status": "ok", "reference": booking.reference, "email_status": event.status}
         )
+
+
+class SmsWebhookView(APIView):
+    """Receive delivery receipts and inbound replies from an SMS provider."""
+
+    permission_classes = [AllowAny]
+
+    @staticmethod
+    def _normalise_phone(value: str) -> str:
+        return "".join(ch for ch in (value or "") if ch.isdigit())
+
+    @classmethod
+    def _match_booking_by_phone(cls, phone: str):
+        from apps.hotel.models import Booking
+
+        digits = cls._normalise_phone(phone)
+        if len(digits) < 7:
+            return None
+        candidates = (
+            Booking.objects.select_related("client")
+            .exclude(client__phone="")
+            .order_by("-created_at", "-pk")[:200]
+        )
+        for booking in candidates:
+            other = cls._normalise_phone(booking.client.phone)
+            if not other:
+                continue
+            if digits == other or digits.endswith(other) or other.endswith(digits):
+                return booking
+        return None
+
+    def post(self, request, provider: str):
+        from django.conf import settings
+
+        secret = getattr(settings, "SMS_WEBHOOK_SECRET", "")
+        if secret:
+            supplied = request.headers.get("X-Sms-Webhook-Secret", "")
+            if supplied != secret:
+                raise ApiError("webhook_access_denied", "Invalid webhook secret.", status_code=403)
+
+        from apps.hotel.sms_webhooks import SmsInboundEvent, SmsReceiptEvent, parse_sms_webhook
+
+        data = request.data if isinstance(request.data, dict) else {}
+        event = parse_sms_webhook(provider, data)
+        if event is None:
+            return Response({"status": "ignored"})
+
+        if isinstance(event, SmsInboundEvent):
+            from apps.hotel.models import InboundSmsMessage
+
+            booking = self._match_booking_by_phone(event.from_number)
+            message = InboundSmsMessage.objects.create(
+                booking=booking,
+                from_number=event.from_number,
+                to_number=event.to_number,
+                body=event.body,
+                provider=(provider or "").strip().lower(),
+                provider_message_id=event.message_id,
+            )
+            return Response(
+                {
+                    "status": "ok",
+                    "type": "inbound",
+                    "message_id": message.pk,
+                    "reference": booking.reference if booking else "",
+                }
+            )
+
+        if isinstance(event, SmsReceiptEvent):
+            from apps.hotel.models import Booking, SmsDelivery
+
+            booking = None
+            if event.reference:
+                booking = Booking.objects.filter(reference=event.reference).first()
+            if booking is None and event.message_id:
+                booking = Booking.objects.filter(confirmation_sms_provider_id=event.message_id).first()
+                if booking is None:
+                    delivery = (
+                        SmsDelivery.objects.select_related("booking")
+                        .filter(provider_message_id=event.message_id)
+                        .order_by("-created_at")
+                        .first()
+                    )
+                    if delivery is not None:
+                        booking = delivery.booking
+            if booking is None:
+                # Unknown delivery receipt: acknowledge without failing the callback.
+                if event.message_id:
+                    return Response({"status": "ignored", "message_id": event.message_id})
+                return Response({"status": "ignored"})
+
+            updates = {"confirmation_sms_status": event.status}
+            if event.status in {"failed", "undelivered"}:
+                updates["confirmation_sms_error"] = event.reason or event.status
+            elif event.status == "delivered":
+                updates["confirmation_sms_error"] = ""
+            Booking.objects.filter(pk=booking.pk).update(**updates)
+
+            deliveries = SmsDelivery.objects.filter(booking=booking)
+            if event.message_id:
+                matched = deliveries.filter(provider_message_id=event.message_id).order_by("-created_at").first()
+            else:
+                matched = None
+            latest = matched or deliveries.order_by("-created_at").first()
+            if latest is not None and event.status in SmsDelivery.Status.values:
+                latest.status = event.status
+                if event.status in {"failed", "undelivered"}:
+                    latest.error_message = event.reason or event.status
+                elif event.status == "delivered":
+                    latest.error_message = ""
+                latest.save(update_fields=["status", "error_message", "updated_at"])
+
+            return Response(
+                {"status": "ok", "reference": booking.reference, "sms_status": event.status}
+            )
+
+        return Response({"status": "ignored"})

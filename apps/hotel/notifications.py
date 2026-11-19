@@ -14,7 +14,7 @@ from django.utils.translation import override
 from .access import booking_manage_url
 from .email_providers import Attachment, EmailMessage, get_email_provider
 from .ics import build_booking_ics
-from .models import Booking, EmailDelivery
+from .models import Booking, EmailDelivery, SmsDelivery
 from .sms_providers import SmsMessage, get_sms_provider
 
 logger = logging.getLogger(__name__)
@@ -201,6 +201,15 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
         booking.confirmation_sms_error = error
         booking.confirmation_sms_attempts = attempts
         booking.confirmation_sms_last_attempt_at = attempt_at
+        SmsDelivery.objects.create(
+            booking=booking,
+            attempt=attempts,
+            status=SmsDelivery.Status.FAILED,
+            provider=provider.name,
+            recipient=phone,
+            body=body,
+            error_message=error,
+        )
         logger.warning(
             "Confirmation SMS attempt %s failed for booking %s via %s: %s",
             attempts,
@@ -225,6 +234,15 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
     booking.confirmation_sms_provider_id = provider_id
     booking.confirmation_sms_attempts = attempts
     booking.confirmation_sms_last_attempt_at = attempt_at
+    SmsDelivery.objects.create(
+        booking=booking,
+        attempt=attempts,
+        status=SmsDelivery.Status.SENT,
+        provider=provider.name,
+        provider_message_id=provider_id,
+        recipient=phone,
+        body=body,
+    )
     logger.info("Sent confirmation SMS for booking %s to %s via %s", booking.reference, phone, provider.name)
     return True
 

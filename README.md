@@ -20,7 +20,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails, email delivery health and recent booking events.
 - **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment. Failed sends retry with exponential backoff from the scheduler, and the `/ops/` dashboard tracks delivered, failed, bounced and complained messages.
-- **Confirmation SMS** through a pluggable provider layer: the offline console provider by default, Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Delivery status is stored on the booking and visible in the admin.
+- **Confirmation SMS** through a pluggable provider layer: the offline console provider by default, Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded, provider delivery receipts update the booking/status history, and inbound guest replies are stored and shown in `/ops/` and the admin.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
@@ -170,7 +170,9 @@ SMS delivery goes through `apps/hotel/sms_providers.py`:
 | `console` (default) | Records the message in the log and `ConsoleSmsProvider.outbox`; works offline and in tests. | Nothing |
 | `twilio` | Posts to the Twilio Messages API. | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
 
-Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts` and `confirmation_sms_sent_at`. The admin shows the status and offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
+Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts` and `confirmation_sms_sent_at`; each attempt is also recorded as an `SmsDelivery` row and provider receipts can refine it to `delivered` or `undelivered`. The admin and `/ops/` show SMS delivery history and inbound replies; the admin offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
+
+To receive delivery receipts and inbound replies, point the provider at `POST /api/v1/sms/webhooks/<provider>/` (for example `twilio`). If `SMS_WEBHOOK_SECRET` is set, the request must include the matching `X-Sms-Webhook-Secret` header. Twilio-shaped callbacks and generic JSON payloads are supported; unknown receipts are acknowledged without breaking the provider.
 
 ---
 
@@ -277,7 +279,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
-- SMS delivery ships with a console provider for offline demos and an optional Twilio adapter; there is no inbound SMS or delivery-receipt webhook yet.
+- SMS delivery ships with a console provider for offline demos and an optional Twilio adapter, with provider webhooks for delivery receipts and inbound replies. (There is no automatic SMS retry scheduler yet; reception can resend from the admin.)
 - The demo policy is intentionally rule-based; use a real provider for open-ended conversation.
 
 ---

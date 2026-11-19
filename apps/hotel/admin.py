@@ -21,11 +21,13 @@ from .models import (
     Client,
     DailyRate,
     EmailDelivery,
+    InboundSmsMessage,
     PricingRule,
     RatePlan,
     Room,
     RoomBlock,
     RoomType,
+    SmsDelivery,
 )
 
 
@@ -227,6 +229,42 @@ class EmailDeliveryInline(admin.TabularInline):
         return False
 
 
+class SmsDeliveryInline(admin.TabularInline):
+    model = SmsDelivery
+    extra = 0
+    can_delete = False
+    fields = (
+        "created_at",
+        "attempt",
+        "status",
+        "provider",
+        "provider_message_id",
+        "recipient",
+        "error_message",
+    )
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class InboundSmsMessageInline(admin.TabularInline):
+    model = InboundSmsMessage
+    extra = 0
+    can_delete = False
+    fields = ("received_at", "from_number", "to_number", "body", "provider", "provider_message_id")
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(EmailDelivery)
 class EmailDeliveryAdmin(admin.ModelAdmin):
     list_display = ("created_at", "booking", "attempt", "status", "recipient", "subject")
@@ -245,6 +283,68 @@ class EmailDeliveryAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SmsDelivery)
+class SmsDeliveryAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "booking", "attempt", "status", "recipient")
+    list_filter = ("status", "provider")
+    search_fields = ("booking__reference", "recipient", "provider_message_id")
+    date_hierarchy = "created_at"
+    readonly_fields = (
+        "booking",
+        "attempt",
+        "status",
+        "provider",
+        "provider_message_id",
+        "recipient",
+        "body",
+        "error_message",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(InboundSmsMessage)
+class InboundSmsMessageAdmin(admin.ModelAdmin):
+    list_display = ("received_at", "from_number", "booking", "short_body", "provider")
+    list_filter = ("provider",)
+    search_fields = ("from_number", "to_number", "body", "booking__reference", "provider_message_id")
+    date_hierarchy = "received_at"
+    readonly_fields = (
+        "booking",
+        "from_number",
+        "to_number",
+        "body",
+        "provider",
+        "provider_message_id",
+        "received_at",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(description=_("Message"))
+    def short_body(self, obj):
+        body = obj.body or ""
+        return body if len(body) <= 60 else body[:57] + "..."
 
     def has_add_permission(self, request):
         return False
@@ -284,7 +384,7 @@ class BookingAdmin(admin.ModelAdmin):
     search_fields = ("reference", "client__first_name", "client__last_name", "client__email", "client__phone")
     date_hierarchy = "check_in"
     autocomplete_fields = ("client", "room")
-    inlines = [BookingEventInline, EmailDeliveryInline]
+    inlines = [BookingEventInline, EmailDeliveryInline, SmsDeliveryInline, InboundSmsMessageInline]
     readonly_fields = (
         "reference",
         "price_breakdown",
