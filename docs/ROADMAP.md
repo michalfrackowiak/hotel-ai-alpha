@@ -282,3 +282,20 @@ Theme: **the guided booking scenario**. The conversation now follows the recepti
 - [x] Rewritten end-to-end demo tests for the sequential flow, SMS, Polish and handover
 
 **Exit criteria:** a guest can book by chat or voice through the seven steps, in Polish or English, and receive the confirmation by email or SMS. **All met in v0.6.9.**
+
+---
+
+## Milestone v0.7.0 — in progress
+
+Theme: **operational visibility**. Reception can see what happened to each confirmation email, not just the latest status on the booking.
+
+### In progress
+
+- [x] Email history: expose the append-only `EmailDelivery` rows in `/ops/` (last 20 attempts, newest first) with reference, recipient, subject, status, attempt and error
+- [x] Read-only `EmailDelivery` admin list with a subject column; the booking inline shows the subject too
+- [x] Tests for send/retry rows, webhook sync by message id or latest row, a webhook with no delivery row, ops display in EN/PL and admin read-only permissions
+- [x] Polish catalogue updated for the new ops copy
+- [ ] Scheduler: load-test with a large backlog
+- [ ] SMS: decide on inbound replies and delivery-receipt webhooks for the pilot
+
+**Exit criteria:** reception can trace every confirmation attempt from `/ops/` or the admin, in both languages. No release has been cut yet; follow [BRANCHING.md](BRANCHING.md) before merging `feature/v0.7.0-email-history`.
