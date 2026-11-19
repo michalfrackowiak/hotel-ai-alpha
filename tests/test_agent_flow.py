@@ -114,6 +114,76 @@ def test_demo_agent_asks_for_departure_and_guest_count_in_order(room_type, rooms
 
 
 @pytest.mark.django_db
+def test_demo_agent_accepts_bare_number_guest_count(room_type, rooms):
+    """A guest who answers the count with just "2" must not be asked again."""
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="en")
+
+    arrival = _run(conversation, f"I would like to book a room. My arrival is {check_in.isoformat()}.")
+    assert "departure date" in arrival.content.lower()
+
+    departure = _run(conversation, f"My departure is {check_out.isoformat()}.")
+    assert "total number of guests" in departure.content.lower()
+
+    offer = _run(conversation, "2")
+    assert "total number of guests" not in offer.content.lower()
+    assert any(call["name"] == "check_availability" and call["ok"] for call in offer.tool_calls)
+    assert "Which option would you like to select?" in offer.content
+
+    confirm = _run(conversation, "The Standard Double, please.")
+    assert "total number of guests" not in confirm.content.lower()
+    assert "for 2 guests" in confirm.content
+
+    delivery = _run(conversation, "Yes, please confirm.")
+    assert "total number of guests" not in delivery.content.lower()
+    assert "email address or by SMS" in delivery.content
+
+    _run(conversation, "Email, please.")
+    done = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert "total number of guests" not in done.content.lower()
+
+    booking = Booking.objects.get()
+    assert booking.status == Booking.Status.CONFIRMED
+    assert booking.adults == 2
+
+
+@pytest.mark.django_db
+def test_demo_agent_accepts_bare_number_guest_count_in_polish(room_type, rooms):
+    """The bare "2" is a guest count, not a request to switch to English."""
+    check_in, check_out = _dates()
+    conversation = start_conversation(language="pl")
+
+    arrival = _run(conversation, f"Chcę zarezerwować pokój. Przyjazd {check_in.isoformat()}.")
+    assert "datę wyjazdu" in arrival.content.lower()
+
+    departure = _run(conversation, f"Wyjazd {check_out.isoformat()}.")
+    assert "liczbę osób" in departure.content.lower()
+
+    offer = _run(conversation, "2")
+    conversation.refresh_from_db()
+    assert conversation.language == "pl"
+    assert "liczbę osób" not in offer.content.lower()
+    assert any(call["name"] == "check_availability" and call["ok"] for call in offer.tool_calls)
+
+    confirm = _run(conversation, "Standard Double, proszę.")
+    assert "liczbę osób" not in confirm.content.lower()
+    assert "dla 2 osób" in confirm.content
+
+    delivery = _run(conversation, "Tak, potwierdzam.")
+    assert "liczbę osób" not in delivery.content.lower()
+    assert "e-mail" in delivery.content.lower()
+
+    _run(conversation, "E-mail, proszę.")
+    done = _run(conversation, "Anna Kowalska, anna@example.com")
+    assert "liczbę osób" not in done.content.lower()
+
+    booking = Booking.objects.get()
+    assert booking.language == "pl"
+    assert booking.status == Booking.Status.CONFIRMED
+    assert booking.adults == 2
+
+
+@pytest.mark.django_db
 def test_demo_agent_books_deluxe_suite_by_name(room_type, rooms):
     """Picking a room by name (as a voice guest would) must not re-run search."""
     deluxe = RoomType.objects.create(
@@ -182,6 +252,17 @@ def test_demo_agent_switches_language_mid_conversation(room_type, rooms):
     conversation.refresh_from_db()
     assert conversation.language == "en"
     assert "arrival date" in reply.content.lower()
+
+
+def test_bare_number_only_switches_language_before_the_first_reply():
+    from apps.agents.engine import detect_language
+
+    assert detect_language("2", "pl", allow_number_switch=True) == "en"
+    assert detect_language("1", "en", allow_number_switch=True) == "pl"
+    assert detect_language("2", "pl", allow_number_switch=False) == "pl"
+    assert detect_language("2", "en", allow_number_switch=False) == "en"
+    assert detect_language("English, please.", "pl") == "en"
+    assert detect_language("Po polsku, proszę.", "en") == "pl"
 
 
 @pytest.mark.django_db
