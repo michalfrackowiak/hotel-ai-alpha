@@ -313,5 +313,6 @@ Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SM
 - [x] Run SMS retries from the scheduler sidecar alongside email retries
 - [x] Show SMS retry queue/problem next-retry state in `/ops/` and expose retry fields in admin
 - [x] Tests for SMS backoff, pending queue/cap, command behavior, and docs/translations updates
+- [x] Scheduler load coverage for pending confirmation SMS backlog (`tests/test_scheduler_load.py`)
 
 **Exit criteria:** failed or unsent confirmation SMS messages retry automatically on the same operational model as email, and reception can see retry state from `/ops/` and the admin.

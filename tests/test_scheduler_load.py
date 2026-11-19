@@ -11,7 +11,10 @@ from django.utils import timezone
 
 from apps.hotel.booking_service import confirm_booking, create_booking, expire_stale_holds
 from apps.hotel.models import Booking, Room, RoomType
-from apps.hotel.notifications import send_pending_confirmation_emails
+from apps.hotel.notifications import (
+    send_pending_confirmation_emails,
+    send_pending_confirmation_sms,
+)
 
 
 def _make_room_type_and_rooms(count):
@@ -78,3 +81,30 @@ def test_send_pending_confirmation_emails_handles_a_backlog():
 
     assert sent == count
     assert elapsed < 10, f"send_pending_confirmation_emails took {elapsed:.2f}s for {count} rows"
+
+
+@pytest.mark.django_db
+def test_send_pending_confirmation_sms_handles_a_backlog():
+    count = 100
+    rt, _ = _make_room_type_and_rooms(count)
+    check_in = timezone.localdate() + timedelta(days=30)
+    check_out = check_in + timedelta(days=3)
+    for i in range(count):
+        booking = create_booking(
+            room_type=rt,
+            check_in=check_in,
+            check_out=check_out,
+            first_name="Load",
+            last_name="Test",
+            email="load@example.com",
+            phone=f"+48 500 000 {i:03d}",
+            adults=2,
+        )
+        confirm_booking(booking.reference)
+
+    start = time.perf_counter()
+    sent = send_pending_confirmation_sms()
+    elapsed = time.perf_counter() - start
+
+    assert sent == count
+    assert elapsed < 10, f"send_pending_confirmation_sms took {elapsed:.2f}s for {count} rows"
