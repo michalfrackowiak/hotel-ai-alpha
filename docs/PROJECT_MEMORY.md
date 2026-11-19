@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 19 November 2026 - **Version:** v0.6.10 (v0.7.0 in progress) - **Tests:** 212 passing
+**Last updated:** 19 November 2026 - **Version:** v0.7.0 (release in preparation) - **Tests:** 212 passing
 
 ## Current state
 
@@ -291,4 +291,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.6.10 is released. On `develop`, the v0.7.0 slices merged so far are email history (PR #1), scheduler backlog load tests (PR #2), and SMS delivery receipts/inbound replies (PR #3, CI green). The roadmap's currently listed v0.7.0 items are complete; no release has been cut. Next: confirm whether v0.7.0 needs any additional scope, then follow [BRANCHING.md](BRANCHING.md) to cut `release/v0.7.0`, run the release gate, and tag when ready.
+v0.7.0 scope is complete on `develop` (email history PR #1, scheduler backlog load tests PR #2, SMS delivery receipts and inbound replies PR #3). Release preparation is in progress on `release/v0.7.0`: version bumped, roadmap/project memory updated, and `docs/releases/v0.7.0.md` added. Next: run the full release gate (pytest, manage.py check, ruff, `makemigrations --check --dry-run`, Docker/`/healthz`, EN/PL smoke as applicable), then follow [BRANCHING.md](BRANCHING.md) to merge `release/v0.7.0` into `main`, tag `v0.7.0`, and merge `main` back into `develop`. No tag or release merge has been completed yet.

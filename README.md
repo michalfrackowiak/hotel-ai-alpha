@@ -17,7 +17,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Guest self-service**: change dates, room type or occupancy, and cancel with a reason through the signed link. A configurable policy previews the fee before the guest commits.
 - **Cancellation policy**: pending holds are free; confirmed bookings are free until `check_in - CANCELLATION_FREE_DAYS`; late cancellations charge the first `CANCELLATION_FEE_NIGHTS` nightly rates, capped at the total.
 - **Append-only audit log**: every create, confirm, modify, cancel and expiry records the actor, channel and before/after state.
-- **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails, email delivery health and recent booking events.
+- **Operations dashboard** at `/ops/` for today's arrivals/departures, holds, failed calendar syncs, missing confirmation emails, email/SMS delivery health and recent booking events.
 - **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment. Failed sends retry with exponential backoff from the scheduler, and the `/ops/` dashboard tracks delivered, failed, bounced and complained messages.
 - **Confirmation SMS** through a pluggable provider layer: the offline console provider by default, Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded, provider delivery receipts update the booking/status history, and inbound guest replies are stored and shown in `/ops/` and the admin.

@@ -17,7 +17,7 @@ Status as of **19 November 2026**.
 | 10 | Revenue and delivery hardening | ✅ Complete (v0.4.0) |
 | 11 | Guest experience and polish | ✅ Complete (v0.5.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.6.10** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, and the v0.6.10 demo-provider fix for a forgotten guest count.
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.7.0** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, the v0.6.10 demo-provider fix for a forgotten guest count, and operational-visibility work (email history, scheduler load coverage, SMS delivery receipts and inbound replies).
 
 ---
 
@@ -285,11 +285,11 @@ Theme: **the guided booking scenario**. The conversation now follows the recepti
 
 ---
 
-## Milestone v0.7.0 � in progress
+## Milestone v0.7.0 — ✅ Complete
 
 Theme: **operational visibility**. Reception can trace confirmation delivery and guest replies, not just the latest status on a booking.
 
-### In progress
+### Done
 
 - [x] Email history: expose the append-only `EmailDelivery` rows in `/ops/` (last 20 attempts, newest first) with reference, recipient, subject, status, attempt and error
 - [x] Read-only `EmailDelivery` admin list with a subject column; the booking inline shows the subject too
@@ -298,4 +298,4 @@ Theme: **operational visibility**. Reception can trace confirmation delivery and
 - [x] Scheduler: load-test with a large backlog (`tests/test_scheduler_load.py` covers 200 expired holds and 100 pending confirmation emails)
 - [x] SMS: per-attempt `SmsDelivery` history and provider delivery-receipt webhooks (`/api/v1/sms/webhooks/<provider>/`, `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret`) that update booking and delivery status; inbound guest SMS replies stored as `InboundSmsMessage` records and matched to a booking by phone when possible; read-only SMS delivery/reply history in `/ops/` and the admin
 
-**Exit criteria:** reception can trace every confirmation attempt and inbound SMS reply from `/ops/` or the admin, in both languages. No release has been cut yet; follow [BRANCHING.md](BRANCHING.md) before merging feature branches.
+**Exit criteria:** reception can trace every confirmation attempt and inbound SMS reply from `/ops/` or the admin, in both languages. **All met in v0.7.0.**
