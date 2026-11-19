@@ -108,3 +108,39 @@ def test_send_pending_confirmation_sms_handles_a_backlog():
 
     assert sent == count
     assert elapsed < 10, f"send_pending_confirmation_sms took {elapsed:.2f}s for {count} rows"
+
+
+@pytest.mark.django_db
+def test_send_pending_confirmation_sms_handles_a_due_retry_backlog():
+    count = 100
+    rt, _ = _make_room_type_and_rooms(count)
+    check_in = timezone.localdate() + timedelta(days=30)
+    check_out = check_in + timedelta(days=3)
+    now = timezone.now()
+    for i in range(count):
+        booking = create_booking(
+            room_type=rt,
+            check_in=check_in,
+            check_out=check_out,
+            first_name="Load",
+            last_name="Test",
+            email="load@example.com",
+            phone=f"+48 500 100 {i:03d}",
+            adults=2,
+        )
+        confirm_booking(booking.reference)
+        Booking.objects.filter(pk=booking.pk).update(
+            confirmation_sms_status="failed",
+            confirmation_sms_error="carrier rejected",
+            confirmation_sms_attempts=1,
+            confirmation_sms_last_attempt_at=now - timedelta(minutes=10),
+            confirmation_sms_next_retry_at=now - timedelta(minutes=1),
+            confirmation_sms_sent_at=None,
+        )
+
+    start = time.perf_counter()
+    sent = send_pending_confirmation_sms()
+    elapsed = time.perf_counter() - start
+
+    assert sent == count
+    assert elapsed < 10, f"send_pending_confirmation_sms (due retries) took {elapsed:.2f}s for {count} rows"
