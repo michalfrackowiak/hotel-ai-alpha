@@ -293,4 +293,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`). The next slice, **v0.8.0 SMS retry/backoff parity**, is in progress on `feature/v0.8.0-sms-retry-backoff`: add automatic SMS retry/backoff state and scheduler/command parity with email, plus ops/admin visibility and tests/docs. After the gate is green, commit/push the branch, open a PR to `develop`, watch CI, and merge only when green. No release unless asked.
+v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 SMS retry/backoff parity** is complete on `develop` (PR #4, CI green, merge `5418604`): automatic SMS retry/backoff state, scheduler/command parity with email (`send_booking_sms`), and ops/admin visibility/tests/docs. No release has been cut. Next: choose the next v0.8.0/release slice (or prepare a release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
