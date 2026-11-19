@@ -293,4 +293,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 (unreleased, on `develop`)** includes SMS retry/backoff parity (PR #4, `5418604`), scheduler load coverage for pending SMS confirmations (PR #5, `d39606d`), and scheduler load coverage for due SMS retry backlogs (`tests/test_scheduler_load.py`). No release has been cut. Next: choose the next slice (or prepare a v0.8.0 release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
+v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 (unreleased, on `develop`)** includes SMS retry/backoff parity (PR #4, `5418604`), scheduler load coverage for pending SMS confirmations (PR #5, `d39606d`), and scheduler load coverage for due SMS retry backlogs (PR #6, `6dc890a`, `tests/test_scheduler_load.py`). No release has been cut. Next: choose the next slice (or prepare a v0.8.0 release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
