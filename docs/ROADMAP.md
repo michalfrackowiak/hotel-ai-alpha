@@ -299,3 +299,19 @@ Theme: **operational visibility**. Reception can trace confirmation delivery and
 - [x] SMS: per-attempt `SmsDelivery` history and provider delivery-receipt webhooks (`/api/v1/sms/webhooks/<provider>/`, `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret`) that update booking and delivery status; inbound guest SMS replies stored as `InboundSmsMessage` records and matched to a booking by phone when possible; read-only SMS delivery/reply history in `/ops/` and the admin
 
 **Exit criteria:** reception can trace every confirmation attempt and inbound SMS reply from `/ops/` or the admin, in both languages. **All met in v0.7.0.**
+
+---
+
+## Milestone v0.8.0 - in progress
+
+Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SMS messages are retried automatically with exponential backoff, with scheduler/command support and operational visibility.
+
+### Delivered
+
+- [x] Add SMS retry state on bookings (`confirmation_sms_next_retry_at`) and mirror email backoff settings (`SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`)
+- [x] Schedule and clear SMS retries in `send_booking_confirmation_sms()`; add `send_pending_confirmation_sms()` and `send_booking_sms` management command
+- [x] Run SMS retries from the scheduler sidecar alongside email retries
+- [x] Show SMS retry queue/problem next-retry state in `/ops/` and expose retry fields in admin
+- [x] Tests for SMS backoff, pending queue/cap, command behavior, and docs/translations updates
+
+**Exit criteria:** failed or unsent confirmation SMS messages retry automatically on the same operational model as email, and reception can see retry state from `/ops/` and the admin.

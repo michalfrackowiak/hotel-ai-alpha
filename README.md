@@ -101,12 +101,13 @@ What the web container does on boot (`docker/entrypoint.sh`):
 5. creates the superuser from `DJANGO_SUPERUSER_*`;
 6. starts gunicorn on port 8000.
 
-A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply` and `send_booking_emails`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
+A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
 
 ```cron
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py reconcile_calendars --apply
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_emails
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_sms
 ```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
@@ -170,7 +171,7 @@ SMS delivery goes through `apps/hotel/sms_providers.py`:
 | `console` (default) | Records the message in the log and `ConsoleSmsProvider.outbox`; works offline and in tests. | Nothing |
 | `twilio` | Posts to the Twilio Messages API. | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
 
-Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts` and `confirmation_sms_sent_at`; each attempt is also recorded as an `SmsDelivery` row and provider receipts can refine it to `delivered` or `undelivered`. The admin and `/ops/` show SMS delivery history and inbound replies; the admin offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
+Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts`, `confirmation_sms_last_attempt_at`, `confirmation_sms_next_retry_at` and `confirmation_sms_sent_at`; each attempt is also recorded as an `SmsDelivery` row and provider receipts can refine it to `delivered` or `undelivered`. Failed sends are retried with exponential backoff from the scheduler (`SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`), and `/ops/` tracks SMS delivery health, retries and problem deliveries. The admin and `/ops/` show SMS delivery history and inbound replies; the admin offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
 
 To receive delivery receipts and inbound replies, point the provider at `POST /api/v1/sms/webhooks/<provider>/` (for example `twilio`). If `SMS_WEBHOOK_SECRET` is set, the request must include the matching `X-Sms-Webhook-Secret` header. Twilio-shaped callbacks and generic JSON payloads are supported; unknown receipts are acknowledged without breaking the provider.
 
@@ -242,6 +243,7 @@ The translation scripts exist because GNU gettext is not guaranteed on Windows. 
 | `bootstrap_superuser` | Create/promote the superuser from `DJANGO_SUPERUSER_*` |
 | `expire_holds` | Release pending holds whose deadline passed (run from the scheduler/cron) |
 | `send_booking_emails` | Retry confirmation emails that are due, honouring exponential backoff (`--force` resends everything) |
+| `send_booking_sms` | Retry confirmation SMS messages that are due, honouring exponential backoff (`--force` resends sent messages) |
 | `sync_calendars` | Sync bookings, retry failures or sync one reference |
 | `reconcile_calendars` | Report calendar drift; `--apply` repairs it |
 | `rotate_provider_keys` | Re-encrypt provider API keys after an encryption-key rotation |
@@ -279,7 +281,7 @@ docs/             architecture, API, roadmap, branching, release notes
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.
-- SMS delivery ships with a console provider for offline demos and an optional Twilio adapter, with provider webhooks for delivery receipts and inbound replies. (There is no automatic SMS retry scheduler yet; reception can resend from the admin.)
+- SMS delivery ships with a console provider for offline demos and an optional Twilio adapter, with provider webhooks for delivery receipts and inbound replies, and scheduler-driven retry/backoff for failed or unsent confirmations. Reception can also resend from the admin.
 - The demo policy is intentionally rule-based; use a real provider for open-ended conversation.
 
 ---

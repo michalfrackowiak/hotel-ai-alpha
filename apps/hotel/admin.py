@@ -396,6 +396,7 @@ class BookingAdmin(admin.ModelAdmin):
         "cancellation_fee",
         "confirmation_sms_provider_id",
         "confirmation_sms_last_attempt_at",
+        "confirmation_sms_next_retry_at",
     )
     actions = (
         "confirm_selected",
@@ -420,6 +421,7 @@ class BookingAdmin(admin.ModelAdmin):
                     "confirmation_sms_provider_id",
                     "confirmation_sms_attempts",
                     "confirmation_sms_last_attempt_at",
+                    "confirmation_sms_next_retry_at",
                 )
             },
         ),

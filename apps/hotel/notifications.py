@@ -33,6 +33,19 @@ def retry_delay_seconds(attempts: int) -> int:
     return min(base * (2**exponent), cap)
 
 
+def max_sms_attempts() -> int:
+    """How many delivery attempts a confirmation SMS gets before we stop."""
+    return max(int(getattr(settings, "SMS_MAX_ATTEMPTS", 5)), 1)
+
+
+def sms_retry_delay_seconds(attempts: int) -> int:
+    """Exponential backoff between SMS attempts, capped by configuration."""
+    base = max(int(getattr(settings, "SMS_RETRY_BASE_SECONDS", 300)), 1)
+    cap = max(int(getattr(settings, "SMS_RETRY_MAX_SECONDS", 21600)), base)
+    exponent = max(attempts - 1, 0)
+    return min(base * (2**exponent), cap)
+
+
 def _context(booking: Booking) -> dict:
     return {
         "booking": booking,
@@ -191,16 +204,21 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
         error = str(exc)
 
     if error:
+        next_retry_at = None
+        if attempts < max_sms_attempts():
+            next_retry_at = attempt_at + timedelta(seconds=sms_retry_delay_seconds(attempts))
         Booking.objects.filter(pk=booking.pk).update(
             confirmation_sms_status="failed",
             confirmation_sms_error=error,
             confirmation_sms_attempts=attempts,
             confirmation_sms_last_attempt_at=attempt_at,
+            confirmation_sms_next_retry_at=next_retry_at,
         )
         booking.confirmation_sms_status = "failed"
         booking.confirmation_sms_error = error
         booking.confirmation_sms_attempts = attempts
         booking.confirmation_sms_last_attempt_at = attempt_at
+        booking.confirmation_sms_next_retry_at = next_retry_at
         SmsDelivery.objects.create(
             booking=booking,
             attempt=attempts,
@@ -211,8 +229,9 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
             error_message=error,
         )
         logger.warning(
-            "Confirmation SMS attempt %s failed for booking %s via %s: %s",
+            "Confirmation SMS attempt %s/%s failed for booking %s via %s: %s",
             attempts,
+            max_sms_attempts(),
             booking.reference,
             provider.name,
             error,
@@ -227,6 +246,7 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
         confirmation_sms_provider_id=provider_id,
         confirmation_sms_attempts=attempts,
         confirmation_sms_last_attempt_at=attempt_at,
+        confirmation_sms_next_retry_at=None,
     )
     booking.confirmation_sms_sent_at = attempt_at
     booking.confirmation_sms_status = "sent"
@@ -234,6 +254,7 @@ def send_booking_confirmation_sms(booking: Booking, *, force: bool = False) -> b
     booking.confirmation_sms_provider_id = provider_id
     booking.confirmation_sms_attempts = attempts
     booking.confirmation_sms_last_attempt_at = attempt_at
+    booking.confirmation_sms_next_retry_at = None
     SmsDelivery.objects.create(
         booking=booking,
         attempt=attempts,
@@ -308,4 +329,36 @@ def send_pending_confirmation_emails(*, force: bool = False) -> int:
                 sent += 1
         except Exception:  # noqa: BLE001 - one bad address must not stop the batch
             logger.exception("Confirmation email failed for booking %s", booking.reference)
+    return sent
+
+
+def send_pending_confirmation_sms(*, force: bool = False) -> int:
+    """Retry confirmations that were confirmed before SMS delivery succeeded.
+
+    Without ``force`` the retry queue honours the exponential backoff stored on
+    each booking: a booking is only attempted again once ``next_retry_at`` has
+    passed and it still has attempts left.
+    """
+    pending = Booking.objects.filter(
+        status__in=(Booking.Status.CONFIRMED, Booking.Status.CHECKED_IN),
+        client__phone__gt="",
+    )
+    if not force:
+        now = timezone.now()
+        pending = (
+            pending.filter(confirmation_sms_sent_at__isnull=True)
+            .filter(
+                Q(confirmation_sms_next_retry_at__isnull=True)
+                | Q(confirmation_sms_next_retry_at__lte=now)
+            )
+            .filter(confirmation_sms_attempts__lt=max_sms_attempts())
+        )
+    pending = pending.select_related("room", "room__room_type", "client").order_by("pk")
+    sent = 0
+    for booking in pending:
+        try:
+            if send_booking_confirmation_sms(booking, force=force):
+                sent += 1
+        except Exception:  # noqa: BLE001 - one bad number must not stop the batch
+            logger.exception("Confirmation SMS failed for booking %s", booking.reference)
     return sent

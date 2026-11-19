@@ -53,7 +53,7 @@ from apps.hotel.models import (
     RoomType,
     SmsDelivery,
 )
-from apps.hotel.notifications import max_email_attempts, send_guest_login_email
+from apps.hotel.notifications import max_email_attempts, max_sms_attempts, send_guest_login_email
 from apps.hotel.pricing import StayError
 
 logger = logging.getLogger(__name__)
@@ -407,6 +407,19 @@ def ops_dashboard(request):
     sms_delivered_count = Booking.objects.filter(confirmation_sms_status="delivered").count()
     sms_failed_count = Booking.objects.filter(confirmation_sms_status__in=("failed", "undelivered")).count()
     sms_sent_count = Booking.objects.filter(confirmation_sms_status="sent").count()
+    sms_retry_count = (
+        Booking.objects.filter(
+            status__in=active_statuses,
+            client__phone__gt="",
+            confirmation_sms_sent_at__isnull=True,
+            confirmation_sms_attempts__lt=max_sms_attempts(),
+        )
+        .filter(
+            Q(confirmation_sms_next_retry_at__isnull=True)
+            | Q(confirmation_sms_next_retry_at__lte=now)
+        )
+        .count()
+    )
     problem_sms = (
         Booking.objects.filter(confirmation_sms_status__in=("failed", "undelivered"))
         .select_related("client")
@@ -455,6 +468,7 @@ def ops_dashboard(request):
             "sms_delivered_count": sms_delivered_count,
             "sms_failed_count": sms_failed_count,
             "sms_sent_count": sms_sent_count,
+            "sms_retry_count": sms_retry_count,
             "problem_sms": problem_sms,
             "sms_history": sms_history,
             "inbound_sms": inbound_sms,

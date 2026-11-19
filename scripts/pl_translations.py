@@ -853,6 +853,7 @@ TRANSLATIONS: dict[str, str] = {
     "confirmation SMS attempts": "próby wysłania SMS-a z potwierdzeniem",
     "confirmation SMS error": "błąd SMS-a z potwierdzeniem",
     "confirmation SMS last attempt at": "ostatnia próba wysłania SMS-a z potwierdzeniem",
+    "confirmation SMS next retry at": "następna próba wysłania SMS-a z potwierdzeniem",
     "confirmation SMS sent at": "SMS z potwierdzeniem wysłany o",
     "confirmation SMS status": "status SMS-a z potwierdzeniem",
     # SMS delivery receipts and inbound replies (v0.7.0)
@@ -867,6 +868,7 @@ TRANSLATIONS: dict[str, str] = {
     "SMS deliveries": "dostawy SMS",
     "SMS delivery": "Dostarczanie SMS",
     "SMS delivery failures": "Błędy dostarczania SMS",
+    "SMS waiting to retry": "SMS-y oczekujące na ponowną próbę",
     "SMS history": "Historia SMS",
     "Sent SMS awaiting receipt": "Wysłane SMS-y oczekujące na potwierdzenie",
     "Undelivered": "Niedostarczony",
