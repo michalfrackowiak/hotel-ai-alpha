@@ -778,6 +778,12 @@ TRANSLATIONS: dict[str, str] = {
     "Next retry": "Następna próba",
     "Last error": "Ostatni błąd",
     "No delivery problems.": "Brak problemów z dostarczaniem.",
+    # Email history (v0.7.0)
+    "Email history": "Historia e-maili",
+    "Sent at": "Wysłano",
+    "Subject": "Temat",
+    "Attempt": "Próba",
+    "No emails logged yet.": "Brak zapisanych e-maili.",
     "confirmation email attempts": "próby wysłania e-maila potwierdzającego",
     "confirmation email last attempt at": "ostatnia próba wysłania e-maila potwierdzającego",
     "confirmation email next retry at": "następna próba wysłania e-maila potwierdzającego",

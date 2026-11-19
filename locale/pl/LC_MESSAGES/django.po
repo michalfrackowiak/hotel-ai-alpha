@@ -1,13 +1,13 @@
-# Polish translations for Hotel Aurora.
-# Copyright (C) 2026 Hotel Aurora
-# This file is distributed under the same license as the Hotel Aurora project.
+# Polish translations for Resort Neptun.
+# Copyright (C) 2026 Resort Neptun
+# This file is distributed under the same license as the Resort Neptun project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Hotel Aurora 0.1.0\n"
+"Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-15 15:35+0100\n"
+"POT-Creation-Date: 2026-11-19 16:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -171,6 +171,9 @@ msgstr "Asystent"
 
 msgid "At least one adult is required."
 msgstr "Wymagany jest co najmniej jeden dorosły."
+
+msgid "Attempt"
+msgstr "Próba"
 
 msgid "Attempts"
 msgstr "Próby"
@@ -524,6 +527,9 @@ msgstr "Dostarczanie e-maili"
 msgid "Email failures"
 msgstr "Błędy e-maili"
 
+msgid "Email history"
+msgstr "Historia e-maili"
+
 msgid "Email or phone"
 msgstr "E-mail lub telefon"
 
@@ -868,6 +874,9 @@ msgstr "Brak problemów z dostarczaniem."
 msgid "No departures scheduled for today."
 msgstr "Brak zaplanowanych wyjazdów na dziś."
 
+msgid "No emails logged yet."
+msgstr "Brak zapisanych e-maili."
+
 msgid "No microphone was found or audio capture failed."
 msgstr "Nie znaleziono mikrofonu lub przechwytywanie dźwięku nie powiodło się."
 
@@ -1121,6 +1130,9 @@ msgstr "Wyślij link do logowania"
 msgid "Sent"
 msgstr "Wysłany"
 
+msgid "Sent at"
+msgstr "Wysłano"
+
 msgid ""
 "Service account key JSON or OAuth authorised-user JSON. The file path from "
 "GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty."
@@ -1204,6 +1216,9 @@ msgstr "Pobyty dłuższe niż %(nights)s nocy nie są obsługiwane."
 #, python-brace-format
 msgid "Stays longer than {nights} nights are not supported."
 msgstr "Pobyty dłuższe niż {nights} nocy nie są obsługiwane."
+
+msgid "Subject"
+msgstr "Temat"
 
 msgid "Summary"
 msgstr "Podsumowanie"

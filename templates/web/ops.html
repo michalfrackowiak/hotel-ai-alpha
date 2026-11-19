@@ -198,6 +198,30 @@
   </section>
 
   <section class="ops-section">
+    <h2>{% trans "Email history" %}</h2>
+    {% if email_history %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Sent at" %}</th><th>{% trans "Reference" %}</th><th>{% trans "Recipient" %}</th><th>{% trans "Subject" %}</th><th>{% trans "Status" %}</th><th>{% trans "Attempt" %}</th><th>{% trans "Last error" %}</th></tr></thead>
+        <tbody>
+          {% for delivery in email_history %}
+            <tr>
+              <td>{{ delivery.created_at|date:"d M H:i" }}</td>
+              <td>{{ delivery.booking.reference }}</td>
+              <td>{{ delivery.recipient|default:"—" }}</td>
+              <td>{{ delivery.subject|default:"—"|truncatechars:60 }}</td>
+              <td>{{ delivery.get_status_display }}</td>
+              <td>{{ delivery.attempt }}</td>
+              <td>{{ delivery.error_message|default:"—"|truncatechars:60 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No emails logged yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
     <h2>{% trans "Channel feeds" %}</h2>
     {% if channel_feeds %}
       <table class="ops-table">

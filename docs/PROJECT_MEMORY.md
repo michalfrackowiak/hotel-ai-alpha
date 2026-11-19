@@ -264,16 +264,22 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-19 | v0.6.10 | Docker compose build + `/healthz` | image built; `/healthz` returned `{"status": "ok"}` |
 | 2026-11-19 | v0.6.10 | Docker pages EN/PL (`/`, `/chat/`, `/voice/`, `/book/`, `/my-bookings/`) | all 200 with matching `lang` |
 | 2026-11-19 | v0.6.10 | GitHub Actions CI (`main` + `develop`) | green: test, docker and smoke jobs pass |
+| 2026-11-19 | v0.7.0 (unreleased) | `pytest` | 201 passed (8 new email-history tests) |
+| 2026-11-19 | v0.7.0 (unreleased) | `manage.py check` | 0 issues |
+| 2026-11-19 | v0.7.0 (unreleased) | `makemigrations --check --dry-run` | no changes detected |
+| 2026-11-19 | v0.7.0 (unreleased) | `ruff check .` | clean |
+| 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 622 strings extracted, all translated and compiled |
+| 2026-11-19 | v0.7.0 (unreleased) | `/ops/` EN + PL | email-history section renders in both languages; staff-only gate unchanged |
 
 Update this table when the release gate is re-run.
 
 ## Open questions for v0.7.0
 
 - ~~Colour contrast: add automated checks to the accessibility gate, or keep as manual review?~~ Resolved: the token audit now enforces WCAG AA for text, focus rings and control borders.
-- Email history: per-message view vs. only current delivery state.
+- ~~Email history: per-message view vs. only current delivery state.~~ Resolved on `feature/v0.7.0-email-history`: each send/retry already appends one `EmailDelivery` row; `/ops/` now shows the last 20 rows and the admin has a read-only list with `subject`. Provider webhooks update the matching row's final status in place — one row per attempt, not per status transition — so the history stays append-only per attempt.
 - Scheduler: load-test with a large backlog.
 - SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?
 
 ## Next move
 
-v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The next milestone (v0.7.0) would pick up the remaining "should have" items; no scope has been committed yet.
+v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The v0.7.0 email-history slice is in progress on `feature/v0.7.0-email-history` (8 new tests, 201 passing); no release has been cut. The remaining candidate items are the scheduler load test and inbound SMS receipts.

@@ -208,13 +208,51 @@ class EmailDeliveryInline(admin.TabularInline):
     model = EmailDelivery
     extra = 0
     can_delete = False
-    fields = ("created_at", "attempt", "status", "provider", "provider_message_id", "recipient", "error_message")
+    fields = (
+        "created_at",
+        "attempt",
+        "status",
+        "provider",
+        "provider_message_id",
+        "recipient",
+        "subject",
+        "error_message",
+    )
     readonly_fields = fields
 
     def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EmailDelivery)
+class EmailDeliveryAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "booking", "attempt", "status", "recipient", "subject")
+    list_filter = ("status", "provider")
+    search_fields = ("booking__reference", "recipient", "provider_message_id")
+    date_hierarchy = "created_at"
+    readonly_fields = (
+        "booking",
+        "attempt",
+        "status",
+        "provider",
+        "provider_message_id",
+        "recipient",
+        "subject",
+        "error_message",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False
 
 
