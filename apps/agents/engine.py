@@ -29,13 +29,16 @@ from .tools import TOOL_SPECS, ToolExecutor
 logger = logging.getLogger(__name__)
 
 EXPLICIT_EN = re.compile(
-    r"\benglish\b|\bangl(?:ielsk\w*|ielsku)\b|\bprze(?:łącz|łącz).*angielsk\w*\b|^\s*2\s*$",
+    r"\benglish\b|\bangl(?:ielsk\w*|ielsku)\b|\bprze(?:łącz|łącz).*angielsk\w*\b",
     re.IGNORECASE,
 )
 EXPLICIT_PL = re.compile(
-    r"\bpolish\b|\bpolsk(?:i|u|im|iego)\b|\bpo polsku\b|^\s*1\s*$",
+    r"\bpolish\b|\bpolsk(?:i|u|im|iego)\b|\bpo polsku\b",
     re.IGNORECASE,
 )
+# The greeting offers "press 1 / press 2"; these only apply before the first reply.
+NUMBER_EN = re.compile(r"^\s*2\s*$")
+NUMBER_PL = re.compile(r"^\s*1\s*$")
 POLISH_DIACRITICS = re.compile(r"[ąćęłńóśźż]", re.IGNORECASE)
 POLISH_WORDS = re.compile(
     r"\b(tak|nie|proszę|dziękuję|dzień|dobry|pokój|pokoje|rezerwacj\w*|noc\w*|goś\w*|"
@@ -58,14 +61,14 @@ def detect_language(text: str, current: str, allow_number_switch: bool = True) -
     addresses and bare numbers never flip the conversation.
     """
     text = text or ""
-    if re.search(r"\benglish\b|\bangl(?:ielsk\w*|ielsku)\b|\bprze(?:łącz|łącz).*angielsk\w*\b", text, re.IGNORECASE):
+    if EXPLICIT_EN.search(text):
         return "en"
-    if re.search(r"\bpolish\b|\bpolsk(?:i|u|im|iego)\b|\bpo polsku\b", text, re.IGNORECASE):
+    if EXPLICIT_PL.search(text):
         return "pl"
     if allow_number_switch:
-        if re.match(r"^\s*2\s*$", text):
+        if NUMBER_EN.match(text):
             return "en"
-        if re.match(r"^\s*1\s*$", text):
+        if NUMBER_PL.match(text):
             return "pl"
     if POLISH_DIACRITICS.search(text):
         return "pl"
