@@ -270,6 +270,7 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-19 | v0.7.0 (unreleased) | `ruff check .` | clean |
 | 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 622 strings extracted, all translated and compiled |
 | 2026-11-19 | v0.7.0 (unreleased) | `/ops/` EN + PL | email-history section renders in both languages; staff-only gate unchanged |
+| 2026-11-19 | v0.7.0 (unreleased) | Scheduler load (`tests/test_scheduler_load.py`) | 200 stale holds and 100 pending confirmation emails processed within budget (2 tests passed) |
 
 Update this table when the release gate is re-run.
 
@@ -277,9 +278,9 @@ Update this table when the release gate is re-run.
 
 - ~~Colour contrast: add automated checks to the accessibility gate, or keep as manual review?~~ Resolved: the token audit now enforces WCAG AA for text, focus rings and control borders.
 - ~~Email history: per-message view vs. only current delivery state.~~ Resolved on `feature/v0.7.0-email-history`: each send/retry already appends one `EmailDelivery` row; `/ops/` now shows the last 20 rows and the admin has a read-only list with `subject`. Provider webhooks update the matching row's final status in place — one row per attempt, not per status transition — so the history stays append-only per attempt.
-- Scheduler: load-test with a large backlog.
+- ~~Scheduler: load-test with a large backlog.~~ Resolved: `tests/test_scheduler_load.py` now covers 200 expired holds and 100 pending confirmation emails; both complete well within the 10 s budget (no scheduler code changes required).
 - SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?
 
 ## Next move
 
-v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The v0.7.0 email-history slice is in progress on `feature/v0.7.0-email-history` (8 new tests, 201 passing); no release has been cut. The remaining candidate items are the scheduler load test and inbound SMS receipts.
+v0.6.10 is released: a patch for the offline demo provider that keeps the guest count across turns and stops a bare "2" from flipping a Polish conversation to English. The v0.7.0 email-history slice is merged to `develop` and the scheduler backlog load test is covered on `fix/v0.7.0-scheduler-load-test`; no release has been cut. The remaining candidate item is SMS inbound replies and delivery-receipt webhooks (design decision).

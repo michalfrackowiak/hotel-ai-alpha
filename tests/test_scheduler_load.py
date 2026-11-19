@@ -28,7 +28,7 @@ def _make_room_type_and_rooms(count):
 
 @pytest.mark.django_db
 def test_expire_stale_holds_handles_a_backlog():
-    count = 100
+    count = 200
     rt, _ = _make_room_type_and_rooms(count)
     now = timezone.now()
     for _i in range(count):
@@ -56,7 +56,7 @@ def test_expire_stale_holds_handles_a_backlog():
 
 @pytest.mark.django_db
 def test_send_pending_confirmation_emails_handles_a_backlog():
-    count = 50
+    count = 100
     rt, _ = _make_room_type_and_rooms(count)
     check_in = timezone.localdate() + timedelta(days=30)
     check_out = check_in + timedelta(days=3)

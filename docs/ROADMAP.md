@@ -295,7 +295,7 @@ Theme: **operational visibility**. Reception can see what happened to each confi
 - [x] Read-only `EmailDelivery` admin list with a subject column; the booking inline shows the subject too
 - [x] Tests for send/retry rows, webhook sync by message id or latest row, a webhook with no delivery row, ops display in EN/PL and admin read-only permissions
 - [x] Polish catalogue updated for the new ops copy
-- [ ] Scheduler: load-test with a large backlog
+- [x] Scheduler: load-test with a large backlog (`tests/test_scheduler_load.py` covers 200 expired holds and 100 pending confirmation emails)
 - [ ] SMS: decide on inbound replies and delivery-receipt webhooks for the pilot
 
 **Exit criteria:** reception can trace every confirmation attempt from `/ops/` or the admin, in both languages. No release has been cut yet; follow [BRANCHING.md](BRANCHING.md) before merging `feature/v0.7.0-email-history`.
