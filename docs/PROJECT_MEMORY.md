@@ -273,21 +273,22 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 622 strings extracted, all translated and compiled |
 | 2026-11-19 | v0.7.0 (unreleased) | `/ops/` EN + PL | email-history section renders in both languages; staff-only gate unchanged |
 | 2026-11-19 | v0.7.0 (unreleased) | Scheduler load (`tests/test_scheduler_load.py`) | 200 stale holds and 100 pending confirmation emails processed within budget (2 tests passed) |
-| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `pytest` | 212 passed (includes 11 new SMS send/receipt/inbound/auth/ops/admin tests) |
-| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `manage.py check` | 0 issues |
-| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `makemigrations --check --dry-run` | no changes detected (0015 applied to models) |
-| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | `ruff check .` | clean |
-| 2026-11-19 | v0.7.0 (unreleased, `feature/v0.7.0-sms-receipts-replies`) | Polish catalogue | 642 strings extracted, 643 translated and compiled |
+| 2026-11-19 | v0.7.0 (unreleased) | `pytest` | 212 passed (includes SMS send/receipt/inbound/auth/ops/admin tests) |
+| 2026-11-19 | v0.7.0 (unreleased) | `manage.py check` | 0 issues |
+| 2026-11-19 | v0.7.0 (unreleased) | `makemigrations --check --dry-run` | no changes detected (0015 applied to models) |
+| 2026-11-19 | v0.7.0 (unreleased) | `ruff check .` | clean |
+| 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 642 strings extracted, 643 translated and compiled |
+| 2026-11-19 | v0.7.0 (unreleased) | GitHub Actions CI (PR #3, `feature/v0.7.0-sms-receipts-replies`) | green: test, docker and smoke jobs pass |
 
 Update this table when the release gate is re-run.
 
 ## Open questions for v0.7.0
 
 - ~~Colour contrast: add automated checks to the accessibility gate, or keep as manual review?~~ Resolved: the token audit now enforces WCAG AA for text, focus rings and control borders.
-- ~~Email history: per-message view vs. only current delivery state.~~ Resolved on `feature/v0.7.0-email-history`: each send/retry already appends one `EmailDelivery` row; `/ops/` now shows the last 20 rows and the admin has a read-only list with `subject`. Provider webhooks update the matching row's final status in place — one row per attempt, not per status transition — so the history stays append-only per attempt.
-- ~~Scheduler: load-test with a large backlog.~~ Resolved: `tests/test_scheduler_load.py` now covers 200 expired holds and 100 pending confirmation emails; both complete well within the 10 s budget (no scheduler code changes required).
-- ~~SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?~~ Resolved on `feature/v0.7.0-sms-receipts-replies`: each send appends a `SmsDelivery` row, provider receipts update booking/current delivery status via `/api/v1/sms/webhooks/<provider>/`, and inbound replies are stored as `InboundSmsMessage` records (linked by phone when possible) with read-only surfacing in `/ops/` and the admin.
+- ~~Email history: per-message view vs. only current delivery state.~~ Resolved: each send/retry appends one `EmailDelivery` row; `/ops/` shows the last 20 rows and the admin has a read-only list with `subject`. Provider webhooks update the matching row's final status in place — one row per attempt, not per status transition.
+- ~~Scheduler: load-test with a large backlog.~~ Resolved: `tests/test_scheduler_load.py` covers 200 expired holds and 100 pending confirmation emails; both complete well within the 10 s budget.
+- ~~SMS: add inbound replies and delivery-receipt webhooks, or keep outbound-only for the pilot?~~ Resolved: each send appends a `SmsDelivery` row, provider receipts update booking/current delivery status via `/api/v1/sms/webhooks/<provider>/`, and inbound replies are stored as `InboundSmsMessage` records (linked by phone when possible) with read-only surfacing in `/ops/` and the admin.
 
 ## Next move
 
-v0.6.10 is released. On `develop`, the v0.7.0 email-history slice and scheduler backlog load test are merged. On `feature/v0.7.0-sms-receipts-replies`, SMS delivery receipts and inbound replies are implemented (models/migration, webhook endpoint/auth, ops/admin visibility, tests, translations, docs) with the full gate green locally; commit/push, open a PR to `develop`, and watch CI. No release has been cut. After merge, decide any remaining v0.7.0 scope and follow [BRANCHING.md](BRANCHING.md) for the release.
+v0.6.10 is released. On `develop`, the v0.7.0 slices merged so far are email history (PR #1), scheduler backlog load tests (PR #2), and SMS delivery receipts/inbound replies (PR #3, CI green). The roadmap's currently listed v0.7.0 items are complete; no release has been cut. Next: confirm whether v0.7.0 needs any additional scope, then follow [BRANCHING.md](BRANCHING.md) to cut `release/v0.7.0`, run the release gate, and tag when ready.
