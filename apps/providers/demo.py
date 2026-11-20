@@ -60,10 +60,17 @@ POLISH_ORDINALS = {
 WORD_NUMBERS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
     "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "a": 1, "an": 1,
     "jeden": 1, "jedna": 1, "jedno": 1, "dwa": 2, "dwie": 2, "dwoje": 2,
-    "trzy": 3, "cztery": 4, "pięć": 5, "sześć": 6, "siedem": 7,
-    "osiem": 8, "dziewięć": 9, "dziesięć": 10,
+    "trzy": 3, "cztery": 4, "pięć": 5, "piec": 5, "sześć": 6, "szesc": 6, "siedem": 7,
+    "osiem": 8, "dziewięć": 9, "dziewiec": 9, "dziesięć": 10, "dziesiec": 10,
+    "jedenaście": 11, "jedenascie": 11, "dwanaście": 12, "dwanascie": 12,
+    "trzynaście": 13, "trzynascie": 13, "czternaście": 14, "czternascie": 14,
+    "piętnaście": 15, "pietnascie": 15,
 }
+
+NUMBER_WORD_PATTERN = "|".join(sorted((re.escape(word) for word in WORD_NUMBERS), key=len, reverse=True))
 
 AFFIRMATIVE = re.compile(
     r"\b(yes|yeah|yep|sure|ok|okay|confirm|confirmed|book it|go ahead|"
@@ -378,7 +385,7 @@ class DemoProvider(BaseLLMProvider):
         found: list[date] = []
         today = timezone.localdate()
 
-        # "12–15 December 2026" / "12 do 15 grudnia 2026"
+        # "12–15 December 2026" / "12 do 15 grudnia 2026" (with year)
         for match in re.finditer(
             r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to|do)\s*(\d{1,2})(?:st|nd|rd|th)?\s+"
             r"(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b",
@@ -389,6 +396,31 @@ class DemoProvider(BaseLLMProvider):
                 found.append(self._safe_date(int(match.group(4)), month, int(match.group(1))))
                 found.append(self._safe_date(int(match.group(4)), month, int(match.group(2))))
                 break
+
+        # "12–15 December" / "12 do 15 listopada" (no year)
+        if not found:
+            for match in re.finditer(
+                r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to|do)\s*(\d{1,2})(?:st|nd|rd|th)?\s+"
+                r"(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\b",
+                lowered,
+            ):
+                month = MONTHS.get(match.group(3))
+                if month:
+                    found.append(self._date_without_year(today, month, int(match.group(1))))
+                    found.append(self._date_without_year(today, month, int(match.group(2))))
+                    break
+
+        # "20.11-22.11" or "20/11 to 22/11" (day.month/day.month, no year)
+        if not found:
+            for match in re.finditer(
+                r"\b(\d{1,2})[./](\d{1,2})\s*(?:-|–|to|do)\s*(\d{1,2})[./](\d{1,2})\b",
+                lowered,
+            ):
+                first = self._date_without_year(today, int(match.group(2)), int(match.group(1)))
+                second = self._date_without_year(today, int(match.group(4)), int(match.group(3)))
+                if first and second:
+                    found.extend([first, second])
+                    break
 
         if not found:
             for match in re.finditer(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b", lowered):
@@ -445,9 +477,9 @@ class DemoProvider(BaseLLMProvider):
                 month = MONTHS.get(match.group(1) or "")
                 found.append(self._date_without_year(today, month or today.month, day))
 
-        # "12.07" (day.month) without a year.
+        # "12.07" or "12/07" (day.month) without a year.
         if not found:
-            for match in re.finditer(r"\b(\d{1,2})\.(\d{1,2})\b", lowered):
+            for match in re.finditer(r"\b(\d{1,2})[./](\d{1,2})\b", lowered):
                 day, month = int(match.group(1)), int(match.group(2))
                 if 1 <= day <= 31 and 1 <= month <= 12:
                     found.append(self._date_without_year(today, month, day))
@@ -458,7 +490,9 @@ class DemoProvider(BaseLLMProvider):
                 dates.append(item)
 
         if not dates:
-            has_today = bool(re.search(r"\btoday\b|\bdzi(?:ś|siaj)\b", lowered))
+            has_tonight = bool(re.search(r"\btonight\b", lowered))
+            has_today_word = bool(re.search(r"\btoday\b|\bdzi(?:ś|siaj)\b", lowered))
+            has_today = has_today_word or has_tonight
             has_tomorrow = bool(re.search(r"\btomorrow\b|\bjutr[ao]\b", lowered))
             has_day_after = bool(re.search(r"\bday after tomorrow\b|\bpojutrze\b", lowered))
             if has_today and has_tomorrow:
@@ -472,19 +506,13 @@ class DemoProvider(BaseLLMProvider):
             elif re.search(r"\bnext week\b|\bza tydzie(?:ń|n)\b", lowered):
                 dates = [today + timedelta(days=7)]
             else:
-                match = re.search(r"\bin\s+(\d+)\s+(day|days|week|weeks)\b", lowered)
-                if match:
-                    amount = int(match.group(1))
-                    unit = match.group(2)
-                    delta = amount * 7 if unit.startswith("week") else amount
-                    dates = [today + timedelta(days=delta)]
+                relative = self._relative_date(lowered, today)
+                if relative is not None:
+                    dates = [relative]
                 else:
-                    match = re.search(r"\bza\s+(\d+)\s+(dzie(?:ń|ni)|tygod(?:nie|ni))\b", lowered)
-                    if match:
-                        amount = int(match.group(1))
-                        unit = match.group(2)
-                        delta = amount * 7 if unit.startswith("tygod") else amount
-                        dates = [today + timedelta(days=delta)]
+                    weekday = self._next_weekday(lowered, today)
+                    if weekday is not None:
+                        dates = [weekday]
 
         # A bare English ordinal such as "the 20th" means the current month.
         if not dates:
@@ -502,6 +530,55 @@ class DemoProvider(BaseLLMProvider):
             return dates[0], None
         return None, None
 
+
+    @classmethod
+    def _relative_date(cls, lowered: str, today: date) -> date | None:
+        # "in 3 days", "in two weeks", "za 3 dni", "za dwa tygodnie"
+        patterns = (
+            r"\bin\s+(?P<num>\d+|" + NUMBER_WORD_PATTERN + r")\s+(?P<unit>day|days|week|weeks)\b",
+            r"\bza\s+(?P<num>\d+|" + NUMBER_WORD_PATTERN + r")\s+(?P<unit>dni|dnia|dzie[nń]|tygodni(?:e|a)?|tygodnie|tydzie[nń])\b",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, lowered, re.IGNORECASE)
+            if not match:
+                continue
+            amount = cls._parse_number(match.group("num"))
+            if amount is None or amount < 1 or amount > 60:
+                continue
+            unit = match.group("unit").lower()
+            if unit.startswith("week") or unit.startswith("tygod") or unit.startswith("tydzi"):
+                delta = amount * 7
+            else:
+                delta = amount
+            return today + timedelta(days=delta)
+        return None
+
+    @staticmethod
+    def _next_weekday(lowered: str, today: date) -> date | None:
+        weekdays = {
+            "monday": 0, "mon": 0, "poniedziałek": 0, "poniedzialek": 0,
+            "tuesday": 1, "tue": 1, "tues": 1, "wtorek": 1,
+            "wednesday": 2, "wed": 2, "środa": 2, "sroda": 2, "środę": 2, "srode": 2,
+            "thursday": 3, "thu": 3, "thur": 3, "thurs": 3, "czwartek": 3,
+            "friday": 4, "fri": 4, "piątek": 4, "piatek": 4,
+            "saturday": 5, "sat": 5, "sobota": 5, "sobotę": 5, "sobote": 5,
+            "sunday": 6, "sun": 6, "niedziela": 6, "niedzielę": 6, "niedziele": 6,
+        }
+        match = re.search(
+            r"\b(?:next|on|this|coming|w|we|w\s+nastepny|w\s+następny|w\s+najbliższy|w\s+najblizszy)\s+"
+            r"([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\b",
+            lowered,
+        )
+        if not match:
+            return None
+        target = weekdays.get(match.group(1))
+        if target is None:
+            return None
+        days_ahead = (target - today.weekday()) % 7
+        if days_ahead == 0:
+            days_ahead = 7
+        return today + timedelta(days=days_ahead)
+
     @staticmethod
     def _date_without_year(today: date, month: int, day: int) -> date | None:
         try:
@@ -515,26 +592,58 @@ class DemoProvider(BaseLLMProvider):
                 return None
         return candidate
 
-    @staticmethod
-    def _duration_nights(text: str) -> int | None:
+    @classmethod
+    def _duration_nights(cls, text: str) -> int | None:
+        source = text or ""
+        # Common approximate durations.
+        if re.search(r"\b(?:a\s+)?couple\s+of\s+(?:nights?|days?)\b", source, re.IGNORECASE):
+            return 2
+        if re.search(r"\b(?:a\s+)?few\s+(?:nights?|days?)\b", source, re.IGNORECASE):
+            return 3
         # Prefer explicit "for/stay/na N nights/days" phrasing as a stay length.
         for match in re.finditer(
-            r"\b(?:for|stay(?:ing)?|na|pobyt|przez)\s+(\d+)\s*"
+            rf"\b(?:for|stay(?:ing)?|na|pobyt|przez)\s+(?P<num>\d+|{NUMBER_WORD_PATTERN})\s*"
             r"(?:night|nights|noc|noce|nocy|day|days|dni|dzie(?:ń|ni))\b",
-            text or "",
+            source,
             re.IGNORECASE,
         ):
-            value = int(match.group(1))
-            if 1 <= value <= 30:
+            value = cls._parse_number(match.group("num"))
+            if value is not None and 1 <= value <= 30:
                 return value
-        if re.search(r"\b(?:for|na)\s+(?:a\s+)?week\b|\b(?:for|na)\s+tydzie(?:ń|n)\b", text or "", re.IGNORECASE):
+        # "three-night stay", "3 night stay", "a two-nights stay"
+        for match in re.finditer(
+            rf"\b(?:(?:a|an)\s+)?(?P<num>\d+|{NUMBER_WORD_PATTERN})[-\s]+(?:night|nights|noc|noce|nocy)\s+stay\b",
+            source,
+            re.IGNORECASE,
+        ):
+            value = cls._parse_number(match.group("num"))
+            if value is not None and 1 <= value <= 30:
+                return value
+        for match in re.finditer(
+            rf"\b(?P<num>\d+|{NUMBER_WORD_PATTERN})\s*(?:night|nights|noc|noce|nocy)\b",
+            source,
+            re.IGNORECASE,
+        ):
+            value = cls._parse_number(match.group("num"))
+            if value is not None and 1 <= value <= 30:
+                return value
+        if re.search(
+            rf"\b(?:for|na)\s+(?:a|one|{NUMBER_WORD_PATTERN})\s+week(?:s)?\b|"
+            r"\b(?:for|na)\s+tydzie(?:ń|n)\b|\ba\s+week\b|\btydzie(?:ń|n)\b",
+            source,
+            re.IGNORECASE,
+        ):
             return 7
-        match = NIGHTS.search(text or "")
-        if match:
-            value = int(match.group(1))
-            if 1 <= value <= 30:
-                return value
         return None
+
+    @staticmethod
+    def _parse_number(token: str | None) -> int | None:
+        if token is None:
+            return None
+        raw = str(token).strip().lower()
+        if raw.isdigit():
+            return int(raw)
+        return WORD_NUMBERS.get(raw)
 
     @staticmethod
     def _safe_date(year: int, month: int, day: int) -> date | None:
