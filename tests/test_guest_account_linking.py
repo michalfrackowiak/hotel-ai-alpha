@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import Client
 from django.utils import timezone
 
@@ -160,3 +161,53 @@ def test_linking_rejects_email_owned_by_different_user():
     assert account_b.is_email_verified is False
     user_b.refresh_from_db()
     assert user_b.email == "b@example.com"
+
+
+@pytest.mark.django_db
+def test_pre_account_booking_becomes_visible_after_register_verify_and_magic_link_login(
+    client, room_type, rooms, stay_dates, settings
+):
+    """A pre-account booking is linked on verification and visible via magic-link sign-in."""
+    settings.BOOKING_EMAILS_ENABLED = True
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    assert booking.client.account_id is None
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    _record, raw = issue_email_verification_token(user)
+    assert consume_email_verification_token(raw) == "anna@example.com"
+
+    booking.client.refresh_from_db()
+    assert booking.client.account_id is not None
+
+    response = client.post("/my-bookings/", {"email": "anna@example.com"}, HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    match = __import__("re").search(r"/my-bookings/login/[^\s]+", mail.outbox[0].body)
+    assert match, mail.outbox[0].body
+
+    login = client.get(match.group(0))
+    assert login.status_code == 302
+
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
