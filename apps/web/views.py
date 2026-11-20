@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from datetime import timedelta
+from urllib.parse import urlencode
 
+import httpx
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model, update_session_auth_hash
@@ -44,6 +47,7 @@ from apps.hotel.guest_access import (
     guest_session_matches,
     issue_email_verification_token,
     issue_login_token,
+    link_clients_for_guest_account,
     normalise_email,
     reserve_login_request,
     session_email,
@@ -293,12 +297,7 @@ def guest_bookings(request):
         return render(
             request,
             "web/guest_login.html",
-            {
-                "sent": True,
-                "email": requested,
-                "login_form": GuestAuthenticationForm(request),
-                "register_form": GuestRegistrationForm(),
-            },
+            _guest_login_context(request, sent=True, email=requested),
         )
 
     if email:
@@ -311,14 +310,7 @@ def guest_bookings(request):
                 "today": timezone.localdate(),
             },
         )
-    return render(
-        request,
-        "web/guest_login.html",
-        {
-            "login_form": GuestAuthenticationForm(request),
-            "register_form": GuestRegistrationForm(),
-        },
-    )
+    return render(request, "web/guest_login.html", _guest_login_context(request))
 
 
 def guest_login(request, token: str):
@@ -327,11 +319,7 @@ def guest_login(request, token: str):
         return render(
             request,
             "web/guest_login.html",
-            {
-                "link_invalid": True,
-                "login_form": GuestAuthenticationForm(request),
-                "register_form": GuestRegistrationForm(),
-            },
+            _guest_login_context(request, link_invalid=True),
             status=400,
         )
     if request.user.is_authenticated and not request.user.is_staff:
@@ -357,11 +345,12 @@ def guest_password_login(request):
     return render(
         request,
         "web/guest_login.html",
-        {
-            "login_form": form,
-            "register_form": GuestRegistrationForm(),
-            "password_login_failed": True,
-        },
+        _guest_login_context(
+            request,
+            login_form=form,
+            register_form=GuestRegistrationForm(),
+            password_login_failed=True,
+        ),
         status=400,
     )
 
@@ -425,11 +414,12 @@ def guest_register(request):
     return render(
         request,
         "web/guest_login.html",
-        {
-            "login_form": GuestAuthenticationForm(request),
-            "register_form": form,
-            "registration_failed": True,
-        },
+        _guest_login_context(
+            request,
+            login_form=GuestAuthenticationForm(request),
+            register_form=form,
+            registration_failed=True,
+        ),
         status=400,
     )
 
@@ -732,6 +722,180 @@ def room_calendar(request, token: str):
     response = HttpResponse(build_room_calendar(room), content_type="text/calendar; charset=utf-8")
     response["Content-Disposition"] = f'inline; filename="room-{room.number}.ics"'
     return response
+
+
+GOOGLE_OAUTH_STATE_KEY = "google_oauth_state"
+
+
+def _google_oauth_enabled() -> bool:
+    return bool(getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "") and getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", ""))
+
+
+def _guest_login_context(request, **extra):
+    context = {
+        "login_form": extra.pop("login_form", GuestAuthenticationForm(request)),
+        "register_form": extra.pop("register_form", GuestRegistrationForm()),
+        "google_oauth_enabled": _google_oauth_enabled(),
+    }
+    context.update(extra)
+    return context
+
+
+def _google_oauth_redirect_uri(request) -> str:
+    base = (settings.HOTEL.get("public_url") or "").rstrip("/")
+    return f"{base}{reverse('web:guest-google-callback')}"
+
+
+def guest_google_login(request):
+    if not _google_oauth_enabled():
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(request, google_error=_("Google sign-in is not configured.")),
+            status=400,
+        )
+    state = secrets.token_urlsafe(32)
+    request.session[GOOGLE_OAUTH_STATE_KEY] = state
+    params = {
+        "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
+        "redirect_uri": _google_oauth_redirect_uri(request),
+        "response_type": "code",
+        "scope": " ".join(getattr(settings, "GOOGLE_OAUTH_SCOPES", ["openid", "email", "profile"])),
+        "state": state,
+        "prompt": "select_account",
+        "access_type": "online",
+    }
+    return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+
+
+def _google_fetch_userinfo(code: str, redirect_uri: str) -> dict | None:
+    token_url = "https://oauth2.googleapis.com/token"
+    userinfo_url = "https://openidconnect.googleapis.com/v1/userinfo"
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            token_response = client.post(
+                token_url,
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_OAUTH_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
+            token_response.raise_for_status()
+            access_token = token_response.json().get("access_token")
+            if not access_token:
+                return None
+            user_response = client.get(
+                userinfo_url,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            user_response.raise_for_status()
+            return user_response.json()
+    except Exception:  # noqa: BLE001
+        logger.exception("Google OAuth exchange failed")
+        return None
+
+
+def guest_google_callback(request):
+    if not _google_oauth_enabled():
+        return redirect("web:guest-bookings")
+
+    error = request.GET.get("error")
+    if error:
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google sign-in was cancelled or could not be completed."),
+            ),
+            status=400,
+        )
+
+    expected_state = request.session.pop(GOOGLE_OAUTH_STATE_KEY, "")
+    state = request.GET.get("state") or ""
+    if not expected_state or not state or not secrets.compare_digest(expected_state, state):
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google sign-in could not be verified. Please try again."),
+            ),
+            status=400,
+        )
+
+    code = request.GET.get("code") or ""
+    userinfo = _google_fetch_userinfo(code, _google_oauth_redirect_uri(request)) if code else None
+    email = normalise_email((userinfo or {}).get("email"))
+    email_verified = bool((userinfo or {}).get("email_verified"))
+    if not email or not email_verified:
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google did not provide a verified email address."),
+            ),
+            status=400,
+        )
+
+    existing = User.objects.filter(email__iexact=email).order_by("pk").first()
+    if existing and existing.is_staff:
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("This account cannot be used for guest sign-in."),
+            ),
+            status=403,
+        )
+
+    now = timezone.now()
+    if existing is None:
+        base_username = email
+        username = base_username
+        suffix = 1
+        while User.objects.filter(username=username).exists():
+            suffix += 1
+            username = f"{base_username}-{suffix}"
+        existing = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=((userinfo or {}).get("given_name") or "").strip()[:150],
+            last_name=((userinfo or {}).get("family_name") or "").strip()[:150],
+            is_staff=False,
+            is_active=True,
+        )
+        existing.set_unusable_password()
+        existing.save(update_fields=["password"])
+    else:
+        updates = []
+        if not existing.is_active:
+            existing.is_active = True
+            updates.append("is_active")
+        if not existing.first_name and (userinfo or {}).get("given_name"):
+            existing.first_name = str((userinfo or {}).get("given_name") or "").strip()[:150]
+            updates.append("first_name")
+        if not existing.last_name and (userinfo or {}).get("family_name"):
+            existing.last_name = str((userinfo or {}).get("family_name") or "").strip()[:150]
+            updates.append("last_name")
+        if updates:
+            existing.save(update_fields=updates)
+
+    account, _created = GuestAccount.objects.get_or_create(user=existing)
+    if account.email_verified_at is None:
+        account.email_verified_at = now
+        account.save(update_fields=["email_verified_at", "updated_at"])
+    link_clients_for_guest_account(account)
+
+    auth_login(request, existing, backend="django.contrib.auth.backends.ModelBackend")
+    request.session.pop(GUEST_SESSION_KEY, None)
+    request.session.cycle_key()
+    return redirect("web:guest-bookings")
 
 
 def healthz(request):

@@ -9,6 +9,9 @@
     <p class="eyebrow">{% trans "Guest account" %}</p>
     <h1>{% trans "My bookings" %}</h1>
 
+    {% if google_error %}
+      <p class="notice notice--warning" role="alert">{{ google_error }}</p>
+    {% endif %}
     {% if link_invalid %}
       <p class="notice notice--warning" role="alert">
         {% trans "That sign-in link is invalid, already used or expired. Request a fresh one below." %}
@@ -35,6 +38,16 @@
       </label>
       <button class="btn btn--primary btn--block" type="submit">{% trans "Send sign-in link" %}</button>
     </form>
+
+    {% if google_oauth_enabled %}
+      <hr class="lookup-divider">
+
+      <h2>{% trans "Sign in with Google" %}</h2>
+      <p class="lookup-card__lede">{% trans "Use your Google account for fast and secure access to your bookings." %}</p>
+      <p>
+        <a class="btn btn--primary btn--block" href="{% url 'web:guest-google-login' %}">{% trans "Continue with Google" %}</a>
+      </p>
+    {% endif %}
 
     <hr class="lookup-divider">
 

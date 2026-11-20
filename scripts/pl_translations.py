@@ -1008,4 +1008,12 @@ TRANSLATIONS: dict[str, str] = {
     "Not verified": "Niezweryfikowano",
     "Verified": "Zweryfikowano",
     "Your account details have been saved.": "Dane konta zostały zapisane.",
+    "Continue with Google": "Kontynuuj z Google",
+    "Google did not provide a verified email address.": "Google nie przekazało zweryfikowanego adresu e-mail.",
+    "Google sign-in could not be verified. Please try again.": "Nie udało się zweryfikować logowania Google. Spróbuj ponownie.",
+    "Google sign-in is not configured.": "Logowanie przez Google nie jest skonfigurowane.",
+    "Google sign-in was cancelled or could not be completed.": "Logowanie przez Google zostało anulowane lub nie mogło zostać ukończone.",
+    "Sign in with Google": "Zaloguj się przez Google",
+    "This account cannot be used for guest sign-in.": "Tego konta nie można użyć do logowania gościa.",
+    "Use your Google account for fast and secure access to your bookings.": "Użyj konta Google, aby szybko i bezpiecznie uzyskać dostęp do swoich rezerwacji.",
 }
