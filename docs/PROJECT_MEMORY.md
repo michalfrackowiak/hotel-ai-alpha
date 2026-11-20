@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 231 passing
+**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 235 passing
 
 ## Current state
 
@@ -299,4 +299,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.8.0 is released and tagged (`v0.8.0`) on `main`; `develop` includes the **v0.9.0 payment tracking foundation** (PR #7, `616ea2b`, migration `hotel.0017_booking_payment_tracking`), **guest-facing payment summaries** (PR #8, `bba8ccf`), and **payment audit trail + staff recording path** (PR #9, `a9eebf0`, migration `hotel.0018_bookingevent_payment_types`): append-only payment `BookingEvent` types, `record_booking_payment()` single write path, and `manage.py record_payment`. **v0.9.0 remains in progress on `develop`** (see [docs/ROADMAP.md](docs/ROADMAP.md)); remaining work includes deposit/policy logic and configurable prepayment expectations, plus additional docs/tests for the remaining payment flow (and any staff-only API path if needed beyond admin/command). Next: choose and implement the next v0.9.0 slice from `develop` (no release cut).
+v0.8.0 is released and tagged (`v0.8.0`) on `main`; `develop` includes the **v0.9.0 payment tracking foundation** (PR #7, `616ea2b`, migration `hotel.0017_booking_payment_tracking`), **guest-facing payment summaries** (PR #8, `bba8ccf`), **payment audit trail + staff recording path** (PR #9, `a9eebf0`, migration `hotel.0018_bookingevent_payment_types`), and **hotel-level deposit/prepayment policy and guest-facing deposit summary** (PR #10, `83567e6`): configurable `DEPOSIT_POLICY`/`DEPOSIT_VALUE`, `apps/hotel/deposit.py` `deposit_summary()` single source of truth, and deposit details surfaced via `Booking` helpers, booking API, guest booking detail, and confirmation email/SMS. **v0.9.0 remains in progress on `develop`** (see [docs/ROADMAP.md](docs/ROADMAP.md)); remaining work is limited to rate-plan-specific deposit policy if needed for the pilot and additional docs/tests for the remaining payment flow (including any staff-only API path if needed beyond admin/command). Next: reassess the remaining v0.9.0 scope from `develop` and implement any needed follow-up slice (no release cut unless asked).

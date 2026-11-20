@@ -332,10 +332,11 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 - [x] Tests, migration, and Polish translations for the payment tracking foundation
 - [x] Guest-facing payment summaries (PR #8, `bba8ccf`): `Booking.amount_due` and token-gated API exposure, payment summary on the guest booking detail page, and payment summary in confirmation email/SMS templates with updated tests and Polish translations
 - [x] Payment audit trail and staff recording path (PR #9, `a9eebf0`): append-only `BookingEvent` payment types (`payment_recorded`/`payment_adjusted`/`payment_refunded`/`payment_waived`, migration `hotel.0018_bookingevent_payment_types`), `record_booking_payment()` single write path, and `manage.py record_payment` staff command with tests and Polish translations
+- [x] Hotel-level deposit/prepayment policy and guest-facing deposit summary (PR #10, `83567e6`): configurable policy via `settings.HOTEL`/env (`DEPOSIT_POLICY=none|percent|fixed`, `DEPOSIT_VALUE`), `apps/hotel/deposit.py` `deposit_summary()` single source of truth, and deposit details surfaced via `Booking` helpers, booking API (`deposit_amount`, `amount_due_now`, `deposit`), guest booking detail, and confirmation email/SMS templates with tests and translations
 
 ### Remaining scope
 
-- [ ] Payment amount due/deposit expectations and configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot, with a clear guest-facing summary
+- [ ] Rate-plan-specific deposit/prepayment policy if needed for the pilot (current policy is hotel-level)
 - [ ] Additional docs and tests for the remaining payment flow (including any staff-only API path if needed beyond the existing admin/command paths)
 
 ### Out of scope (unless explicitly planned later)
