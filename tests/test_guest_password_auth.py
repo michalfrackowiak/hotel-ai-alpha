@@ -103,6 +103,32 @@ def test_register_rejects_invalid_password_and_does_not_create_user(client):
 
 
 @pytest.mark.django_db
+def test_register_ip_throttle_returns_neutral_response_without_creating_user(client, settings):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    cache.set(_throttle_key("register", "10.0.0.1"), 1, timeout=60)
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert not User.objects.filter(email="anna@example.com").exists()
+    assert mail.outbox == []
+
+
+@pytest.mark.django_db
 def test_verify_email_activates_user_and_marks_verified(client, settings):
     settings.BOOKING_EMAILS_ENABLED = True
     user = User.objects.create_user(

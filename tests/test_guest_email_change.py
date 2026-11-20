@@ -245,6 +245,7 @@ def test_email_change_cooldown_is_best_effort_without_revealing_block(web_client
     )
     assert first.status_code == 200
     assert len(mail.outbox) == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="first@example.com").count() == 1
 
     second = web_client.post(
         "/my-bookings/profile/",
@@ -252,9 +253,12 @@ def test_email_change_cooldown_is_best_effort_without_revealing_block(web_client
         HTTP_ACCEPT_LANGUAGE="en",
     )
     assert second.status_code == 200
-    # Cooldown may prevent issuing/sending another token immediately, but the UI
+    # Cooldown prevents issuing/sending another token immediately, but the UI
     # response stays neutral/helpful and never errors for throttling.
     assert "verification link" in second.content.decode().lower()
+    assert len(mail.outbox) == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="second@example.com").count() == 0
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="first@example.com").count() == 1
 
 
 @pytest.mark.django_db
