@@ -13,6 +13,15 @@ from apps.hotel.models import GuestAccount
 User = get_user_model()
 
 
+@pytest.fixture(autouse=True)
+def clear_throttle_cache():
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def client() -> Client:
     return Client()
@@ -262,3 +271,52 @@ def test_google_callback_activates_and_links_existing_unverified_guest(
 
     booking.client.refresh_from_db()
     assert booking.client.account_id == account.id
+
+@pytest.mark.django_db
+def test_google_login_is_rate_limited_per_ip(client, settings):
+    settings.GOOGLE_OAUTH_CLIENT_ID = "client-id"
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = "client-secret"
+    settings.HOTEL["public_url"] = "http://testserver"
+
+    first = client.get("/my-bookings/google/", REMOTE_ADDR="10.0.0.5")
+    second = client.get("/my-bookings/google/", REMOTE_ADDR="10.0.0.5", HTTP_ACCEPT_LANGUAGE="en")
+
+    assert first.status_code == 302
+    assert "accounts.google.com/o/oauth2/v2/auth" in first["Location"]
+    assert second.status_code == 400
+    assert "could not be completed" in second.content.decode().lower()
+
+
+@pytest.mark.django_db
+def test_google_callback_is_rate_limited_per_ip(client, settings, monkeypatch):
+    settings.GOOGLE_OAUTH_CLIENT_ID = "client-id"
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = "client-secret"
+    session = client.session
+    session["google_oauth_state"] = "good-state"
+    session.save()
+
+    called = {"count": 0}
+
+    def _unexpected_httpx(*args, **kwargs):
+        called["count"] += 1
+        raise AssertionError("external exchange should not run when throttled")
+
+    monkeypatch.setattr("apps.web.views.httpx.Client", _unexpected_httpx)
+
+    first = client.get(
+        "/my-bookings/google/callback/?state=wrong&code=x",
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.6",
+    )
+    # First request consumed IP cooldown but failed on state (no external call).
+    assert first.status_code == 400
+    assert called["count"] == 0
+
+    second = client.get(
+        "/my-bookings/google/callback/?state=good-state&code=good-code",
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.6",
+    )
+    assert second.status_code == 400
+    assert "could not be completed" in second.content.decode().lower()
+    assert called["count"] == 0

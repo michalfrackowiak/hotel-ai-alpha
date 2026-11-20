@@ -301,6 +301,22 @@ def reserve_password_reset_request(email: str, client_ip: str = "") -> bool:
     return _reserve_email_request("reset-email", "reset-ip", email, client_ip)
 
 
+def reserve_guest_ip_action(scope: str, client_ip: str = "", cooldown_seconds: int | None = None) -> bool:
+    """Cache-based IP cooldown for a guest auth action (no email component).
+
+    Returns False when the same IP repeats the action within the cooldown window.
+    """
+    client_ip = (client_ip or "").strip()
+    if not client_ip:
+        return True
+    if cooldown_seconds is None:
+        cooldown_seconds = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
+    cooldown_seconds = int(cooldown_seconds or 0)
+    if cooldown_seconds <= 0:
+        return True
+    return cache.add(_throttle_key(scope, client_ip), 1, timeout=cooldown_seconds)
+
+
 def _increment_throttle(scope: str, value: str, window: int) -> int:
     key = _throttle_key(scope, value)
     if cache.add(key, 1, timeout=window):

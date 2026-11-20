@@ -52,6 +52,7 @@ from apps.hotel.guest_access import (
     issue_login_token,
     link_clients_for_guest_account,
     normalise_email,
+    reserve_guest_ip_action,
     reserve_login_request,
     reserve_password_reset_request,
     session_email,
@@ -881,6 +882,17 @@ def guest_google_login(request):
             _guest_login_context(request, google_error=_("Google sign-in is not configured.")),
             status=400,
         )
+    if not reserve_guest_ip_action("google-login", request.META.get("REMOTE_ADDR", "")):
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google sign-in could not be completed. Please try again."),
+            ),
+            status=400,
+        )
+
     state = secrets.token_urlsafe(32)
     request.session[GOOGLE_OAUTH_STATE_KEY] = state
     params = {
@@ -928,6 +940,17 @@ def _google_fetch_userinfo(code: str, redirect_uri: str) -> dict | None:
 def guest_google_callback(request):
     if not _google_oauth_enabled():
         return redirect("web:guest-bookings")
+
+    if not reserve_guest_ip_action("google-callback", request.META.get("REMOTE_ADDR", "")):
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google sign-in could not be completed. Please try again."),
+            ),
+            status=400,
+        )
 
     error = request.GET.get("error")
     if error:
