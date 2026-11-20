@@ -34,13 +34,52 @@ def email_has_bookings(email: str) -> bool:
     return Booking.objects.filter(client__email__iexact=email).exists()
 
 
+def verified_guest_account_for_email(email: str) -> GuestAccount | None:
+    email = normalise_email(email)
+    if not email:
+        return None
+    return (
+        GuestAccount.objects.select_related("user")
+        .filter(
+            email_verified_at__isnull=False,
+            user__is_active=True,
+            user__is_staff=False,
+            user__email__iexact=email,
+        )
+        .first()
+    )
+
+
+def link_clients_for_guest_account(account: GuestAccount) -> int:
+    """Link email-matching clients to a verified guest account.
+
+    Only clients with no account or already linked to this account are updated,
+    so an existing link to a different account is never overridden.
+    """
+    email = normalise_email(getattr(account, "email", "") or getattr(account.user, "email", ""))
+    if not email or not account.is_email_verified:
+        return 0
+    return (
+        Booking.objects.model._meta.apps.get_model("hotel", "Client")
+        .objects.filter(email__iexact=email)
+        .filter(Q(account__isnull=True) | Q(account=account))
+        .exclude(account=account)
+        .update(account=account)
+    )
+
+
 def bookings_for_email(email: str) -> QuerySet[Booking]:
     email = normalise_email(email)
     if not email:
         return Booking.objects.none()
+    query = Q(client__email__iexact=email)
+    account = verified_guest_account_for_email(email)
+    if account is not None:
+        query |= Q(client__account=account)
     return (
-        Booking.objects.filter(client__email__iexact=email)
+        Booking.objects.filter(query)
         .select_related("client", "room", "room__room_type", "rate_plan")
+        .distinct()
         .order_by("-check_in", "-pk")
     )
 
@@ -89,11 +128,27 @@ def guest_session_matches(request, booking: Booking) -> bool:
     """True when the request is authenticated as the booking's guest owner."""
     user = getattr(request, "user", None)
     if user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False):
+        account = getattr(user, "guest_account", None)
+        if (
+            account is not None
+            and getattr(account, "is_email_verified", False)
+            and booking.client_id
+            and booking.client.account_id == account.id
+        ):
+            return True
         user_email = normalise_email(getattr(user, "email", ""))
         if user_email and user_email == normalise_email(booking.client.email):
             return True
     email = session_email(request)
-    return bool(email) and email == normalise_email(booking.client.email)
+    if email and email == normalise_email(booking.client.email):
+        return True
+    # A magic-link session for the verified account email can also access
+    # bookings linked to that account (without relying on client email match).
+    if email:
+        account = verified_guest_account_for_email(email)
+        if account is not None and booking.client_id and booking.client.account_id == account.id:
+            return True
+    return False
 
 
 def issue_email_verification_token(user, email: str | None = None) -> tuple[GuestEmailVerificationToken, str] | None:
@@ -151,6 +206,8 @@ def consume_email_verification_token(raw_token: str | None) -> str | None:
         if not getattr(user, "is_active", False) and not getattr(user, "is_staff", False):
             user.is_active = True
             user.save(update_fields=["is_active"])
+        # Link existing bookings/clients for this verified email to the account.
+        link_clients_for_guest_account(account)
     return email
 
 
