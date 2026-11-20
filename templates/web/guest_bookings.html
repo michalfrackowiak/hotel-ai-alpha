@@ -40,6 +40,9 @@
     {% endif %}
 
     <div class="lookup-card__actions">
+      {% if request.user.is_authenticated and not request.user.is_staff %}
+        <a class="btn btn--ghost" href="{% url 'web:guest-password-change' %}">{% trans "Change password" %}</a>
+      {% endif %}
       <form method="post" action="{% url 'web:guest-logout' %}">
         {% csrf_token %}
         <button class="btn btn--ghost" type="submit">{% trans "Sign out" %}</button>

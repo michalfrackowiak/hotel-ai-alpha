@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.db import connection
@@ -38,8 +38,11 @@ from apps.hotel.deposit import deposit_summary
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
     bookings_for_email,
+    can_issue_email_verification,
+    consume_email_verification_token,
     consume_login_token,
     guest_session_matches,
+    issue_email_verification_token,
     issue_login_token,
     normalise_email,
     reserve_login_request,
@@ -58,10 +61,15 @@ from apps.hotel.models import (
     RoomType,
     SmsDelivery,
 )
-from apps.hotel.notifications import max_email_attempts, max_sms_attempts, send_guest_login_email
+from apps.hotel.notifications import (
+    max_email_attempts,
+    max_sms_attempts,
+    send_guest_email_verification,
+    send_guest_login_email,
+)
 from apps.hotel.pricing import StayError
 
-from .forms import GuestAuthenticationForm, GuestRegistrationForm
+from .forms import GuestAuthenticationForm, GuestPasswordChangeForm, GuestRegistrationForm
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -353,26 +361,62 @@ def guest_password_login(request):
     )
 
 
+def _send_guest_verification(request, user) -> None:
+    if not can_issue_email_verification(request, user):
+        return
+    issued = issue_email_verification_token(user)
+    if issued is None:
+        return
+    _record, raw_token = issued
+    verify_path = reverse("web:guest-verify-email", args=[raw_token])
+    verify_url = f"{settings.HOTEL['public_url'].rstrip('/')}{verify_path}"
+    send_guest_email_verification(
+        user.email,
+        verify_url,
+        language=translation.get_language(),
+    )
+
+
 def guest_register(request):
     if request.method != "POST":
         return redirect("web:guest-bookings")
     form = GuestRegistrationForm(request.POST)
     if form.is_valid():
         email = form.cleaned_data["email"]
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=form.cleaned_data["password1"],
-            first_name=form.cleaned_data.get("first_name", ""),
-            last_name=form.cleaned_data.get("last_name", ""),
-            is_staff=False,
-            is_active=True,
+        existing = User.objects.filter(email__iexact=email).first()
+        if existing is None:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=form.cleaned_data["password1"],
+                first_name=form.cleaned_data.get("first_name", ""),
+                last_name=form.cleaned_data.get("last_name", ""),
+                is_staff=False,
+                is_active=False,
+            )
+            GuestAccount.objects.get_or_create(user=user)
+            _send_guest_verification(request, user)
+        elif not existing.is_staff:
+            account = getattr(existing, "guest_account", None)
+            if account is None or not account.is_email_verified:
+                # Allow completing verification for an existing unverified guest
+                # account without revealing that the address is registered.
+                if not existing.has_usable_password() or not account or not account.is_email_verified:
+                    if existing.check_password(form.cleaned_data["password1"]) or not existing.has_usable_password():
+                        existing.first_name = existing.first_name or form.cleaned_data.get("first_name", "")
+                        existing.last_name = existing.last_name or form.cleaned_data.get("last_name", "")
+                        if not existing.has_usable_password():
+                            existing.set_password(form.cleaned_data["password1"])
+                        existing.save()
+                        GuestAccount.objects.get_or_create(user=existing)
+                GuestAccount.objects.get_or_create(user=existing)
+                _send_guest_verification(request, existing)
+        # Staff/existing verified accounts: neutral response, no email leak.
+        return render(
+            request,
+            "web/guest_verify_email.html",
+            {"verification_sent": True, "email": email},
         )
-        GuestAccount.objects.get_or_create(user=user)
-        auth_login(request, user)
-        request.session.pop(GUEST_SESSION_KEY, None)
-        request.session.cycle_key()
-        return redirect("web:guest-bookings")
     return render(
         request,
         "web/guest_login.html",
@@ -383,6 +427,44 @@ def guest_register(request):
         },
         status=400,
     )
+
+
+def guest_verify_email(request, token: str):
+    email = consume_email_verification_token(token)
+    if email is None:
+        return render(
+            request,
+            "web/guest_verify_email.html",
+            {"link_invalid": True},
+            status=400,
+        )
+    return render(
+        request,
+        "web/guest_verify_email.html",
+        {"verified": True, "email": email},
+    )
+
+
+def guest_password_change(request):
+    user = request.user
+    if not user.is_authenticated or user.is_staff:
+        return redirect("web:guest-bookings")
+    if request.method == "POST":
+        form = GuestPasswordChangeForm(user, request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, form.user)
+            return redirect("web:guest-password-change-done")
+    else:
+        form = GuestPasswordChangeForm(user)
+    return render(request, "web/guest_password_change.html", {"form": form})
+
+
+def guest_password_change_done(request):
+    user = request.user
+    if not user.is_authenticated or user.is_staff:
+        return redirect("web:guest-bookings")
+    return render(request, "web/guest_password_change_done.html")
 
 
 @require_POST

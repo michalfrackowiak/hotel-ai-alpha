@@ -305,6 +305,42 @@ def send_guest_login_email(email: str, login_url: str, *, language: str = "en") 
     return True
 
 
+def send_guest_email_verification(email: str, verification_url: str, *, language: str = "en") -> bool:
+    """Send a single-use email verification link for a guest account.
+
+    Delivery failures are logged but never surfaced to the caller; registration
+    and resend flows show a neutral response.
+    """
+    if not settings.BOOKING_EMAILS_ENABLED:
+        return False
+
+    context = {"hotel": settings.HOTEL, "email": email, "verification_url": verification_url}
+    with override(language or settings.HOTEL["default_language"]):
+        subject = render_to_string("hotel/email/guest_email_verification_subject.txt", context).strip()
+        text_body = render_to_string("hotel/email/guest_email_verification.txt", context)
+        html_body = render_to_string("hotel/email/guest_email_verification.html", context)
+
+    message = EmailMessage(
+        to=email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
+    provider = get_email_provider()
+    try:
+        result = provider.send(message)
+    except Exception:  # noqa: BLE001
+        logger.exception("Guest email verification failed for %s", email)
+        return False
+    if not result.sent:
+        logger.warning(
+            "Guest email verification failed for %s via %s: %s", email, provider.name, result.error
+        )
+        return False
+    logger.info("Sent guest email verification to %s via %s", email, provider.name)
+    return True
+
+
 def send_pending_confirmation_emails(*, force: bool = False) -> int:
     """Retry confirmations that were confirmed before email delivery succeeded.
 
