@@ -86,6 +86,12 @@ def session_email(request) -> str:
 
 
 def guest_session_matches(request, booking: Booking) -> bool:
+    """True when the request is authenticated as the booking's guest owner."""
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False):
+        user_email = normalise_email(getattr(user, "email", ""))
+        if user_email and user_email == normalise_email(booking.client.email):
+            return True
     email = session_email(request)
     return bool(email) and email == normalise_email(booking.client.email)
 

@@ -7,6 +7,9 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import get_user_model
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.db import connection
 from django.db.models import Q
 from django.http import Http404, HttpResponse, JsonResponse
@@ -47,6 +50,7 @@ from apps.hotel.models import (
     BookingEvent,
     ChannelFeed,
     EmailDelivery,
+    GuestAccount,
     InboundSmsMessage,
     RatePlan,
     Room,
@@ -57,7 +61,10 @@ from apps.hotel.models import (
 from apps.hotel.notifications import max_email_attempts, max_sms_attempts, send_guest_login_email
 from apps.hotel.pricing import StayError
 
+from .forms import GuestAuthenticationForm, GuestRegistrationForm
+
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 def home(request):
@@ -243,9 +250,19 @@ def booking_lookup(request):
     return render(request, "web/booking_lookup.html")
 
 
+def _current_guest_email(request) -> str:
+    """Return the signed-in guest email from Django auth or the magic-link session."""
+    user = getattr(request, "user", None)
+    if user and user.is_authenticated and not user.is_staff:
+        email = normalise_email(getattr(user, "email", ""))
+        if email:
+            return email
+    return session_email(request)
+
+
 def guest_bookings(request):
-    """Passwordless guest account: request a link, then list every booking."""
-    email = session_email(request)
+    """Guest account: sign in (password or magic link) or list bookings."""
+    email = _current_guest_email(request)
     if request.method == "POST":
         requested = normalise_email(request.POST.get("email"))
         client_ip = request.META.get("REMOTE_ADDR", "")
@@ -263,7 +280,12 @@ def guest_bookings(request):
         return render(
             request,
             "web/guest_login.html",
-            {"sent": True, "email": requested},
+            {
+                "sent": True,
+                "email": requested,
+                "login_form": GuestAuthenticationForm(request),
+                "register_form": GuestRegistrationForm(),
+            },
         )
 
     if email:
@@ -276,7 +298,14 @@ def guest_bookings(request):
                 "today": timezone.localdate(),
             },
         )
-    return render(request, "web/guest_login.html")
+    return render(
+        request,
+        "web/guest_login.html",
+        {
+            "login_form": GuestAuthenticationForm(request),
+            "register_form": GuestRegistrationForm(),
+        },
+    )
 
 
 def guest_login(request, token: str):
@@ -285,17 +314,82 @@ def guest_login(request, token: str):
         return render(
             request,
             "web/guest_login.html",
-            {"link_invalid": True},
+            {
+                "link_invalid": True,
+                "login_form": GuestAuthenticationForm(request),
+                "register_form": GuestRegistrationForm(),
+            },
             status=400,
         )
+    if request.user.is_authenticated and not request.user.is_staff:
+        auth_logout(request)
     request.session[GUEST_SESSION_KEY] = email
     request.session.cycle_key()
     return redirect("web:guest-bookings")
 
 
+def guest_password_login(request):
+    if request.method != "POST":
+        return redirect("web:guest-bookings")
+    form = GuestAuthenticationForm(request, data=request.POST)
+    if form.is_valid():
+        user = form.get_user()
+        if user is None or user.is_staff or not getattr(user, "is_active", False):
+            form.add_error(None, form.error_messages["invalid_login"])
+        else:
+            auth_login(request, user)
+            request.session.pop(GUEST_SESSION_KEY, None)
+            request.session.cycle_key()
+            return redirect("web:guest-bookings")
+    return render(
+        request,
+        "web/guest_login.html",
+        {
+            "login_form": form,
+            "register_form": GuestRegistrationForm(),
+            "password_login_failed": True,
+        },
+        status=400,
+    )
+
+
+def guest_register(request):
+    if request.method != "POST":
+        return redirect("web:guest-bookings")
+    form = GuestRegistrationForm(request.POST)
+    if form.is_valid():
+        email = form.cleaned_data["email"]
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=form.cleaned_data["password1"],
+            first_name=form.cleaned_data.get("first_name", ""),
+            last_name=form.cleaned_data.get("last_name", ""),
+            is_staff=False,
+            is_active=True,
+        )
+        GuestAccount.objects.get_or_create(user=user)
+        auth_login(request, user)
+        request.session.pop(GUEST_SESSION_KEY, None)
+        request.session.cycle_key()
+        return redirect("web:guest-bookings")
+    return render(
+        request,
+        "web/guest_login.html",
+        {
+            "login_form": GuestAuthenticationForm(request),
+            "register_form": form,
+            "registration_failed": True,
+        },
+        status=400,
+    )
+
+
 @require_POST
 def guest_logout(request):
     request.session.pop(GUEST_SESSION_KEY, None)
+    if request.user.is_authenticated and not request.user.is_staff:
+        auth_logout(request)
     request.session.cycle_key()
     return redirect("web:guest-bookings")
 
