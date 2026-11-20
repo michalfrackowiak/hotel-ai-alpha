@@ -199,6 +199,11 @@ def test_inactive_unverified_user_cannot_password_login(client):
 
     assert response.status_code == 400
     assert not client.session.get("_auth_user_id")
+    content = response.content.decode()
+    # Anti-enumeration: correct password for an inactive/unverified account must
+    # return the same generic failure as invalid credentials (no activation leak).
+    assert "Please enter a correct email address and password" in content
+    assert "inactive" not in content.lower()
 
 
 @pytest.mark.django_db
