@@ -13,7 +13,7 @@ from django.test import Client
 from django.utils import timezone
 
 from apps.hotel.booking_service import create_booking
-from apps.hotel.guest_access import issue_email_verification_token
+from apps.hotel.guest_access import issue_email_verification_token, link_clients_for_guest_account
 from apps.hotel.models import Client as HotelClient
 from apps.hotel.models import GuestAccount, GuestEmailVerificationToken
 
@@ -263,3 +263,46 @@ def test_profile_email_change_renders_in_polish(web_client):
     assert "Zmień adres e-mail" in content
     assert "Nowy adres e-mail" in content
     assert "Wyślij link weryfikacyjny" in content
+
+
+@pytest.mark.django_db
+def test_authenticated_guest_still_sees_account_linked_booking_after_email_change(
+    web_client, room_type, rooms, stay_dates
+):
+    """Bookings linked to the verified account remain visible after a verified email change."""
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
+
+    assert web_client.login(username="anna@example.com", password="correct horse battery")
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    response = web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+    assert booking.client.account_id == account.id
+
+    assert web_client.login(username="new-anna@example.com", password="correct horse battery")
+    listing = web_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    content = listing.content.decode()
+    assert booking.reference in content
+    assert "new-anna@example.com" in content
+
+    detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
