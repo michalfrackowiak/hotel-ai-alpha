@@ -70,6 +70,12 @@ class GuestAuthenticationForm(AuthenticationForm):
         ),
     }
 
+    def confirm_login_allowed(self, user):
+        # Return the same generic failure for inactive/unverified accounts to
+        # avoid leaking account existence or activation state.
+        if not user.is_active:
+            raise ValidationError(self.error_messages["invalid_login"], code="invalid_login")
+
 
 class GuestPasswordResetForm(PasswordResetForm):
     email = forms.EmailField(label=_("Email"), max_length=254, widget=forms.EmailInput(attrs={"autocomplete": "email"}))
