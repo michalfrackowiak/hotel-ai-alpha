@@ -153,7 +153,7 @@ def test_email_change_verification_links_bookings_for_new_verified_email(web_cli
 
 
 @pytest.mark.django_db
-def test_email_change_form_rejects_same_or_in_use_email(web_client):
+def test_email_change_form_rejects_same_email_and_neutral_for_unavailable_email(web_client):
     user, _account = _create_verified_guest()
     User.objects.create_user(
         username="taken@example.com",
@@ -179,8 +179,13 @@ def test_email_change_form_rejects_same_or_in_use_email(web_client):
         HTTP_ACCEPT_LANGUAGE="en",
     )
     assert taken.status_code == 200
-    assert "cannot be used" in taken.content.decode().lower()
+    content = taken.content.decode().lower()
+    # Anti-enumeration: unavailable/taken target gets the same neutral "sent"
+    # response, but no token is issued and no verification email is sent.
+    assert "verification link" in content
+    assert "cannot be used" not in content
     assert GuestEmailVerificationToken.objects.filter(user=user).count() == 0
+    assert mail.outbox == []
 
 
 @pytest.mark.django_db

@@ -148,6 +148,7 @@ class GuestEmailChangeForm(forms.Form):
         current = ((getattr(self.user, "email", "") or "") if self.user else "").strip().lower()
         if email and email == current:
             raise ValidationError(_("Enter a different email address."), code="same_email")
-        if email and User.objects.filter(email__iexact=email).exclude(pk=getattr(self.user, "pk", None)).exists():
-            raise ValidationError(_("This email address cannot be used."), code="email_in_use")
+        # Do not reveal whether another account already uses this email address.
+        # The view applies a neutral "verification sent" response but will only
+        # issue/send verification when the target email is eligible.
         return email
