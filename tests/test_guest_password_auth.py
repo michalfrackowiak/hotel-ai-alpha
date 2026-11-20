@@ -666,3 +666,58 @@ def test_password_reset_ip_cooldown_does_not_consume_email_cooldown(client):
     )
     assert response.status_code == 302
     assert len(mail.outbox) == 1
+
+
+@pytest.mark.django_db
+def test_pre_account_booking_becomes_visible_after_register_verify_and_login(
+    client, room_type, rooms, stay_dates, settings
+):
+    """A booking created before account registration is linked and visible after verification."""
+    settings.BOOKING_EMAILS_ENABLED = True
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    assert booking.client.account_id is None
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+
+    verify_path = re.search(r"/my-bookings/verify-email/[^\s]+/", mail.outbox[0].body).group(0)
+    verify = client.get(verify_path, HTTP_ACCEPT_LANGUAGE="en")
+    assert verify.status_code == 200
+
+    booking.client.refresh_from_db()
+    assert booking.client.account_id is not None
+
+    login = client.post(
+        "/my-bookings/password-login/",
+        {"username": "anna@example.com", "password": "correct horse battery"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert login.status_code == 302
+
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
