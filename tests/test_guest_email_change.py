@@ -348,3 +348,56 @@ def test_magic_link_session_still_accesses_account_bookings_after_verified_email
     detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+
+@pytest.mark.django_db
+def test_magic_link_can_be_requested_for_new_email_after_verified_email_change(
+    web_client, room_type, rooms, stay_dates
+):
+    """Verified account email with linked bookings can request magic-link fallback after change."""
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
+    assert booking.client.email == "anna@example.com"
+
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+
+    user.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+
+    response = web_client.post(
+        "/my-bookings/",
+        {"email": "new-anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert "sign-in link is on its way" in response.content.decode()
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["new-anna@example.com"]
+
+    path = re.search(r"/my-bookings/login/[^\s]+", mail.outbox[0].body).group(0)
+    login = web_client.get(path)
+    assert login.status_code == 302
+
+    listing = web_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    content = listing.content.decode()
+    assert booking.reference in content
+    assert "new-anna@example.com" in content
+
+    detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()

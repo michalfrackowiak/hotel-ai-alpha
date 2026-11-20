@@ -31,7 +31,12 @@ def email_has_bookings(email: str) -> bool:
     email = normalise_email(email)
     if not email:
         return False
-    return Booking.objects.filter(client__email__iexact=email).exists()
+    if Booking.objects.filter(client__email__iexact=email).exists():
+        return True
+    account = verified_guest_account_for_email(email)
+    if account is None:
+        return False
+    return Booking.objects.filter(client__account=account).exists()
 
 
 def verified_guest_account_for_email(email: str) -> GuestAccount | None:
