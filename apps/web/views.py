@@ -425,6 +425,15 @@ def _send_guest_verification(request, user, email: str | None = None) -> bool:
 def guest_register(request):
     if request.method != "POST":
         return redirect("web:guest-bookings")
+    client_ip = request.META.get("REMOTE_ADDR", "")
+    if not reserve_guest_ip_action("register", client_ip):
+        # Anti-abuse/anti-enumeration: throttled requests look like success.
+        email = normalise_email(request.POST.get("email"))
+        return render(
+            request,
+            "web/guest_verify_email.html",
+            {"verification_sent": True, "email": email},
+        )
     form = GuestRegistrationForm(request.POST)
     if form.is_valid():
         email = form.cleaned_data["email"]
