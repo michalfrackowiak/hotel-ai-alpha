@@ -23,7 +23,16 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.test import Client
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
+from apps.hotel.guest_access import issue_email_verification_token
+from apps.hotel.models import GuestAccount
+
+User = get_user_model()
 
 VOID_ELEMENTS = {
     "area",
@@ -425,6 +434,42 @@ def _stay_params(room_type, stay_dates) -> dict[str, str]:
     }
 
 
+def _create_guest_user(*, email: str = "guest@example.com", verified: bool = True):
+    user = User.objects.create_user(
+        username=email,
+        email=email,
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Kowalska",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    if verified and account.email_verified_at is None:
+        from django.utils import timezone
+
+        account.email_verified_at = timezone.now()
+        account.save(update_fields=["email_verified_at", "updated_at"])
+    elif not verified and account.email_verified_at is not None:
+        account.email_verified_at = None
+        account.save(update_fields=["email_verified_at", "updated_at"])
+    return user
+
+
+def _guest_client() -> Client:
+    user = _create_guest_user()
+    guest_client = Client()
+    guest_client.force_login(user)
+    return guest_client
+
+
+def _password_reset_confirm_kwargs(user):
+    return {
+        "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
+        "token": default_token_generator.make_token(user),
+    }
+
+
 @pytest.mark.django_db
 def test_book_page_is_accessible(client):
     response = client.get("/book/")
@@ -465,3 +510,272 @@ def test_voice_page_is_accessible_in_polish(client):
 
     assert response.status_code == 200
     _assert_accessible(response.content.decode(), "/voice/ (pl)")
+# ---------------------------------------------------------------------------
+# Guest account pages
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_my_bookings_login_page_is_accessible(client):
+    response = client.get("/my-bookings/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/ (sign-in)")
+
+
+@pytest.mark.django_db
+def test_my_bookings_login_page_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/ (sign-in, pl)")
+
+
+@pytest.mark.django_db
+def test_my_bookings_magic_link_invalid_is_accessible(client):
+    response = client.get("/my-bookings/login/invalid-token/")
+
+    assert response.status_code == 400
+    _assert_accessible(response.content.decode(), "/my-bookings/login/invalid-token/")
+
+
+@pytest.mark.django_db
+def test_my_bookings_magic_link_invalid_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/login/invalid-token/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 400
+    _assert_accessible(response.content.decode(), "/my-bookings/login/invalid-token/ (pl)")
+
+
+@pytest.mark.django_db
+def test_my_bookings_authenticated_guest_page_is_accessible():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/ (authenticated)")
+
+
+@pytest.mark.django_db
+def test_my_bookings_authenticated_guest_page_is_accessible_in_polish():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/ (authenticated, pl)")
+
+
+@pytest.mark.django_db
+def test_guest_profile_page_is_accessible():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/profile/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/profile/")
+
+
+@pytest.mark.django_db
+def test_guest_profile_page_is_accessible_in_polish():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/profile/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/profile/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_change_page_is_accessible():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/password-change/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-change/")
+
+
+@pytest.mark.django_db
+def test_guest_password_change_page_is_accessible_in_polish():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/password-change/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-change/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_change_done_page_is_accessible():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/password-change/done/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-change/done/")
+
+
+@pytest.mark.django_db
+def test_guest_password_change_done_page_is_accessible_in_polish():
+    guest_client = _guest_client()
+    response = guest_client.get("/my-bookings/password-change/done/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-change/done/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_page_is_accessible(client):
+    response = client.get("/my-bookings/password-reset/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_page_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/password-reset/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_done_page_is_accessible(client):
+    response = client.get("/my-bookings/password-reset/done/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/done/")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_done_page_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/password-reset/done/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/done/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_complete_page_is_accessible(client):
+    response = client.get("/my-bookings/password-reset/complete/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/complete/")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_complete_page_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/password-reset/complete/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/complete/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_confirm_invalid_link_is_accessible(client):
+    response = client.get("/my-bookings/password-reset/MQ/invalid-token/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/invalid-link/")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_confirm_invalid_link_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/password-reset/MQ/invalid-token/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/invalid-link/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_confirm_valid_link_is_accessible(client):
+    user = _create_guest_user(email="reset-access@example.com")
+    url = "/my-bookings/password-reset/{uidb64}/{token}/".format(**_password_reset_confirm_kwargs(user))
+
+    response = client.get(url)
+    if response.status_code == 302:
+        response = client.get(response["Location"])
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/valid-link/")
+
+
+@pytest.mark.django_db
+def test_guest_password_reset_confirm_valid_link_is_accessible_in_polish(client):
+    user = _create_guest_user(email="reset-access-pl@example.com")
+    url = "/my-bookings/password-reset/{uidb64}/{token}/".format(**_password_reset_confirm_kwargs(user))
+
+    response = client.get(url, HTTP_ACCEPT_LANGUAGE="pl")
+    if response.status_code == 302:
+        response = client.get(response["Location"], HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/password-reset/valid-link/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_verify_email_invalid_link_is_accessible(client):
+    response = client.get("/my-bookings/verify-email/invalid-token/")
+
+    assert response.status_code == 400
+    _assert_accessible(response.content.decode(), "/my-bookings/verify-email/invalid-token/")
+
+
+@pytest.mark.django_db
+def test_guest_verify_email_invalid_link_is_accessible_in_polish(client):
+    response = client.get("/my-bookings/verify-email/invalid-token/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 400
+    _assert_accessible(response.content.decode(), "/my-bookings/verify-email/invalid-token/ (pl)")
+
+
+@pytest.mark.django_db
+def test_guest_verify_email_verified_page_is_accessible(client):
+    user = _create_guest_user(email="verify-access@example.com", verified=False)
+    _record, raw_token = issue_email_verification_token(user)
+
+    response = client.get(f"/my-bookings/verify-email/{raw_token}/")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/verify-email/verified/")
+
+
+@pytest.mark.django_db
+def test_guest_verify_email_verified_page_is_accessible_in_polish(client):
+    user = _create_guest_user(email="verify-access-pl@example.com", verified=False)
+    _record, raw_token = issue_email_verification_token(user)
+
+    response = client.get(f"/my-bookings/verify-email/{raw_token}/", HTTP_ACCEPT_LANGUAGE="pl")
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/verify-email/verified/ (pl)")
+
+@pytest.mark.django_db
+def test_guest_register_verification_sent_page_is_accessible(client):
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "new-guest@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+    )
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/register/ (verification sent)")
+
+
+@pytest.mark.django_db
+def test_guest_register_verification_sent_page_is_accessible_in_polish(client):
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "new-guest-pl@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="pl",
+    )
+
+    assert response.status_code == 200
+    _assert_accessible(response.content.decode(), "/my-bookings/register/ (verification sent, pl)")
