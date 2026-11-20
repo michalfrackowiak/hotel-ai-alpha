@@ -331,13 +331,12 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 - [x] API read exposure: token-gated booking responses include payment tracking fields
 - [x] Tests, migration, and Polish translations for the payment tracking foundation
 - [x] Guest-facing payment summaries (PR #8, `bba8ccf`): `Booking.amount_due` and token-gated API exposure, payment summary on the guest booking detail page, and payment summary in confirmation email/SMS templates with updated tests and Polish translations
+- [x] Payment audit trail and staff recording path (PR #9, `a9eebf0`): append-only `BookingEvent` payment types (`payment_recorded`/`payment_adjusted`/`payment_refunded`/`payment_waived`, migration `hotel.0018_bookingevent_payment_types`), `record_booking_payment()` single write path, and `manage.py record_payment` staff command with tests and Polish translations
 
 ### Remaining scope
 
 - [ ] Payment amount due/deposit expectations and configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot, with a clear guest-facing summary
-- [ ] Append-only payment/audit events for recorded payments, adjustments, and refunds/waivers recorded by staff
-- [ ] Staff-only API/command paths for recording payment updates as appropriate (beyond direct admin editing)
-- [ ] Additional docs and tests for the remaining payment flow
+- [ ] Additional docs and tests for the remaining payment flow (including any staff-only API path if needed beyond the existing admin/command paths)
 
 ### Out of scope (unless explicitly planned later)
 
