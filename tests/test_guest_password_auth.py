@@ -634,3 +634,35 @@ def test_register_request_is_rate_limited_but_response_stays_neutral(client, set
     assert User.objects.filter(email__iexact="anna@example.com").exists()
     assert not User.objects.filter(email__iexact="other@example.com").exists()
     assert len(mail.outbox) == 1
+
+
+@pytest.mark.django_db
+def test_password_reset_ip_cooldown_does_not_consume_email_cooldown(client):
+    from apps.hotel.guest_access import _throttle_key
+
+    User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    cache.set(_throttle_key("reset-ip", "10.0.0.1"), 1, timeout=60)
+
+    response = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    assert response.status_code == 302
+    assert mail.outbox == []
+
+    response = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+    assert response.status_code == 302
+    assert len(mail.outbox) == 1

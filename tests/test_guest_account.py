@@ -122,6 +122,36 @@ def test_a_magic_link_can_only_be_used_once(client, anna):
 
 
 @pytest.mark.django_db
+def test_magic_link_ip_cooldown_does_not_consume_email_cooldown(client, anna):
+    from apps.hotel.guest_access import _throttle_key
+
+    ip_key = _throttle_key("ip", "10.0.0.1")
+    cache.set(ip_key, 1, timeout=60)
+
+    response = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    assert response.status_code == 200
+    assert "sign-in link is on its way" in response.content.decode()
+    assert mail.outbox == []
+
+    # A different IP must not be blocked by an email cooldown that was never
+    # legitimately reserved for this request.
+    response = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["anna@example.com"]
+
+
+@pytest.mark.django_db
 def test_expired_magic_link_is_rejected(client, anna):
     record, raw_token = issue_login_token("anna@example.com")
     record.expires_at = timezone.now() - timedelta(minutes=1)
