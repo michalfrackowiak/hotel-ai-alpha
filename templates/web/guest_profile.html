@@ -13,6 +13,11 @@
     {% if saved %}
       <p class="notice notice--success" role="status">{% trans "Your account details have been saved." %}</p>
     {% endif %}
+    {% if email_change_sent %}
+      <p class="notice notice--success" role="status">
+        {% blocktrans with email=email_change_target %}If this email address can be used, we sent a verification link to {{ email }}. Open that link to confirm the change.{% endblocktrans %}
+      </p>
+    {% endif %}
 
     <div class="notice notice--muted" role="status">
       <p><strong>{% trans "Email address" %}:</strong> {{ guest_email|default:"-" }}</p>
@@ -26,6 +31,21 @@
       </p>
     </div>
 
+    <h2>{% trans "Change email address" %}</h2>
+    <p class="lookup-card__lede">{% trans "Enter a new email address. We will send a verification link before the change takes effect." %}</p>
+    <form class="lookup-form" method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="form" value="email_change">
+      {{ email_change_form.non_field_errors }}
+      <label class="field" for="{{ email_change_form.new_email.id_for_label }}">
+        <span>{% trans "New email address" %}</span>
+        {{ email_change_form.new_email }}
+      </label>
+      {% if email_change_form.new_email.errors %}<p class="field-error">{{ email_change_form.new_email.errors|join:", " }}</p>{% endif %}
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Send verification link" %}</button>
+    </form>
+
+    <h2>{% trans "Profile details" %}</h2>
     <form class="lookup-form" method="post">
       {% csrf_token %}
       {{ form.non_field_errors }}
@@ -59,6 +79,7 @@
       </label>
       {% if form.marketing_consent.errors %}<p class="field-error">{{ form.marketing_consent.errors|join:", " }}</p>{% endif %}
 
+      <input type="hidden" name="form" value="profile">
       <button class="btn btn--primary btn--block" type="submit">{% trans "Save changes" %}</button>
     </form>
 
