@@ -592,3 +592,40 @@ def test_password_reset_request_for_staff_is_neutral_and_does_not_send(client, s
     assert response.status_code == 302
     assert response["Location"].endswith("/my-bookings/password-reset/done/")
     assert len(mail.outbox) == 0
+
+@pytest.mark.django_db
+def test_register_request_is_rate_limited_but_response_stays_neutral(client, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    first = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.77",
+    )
+    second = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "other@example.com",
+            "first_name": "Other",
+            "last_name": "Guest",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.77",
+    )
+
+    assert first.status_code == 200
+    assert "verification" in first.content.decode().lower() or "check your email" in first.content.decode().lower()
+    assert second.status_code == 200
+    assert "verification" in second.content.decode().lower() or "check your email" in second.content.decode().lower()
+    assert User.objects.filter(email__iexact="anna@example.com").exists()
+    assert not User.objects.filter(email__iexact="other@example.com").exists()
+    assert len(mail.outbox) == 1
