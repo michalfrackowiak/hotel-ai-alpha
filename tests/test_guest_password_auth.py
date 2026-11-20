@@ -346,6 +346,40 @@ def test_register_existing_verified_account_is_neutral_and_does_not_send(client,
 
 
 @pytest.mark.django_db
+def test_register_existing_unverified_account_is_neutral_and_resends_verification(client, settings):
+    settings.BOOKING_EMAILS_ENABLED = True
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert User.objects.filter(email="anna@example.com").count() == 1
+    assert len(mail.outbox) == 1
+    user.refresh_from_db()
+    assert user.is_active is False
+    assert user.check_password("correct horse battery")
+
+
+@pytest.mark.django_db
 def test_staff_user_cannot_access_guest_password_change(client):
     staff = User.objects.create_user(
         username="staff@example.com",
