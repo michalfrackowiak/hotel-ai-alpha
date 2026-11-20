@@ -347,3 +347,101 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 - Automatic capture, chargeback handling, or accounting-system sync
 
 **Exit criteria:** reception can record and review deposit/payment state for a booking from the admin and `/ops/` (and via the staff-only payments API) without editing raw database rows; the guest-facing booking view and confirmations clearly communicate what is due/paid when a deposit or prepayment applies; payment changes are attributable in the audit trail; and existing booking, confirmation, and cancellation flows continue to pass the full gate. **All met in v0.9.0.**
+
+---
+
+## Milestone v0.10.0 - proposed
+
+Theme: **guest accounts and trusted self-service**. Give guests a durable account so they can sign in, manage their profile and review all of their bookings in one place, while keeping the existing link/reference flows as secure fallbacks.
+
+### Must have
+
+1. **Standard guest account registration and login**
+   - Email/password registration, login and logout for guests (separate from Django staff/admin accounts).
+   - Password reset ("forgot password") and secure password change flows.
+   - Email verification/confirmation for new registrations and email changes (prevent account takeover via unverified addresses).
+   - Account settings/profile: name, contact details, preferred language and marketing-consent preferences, kept consistent with `Client` records where appropriate.
+   - Strong password validation (reuse Django validators), CSRF-protected forms, throttling/rate limiting and anti-enumeration responses (neutral messaging, matching current magic-link behaviour).
+
+2. **Google fast registration and login ("Continue with Google")**
+   - OAuth 2.0 / OpenID Connect sign-in with Google for one-click registration and login.
+   - Account linking by verified email (a Google identity with a verified email can attach to an existing guest account; conflicts handled explicitly and safely).
+   - First-login profile bootstrap from Google claims where available (name, email), with guest review/edit in account settings.
+   - Configurable credentials and callback URLs via environment/settings (client id/secret, redirect URI, enable/disable flag); secrets never committed.
+
+3. **Unified "My bookings" and booking access for logged-in guests**
+   - Evolve `/my-bookings/` from magic-link-only access to an authenticated guest account area: after login, show every reservation linked to the guest's verified account/email(s), with status, dates, room/rate, payment/deposit summary and a clear path to the booking detail/manage view.
+   - Link bookings to guest accounts in a backward-compatible way (match/link existing and future bookings by verified email; handle bookings made before account creation). Do not break bookings that only have a phone number.
+   - Preserve existing access paths as fallbacks: signed booking management links, reference + email/phone lookup, and (optionally, as a transitional step) magic-link sign-in for guests who prefer not to create a password account.
+   - Authorization must remain explicit: a logged-in guest may only access bookings they own; the signed token/reference+contact rules remain in force for non-session access. All access paths must be covered by tests.
+
+4. **Data model, security and compatibility**
+   - Introduce a clear guest identity model (e.g. a guest-facing account linked to Django auth/custom user or an equivalent account entity) with a well-defined relationship to `apps.hotel.Client` and bookings; avoid duplicating or forking booking ownership logic.
+   - Migrate/evolve `GuestLoginToken` magic-link flow coherently (keep, deprecate behind a setting, or fold into the new account flows) with a documented transition.
+   - Session/cookie security aligned with production settings (`Secure`/`HttpOnly`/`SameSite`/TLS), brute-force protection, and safe redirect handling on login/callback.
+   - Admin/staff visibility into guest accounts where operationally useful, without exposing secrets; auditability for sensitive account events considered.
+
+5. **UX, i18n, API and quality**
+   - Guest-facing pages/templates for register, login, Google sign-in, logout, forgot/reset password, email verification and account/bookings views, consistent with existing site style and accessibility standards (labels, landmarks, focus, skip link, contrast) and available in **English and Polish** (gettext strings/catalogue updated).
+   - Review and, if needed, extend API/auth surfaces for guest account use cases (e.g. session-based or token-based access for "my bookings") without weakening existing booking-token protections; document any contract changes in `docs/API.md`.
+   - Tests: registration/login/logout, password reset, email verification, Google OAuth happy-path and failure/linking cases (mocked), booking visibility/linking rules, authorization boundaries, throttling/anti-enumeration behaviour, and EN/PL page rendering/accessibility checks.
+   - Dependencies and configuration documented (`.env.example`, README, architecture/memory notes), with migrations committed and the full gate green.
+
+### Should have
+
+- Optional two-step/multi-factor authentication for guest accounts (TOTP or email code) as a later hardening step.
+- "Remember this device" / session management (view and revoke active sessions).
+- Guest notification preferences (email/SMS opt-ins) surfaced in account settings and respected by confirmation/reminder flows.
+- Social login extensibility beyond Google (e.g. Apple, Facebook) via the same integration layer, if/when needed.
+- Guest profile reuse to prefill booking/contact forms and agent-collected contact details (with explicit consent).
+
+### Could have (later)
+
+- Loyalty/profile enrichment (stay history insights, preferences) built on the account model.
+- Unified identity across web, chat and voice (recognise a signed-in or verified guest across channels).
+
+### Out of scope (unless explicitly planned later)
+
+- Replacing Django admin/staff authentication (staff remains on Django auth with appropriate permissions).
+- Direct payment method storage or PCI-sensitive card-on-file handling.
+- Cross-property/account federation beyond the single-hotel deployment model.
+
+**Exit criteria:** a guest can create an account with email/password or sign in/register with Google, verify/control their email, reset their password, and view/manage all bookings linked to their account from a logged-in "My bookings" area in English and Polish; existing signed-link and reference+contact access continue to work; authorization, throttling and anti-enumeration protections are enforced and covered by tests; documentation and migrations are complete and the full gate is green.
+
+---
+
+## Milestone v0.11.0 - proposed
+
+Theme: **platform hardening and commercial readiness**. Build on guest accounts and v0.9.0 payment tracking to move the alpha toward a pilot-grade, integrable product.
+
+### Proposed focus areas
+
+1. **Payments and billing evolution**
+   - Evaluate and integrate a payment provider/acquirer (e.g. Stripe or Adyen) behind a provider abstraction: payment intents/checkout sessions, capture/authorisation aligned with deposit policy, idempotent webhooks, and reconciliation with `record_booking_payment()`/audit events.
+   - Refund flows (policy-aware, auditable), receipt/invoice hooks, and clear guest-facing payment status; keep PCI scope minimal (hosted payment page/elements, no raw card storage).
+   - Strong idempotency, webhook signature verification, and failure/retry handling consistent with existing email/SMS delivery patterns.
+
+2. **Authentication and account security hardening**
+   - Optional MFA for guest accounts, suspicious-login protections, account/session management, and expanded audit events for account and access changes.
+   - Privacy/compliance tooling: data export and erasure workflows for guest accounts/clients, consent records, and retention policies.
+
+3. **API, integrations and identity**
+   - Versioned/public API hardening for partner use (authn/authz model for guests vs staff vs integrations, scopes/tokens where appropriate, pagination/filtering consistency, rate-limit policies).
+   - Deeper channel manager/PMS integration options beyond iCal where justified; idempotent import/export and conflict resolution.
+   - Identity continuity across channels (associate chat/voice sessions with verified guest accounts when available).
+
+4. **Reliability, observability and operations**
+   - Move scheduled/retry workloads to a durable task queue/worker model if operational needs outgrow the cron-style scheduler (visibility, retries, backpressure).
+   - Structured logging/metrics/tracing, alerting hooks for delivery/payment/calendar failures, and SLO-oriented health checks.
+   - Performance/load hardening for search, pricing and `/ops/` at higher booking/message volumes; database indexing/query review.
+
+5. **Product and UX depth**
+   - Post-stay flows (review prompts, receipts), richer modification/change policies, and guest preferences persisted on the account.
+   - Continued accessibility, localisation quality and mobile/PWA refinements based on pilot feedback.
+
+### Out of scope (unless explicitly planned later)
+
+- Full PMS replacement or multi-property tenancy.
+- Storing raw payment card data (PCI-sensitive scope).
+
+**Exit criteria (to be refined when scheduled):** prioritised slices from the focus areas above are delivered with tests, migrations, documentation and security review; operational/payment integrations are idempotent and observable; and the full gate remains green.

@@ -300,4 +300,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.9.0 is released and tagged (`v0.9.0`) on `main`; `develop` is synced with `main`. The next milestone has not been scoped yet. Plan and document it in [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PROJECT_MEMORY.md](docs/PROJECT_MEMORY.md) before starting implementation on `develop`.
+v0.9.0 is released and tagged (`v0.9.0`) on `main`; `develop` is synced with `main`. **v0.10.0 (guest accounts and trusted self-service)** and **v0.11.0 (platform hardening and commercial readiness)** are now proposed in [docs/ROADMAP.md](docs/ROADMAP.md). Break v0.10.0 into implementation slices on `develop` (guest identity/linkage to `Client` with backward-compatible access, standard email/password auth + verification/reset/profile in EN/PL, Google OAuth sign-in/linking, unified authenticated `/my-bookings/` while preserving signed-link/reference+contact/magic-link fallbacks, then API/docs/tests hardening), keep the full gate green per slice, and refine exit criteria/scope before starting. No release cut unless explicitly requested.
