@@ -444,6 +444,12 @@ class Booking(TimeStampedModel):
         AGENT = "agent", _("AI concierge")
         SYSTEM = "system", _("System")
 
+    class PaymentStatus(models.TextChoices):
+        UNPAID = "unpaid", _("Unpaid")
+        PARTIALLY_PAID = "partially_paid", _("Partially paid")
+        PAID = "paid", _("Paid")
+        REFUNDED = "refunded", _("Refunded")
+
     ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED, Status.CHECKED_IN)
     BLOCKING_STATUSES = (Status.CONFIRMED, Status.CHECKED_IN)
 
@@ -491,6 +497,24 @@ class Booking(TimeStampedModel):
         choices=CancelledBy.choices,
         blank=True,
     )
+    payment_status = models.CharField(
+        _("payment status"),
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.UNPAID,
+        db_index=True,
+    )
+    amount_paid = models.DecimalField(
+        _("amount paid"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    payment_method = models.CharField(_("payment method"), max_length=40, blank=True, default="")
+    payment_reference = models.CharField(_("payment reference"), max_length=120, blank=True, default="")
+    paid_at = models.DateTimeField(_("paid at"), null=True, blank=True)
+    payment_notes = models.TextField(_("payment notes"), blank=True, default="")
     confirmation_email_sent_at = models.DateTimeField(_("confirmation email sent at"), null=True, blank=True)
     confirmation_email_status = models.CharField(
         _("confirmation email status"),

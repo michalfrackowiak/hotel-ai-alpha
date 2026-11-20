@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-19 20:33+0100\n"
+"POT-Creation-Date: 2026-11-20 07:32+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -251,6 +251,9 @@ msgstr "Numer rezerwacji"
 #, python-format
 msgid "Bookings can be made at most %(days)s days ahead."
 msgstr "Rezerwacji można dokonać najwyżej %(days)s dni wcześniej."
+
+msgid "Bookings needing payment"
+msgstr "Rezerwacje wymagające płatności"
 
 msgid "Both check-in and check-out dates are required."
 msgstr "Wymagane są daty zameldowania i wymeldowania."
@@ -880,6 +883,9 @@ msgstr "Żadna rezerwacja nie może obejmować tej nocy."
 msgid "No booking yet. Share your dates to get started."
 msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
 
+msgid "No bookings need payment attention."
+msgstr "Brak rezerwacji wymagających uwagi dotyczącej płatności."
+
 msgid "No card details are needed in the chat."
 msgstr "W czacie nie są potrzebne dane karty."
 
@@ -953,6 +959,21 @@ msgstr "Inny"
 
 msgid "Out of order"
 msgstr "Wyłączony z użytku"
+
+msgid "Paid"
+msgstr "Opłacona"
+
+msgid "Partially paid"
+msgstr "Częściowo opłacona"
+
+msgid "Payment"
+msgstr "Płatność"
+
+msgid "Payment attention"
+msgstr "Płatności wymagające uwagi"
+
+msgid "Payment status"
+msgstr "Status płatności"
 
 msgid "Pending"
 msgstr "Oczekująca"
@@ -1069,6 +1090,9 @@ msgstr "Numer"
 
 msgid "Refundable"
 msgstr "Zwrotna"
+
+msgid "Refunded"
+msgstr "Zwrócona"
 
 msgid "Resend confirmation SMS"
 msgstr "Wyślij ponownie SMS z potwierdzeniem"
@@ -1458,6 +1482,9 @@ msgstr "Niedostarczony"
 msgid "Unknown rate plan."
 msgstr "Nieznany plan cenowy."
 
+msgid "Unpaid"
+msgstr "Nieopłacona"
+
 msgid "Updating your reservation…"
 msgstr "Aktualizuję rezerwację…"
 
@@ -1588,6 +1615,9 @@ msgstr "udogodnienia"
 
 msgid "amount"
 msgstr "kwota"
+
+msgid "amount paid"
+msgstr "zapłacona kwota"
 
 msgid "assistant name"
 msgstr "nazwa asystenta"
@@ -1930,6 +1960,21 @@ msgstr "notatki"
 
 msgid "number"
 msgstr "numer"
+
+msgid "paid at"
+msgstr "opłacono"
+
+msgid "payment method"
+msgstr "metoda płatności"
+
+msgid "payment notes"
+msgstr "notatki o płatności"
+
+msgid "payment reference"
+msgstr "numer referencyjny płatności"
+
+msgid "payment status"
+msgstr "status płatności"
 
 msgid "phone"
 msgstr "telefon"

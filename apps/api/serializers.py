@@ -90,6 +90,7 @@ class BookingSerializer(serializers.ModelSerializer):
     source_display = serializers.CharField(source="get_source_display", read_only=True)
     cancellation_reason_display = serializers.CharField(source="get_cancellation_reason_display", read_only=True)
     cancelled_by_display = serializers.CharField(source="get_cancelled_by_display", read_only=True)
+    payment_status_display = serializers.CharField(source="get_payment_status_display", read_only=True)
     confirmation_email_status = serializers.CharField(source="get_confirmation_email_status_display", read_only=True)
     confirmation_sms_status = serializers.CharField(source="get_confirmation_sms_status_display", read_only=True)
     cancellation = serializers.SerializerMethodField()
@@ -132,6 +133,13 @@ class BookingSerializer(serializers.ModelSerializer):
             "cancellation_note",
             "cancelled_by",
             "cancelled_by_display",
+            "payment_status",
+            "payment_status_display",
+            "amount_paid",
+            "payment_method",
+            "payment_reference",
+            "paid_at",
+            "payment_notes",
             "manage_token",
             "manage_url",
             "created_at",
