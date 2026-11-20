@@ -273,16 +273,17 @@ def can_issue_email_verification(request, user) -> bool:
     email = normalise_email(getattr(user, "email", ""))
     if not email:
         return False
-    email_cooldown = int(getattr(settings, "GUEST_EMAIL_VERIFICATION_COOLDOWN_SECONDS", 300) or 0)
-    if email_cooldown > 0 and not cache.add(
-        _throttle_key("verify-email", str(user.pk)), 1, timeout=email_cooldown
-    ):
-        return False
     client_ip = (getattr(request, "META", {}) or {}).get("REMOTE_ADDR", "")
     ip_cooldown = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
-    if client_ip and ip_cooldown > 0 and not cache.add(
-        _throttle_key("verify-ip", client_ip), 1, timeout=ip_cooldown
-    ):
+    ip_key = _throttle_key("verify-ip", client_ip) if client_ip and ip_cooldown > 0 else ""
+    if ip_key and not cache.add(ip_key, 1, timeout=ip_cooldown):
+        return False
+
+    email_cooldown = int(getattr(settings, "GUEST_EMAIL_VERIFICATION_COOLDOWN_SECONDS", 300) or 0)
+    email_key = _throttle_key("verify-email", str(user.pk)) if email_cooldown > 0 else ""
+    if email_key and not cache.add(email_key, 1, timeout=email_cooldown):
+        if ip_key:
+            cache.delete(ip_key)
         return False
     return True
 
@@ -297,16 +298,16 @@ def _reserve_email_request(scope_email: str, scope_ip: str, email: str, client_i
     if not email:
         return False
 
-    email_cooldown = int(getattr(settings, "GUEST_LOGIN_COOLDOWN_SECONDS", 300) or 0)
-    if email_cooldown > 0 and not cache.add(
-        _throttle_key(scope_email, email), 1, timeout=email_cooldown
-    ):
+    ip_cooldown = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
+    ip_key = _throttle_key(scope_ip, client_ip) if client_ip and ip_cooldown > 0 else ""
+    if ip_key and not cache.add(ip_key, 1, timeout=ip_cooldown):
         return False
 
-    ip_cooldown = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
-    if client_ip and ip_cooldown > 0 and not cache.add(
-        _throttle_key(scope_ip, client_ip), 1, timeout=ip_cooldown
-    ):
+    email_cooldown = int(getattr(settings, "GUEST_LOGIN_COOLDOWN_SECONDS", 300) or 0)
+    email_key = _throttle_key(scope_email, email) if email_cooldown > 0 else ""
+    if email_key and not cache.add(email_key, 1, timeout=email_cooldown):
+        if ip_key:
+            cache.delete(ip_key)
         return False
     return True
 
