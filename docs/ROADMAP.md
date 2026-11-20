@@ -337,7 +337,7 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 ### Remaining scope
 
 - [ ] Rate-plan-specific deposit/prepayment policy if needed for the pilot (current policy is hotel-level)
-- [ ] Additional docs and tests for the remaining payment flow (including any staff-only API path if needed beyond the existing admin/command paths)
+- [ ] Staff-only payment-recording API path if needed beyond the existing admin/`record_payment` command (recording and payment audit are already available)
 
 ### Out of scope (unless explicitly planned later)
 
