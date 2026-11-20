@@ -21,6 +21,7 @@ from .models import (
     Client,
     DailyRate,
     EmailDelivery,
+    GuestAccount,
     InboundSmsMessage,
     PricingRule,
     RatePlan,
@@ -154,14 +155,28 @@ class RoomBlockAdmin(admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "email", "phone", "language", "country", "created_at")
+    list_display = ("full_name", "email", "phone", "account", "language", "country", "created_at")
     list_filter = ("language", "country", "marketing_consent")
-    search_fields = ("first_name", "last_name", "email", "phone")
+    search_fields = ("first_name", "last_name", "email", "phone", "account__user__email", "account__user__username")
     readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("account",)
     fieldsets = (
-        (None, {"fields": ("first_name", "last_name", "language", "country")}),
+        (None, {"fields": ("account", "first_name", "last_name", "language", "country")}),
         (_("Contact"), {"fields": ("email", "phone")}),
         (_("Preferences"), {"fields": ("marketing_consent", "notes")}),
+        (_("Metadata"), {"fields": ("created_at", "updated_at")}),
+    )
+
+
+@admin.register(GuestAccount)
+class GuestAccountAdmin(admin.ModelAdmin):
+    list_display = ("user", "email_verified_at", "created_at", "updated_at")
+    list_filter = ("email_verified_at",)
+    search_fields = ("user__email", "user__username", "user__first_name", "user__last_name")
+    autocomplete_fields = ("user",)
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("user", "email_verified_at")}),
         (_("Metadata"), {"fields": ("created_at", "updated_at")}),
     )
 
