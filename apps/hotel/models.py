@@ -324,6 +324,12 @@ class RatePlan(TimeStampedModel):
         PERCENT = "percent", _("Percentage")
         FIXED = "fixed", _("Fixed amount")
 
+    class DepositPolicy(models.TextChoices):
+        INHERIT = "", _("Inherit hotel policy")
+        NONE = "none", _("No deposit")
+        PERCENT = "percent", _("Percentage of total")
+        FIXED = "fixed", _("Fixed amount")
+
     room_type = models.ForeignKey(
         RoomType,
         on_delete=models.CASCADE,
@@ -344,6 +350,22 @@ class RatePlan(TimeStampedModel):
         help_text=_("Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."),
     )
     is_refundable = models.BooleanField(_("refundable"), default=True)
+    deposit_policy = models.CharField(
+        _("deposit policy"),
+        max_length=10,
+        choices=DepositPolicy.choices,
+        blank=True,
+        default="",
+        help_text=_("Override the hotel deposit policy for this rate plan. Leave blank to inherit the hotel setting."),
+    )
+    deposit_value = models.DecimalField(
+        _("deposit value"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_("Deposit percentage or fixed amount when a deposit policy override is selected."),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
 

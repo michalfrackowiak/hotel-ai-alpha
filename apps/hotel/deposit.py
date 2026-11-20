@@ -1,9 +1,10 @@
 ﻿"""Guest deposit/prepayment policy.
 
 The policy is intentionally small and explainable: a hotel-level setting can
-require no deposit, a fixed amount, or a percentage of the booking total. The
-summary is the single source of truth for guest-facing views, confirmations and
-the API so they all communicate the same amounts.
+require no deposit, a fixed amount, or a percentage of the booking total, and a
+rate plan can override that policy for its bookings. The summary is the single
+source of truth for guest-facing views, confirmations and the API so they all
+communicate the same amounts.
 """
 
 from __future__ import annotations
@@ -53,13 +54,17 @@ class DepositSummary:
         }
 
 
-def _policy() -> str:
-    value = str(settings.HOTEL.get("deposit_policy", "none") or "none").strip().lower()
-    return value if value in {"none", "percent", "fixed"} else "none"
+def _normalize_policy(value: object) -> str:
+    normalized = str(value or "none").strip().lower()
+    return normalized if normalized in {"none", "percent", "fixed"} else "none"
 
 
-def _policy_value() -> Decimal:
-    raw = settings.HOTEL.get("deposit_value", 0)
+def _hotel_policy() -> tuple[str, Decimal]:
+    policy = _normalize_policy(settings.HOTEL.get("deposit_policy", "none"))
+    return policy, _normalize_value(settings.HOTEL.get("deposit_value", 0))
+
+
+def _normalize_value(raw: object) -> Decimal:
     try:
         value = Decimal(str(raw))
     except (InvalidOperation, TypeError, ValueError):
@@ -71,10 +76,16 @@ def _quantize_money(value: Decimal) -> Decimal:
     return value.quantize(MONEY)
 
 
-def deposit_amount_for_total(total: Decimal) -> tuple[str, Decimal]:
-    """Return (policy, deposit_amount) for a booking total."""
-    policy = _policy()
-    value = _policy_value()
+def _effective_policy(booking: Booking) -> tuple[str, Decimal]:
+    plan = getattr(booking, "rate_plan", None)
+    if plan is not None:
+        plan_policy = str(getattr(plan, "deposit_policy", "") or "").strip().lower()
+        if plan_policy in {"none", "percent", "fixed"}:
+            return plan_policy, _normalize_value(getattr(plan, "deposit_value", 0))
+    return _hotel_policy()
+
+
+def _amount_for(total: Decimal, policy: str, value: Decimal) -> Decimal:
     total = max(total or Decimal("0"), Decimal("0"))
     if policy == "percent":
         amount = (total * value / Decimal("100")).quantize(MONEY)
@@ -82,15 +93,21 @@ def deposit_amount_for_total(total: Decimal) -> tuple[str, Decimal]:
         amount = value.quantize(MONEY)
     else:
         amount = Decimal("0.00")
-    amount = min(max(amount, Decimal("0.00")), total)
-    return policy, amount
+    return min(max(amount, Decimal("0.00")), total)
+
+
+def deposit_amount_for_total(total: Decimal) -> tuple[str, Decimal]:
+    """Return (policy, deposit_amount) for a booking total using hotel-level settings."""
+    policy, value = _hotel_policy()
+    return policy, _amount_for(total, policy, value)
 
 
 def deposit_summary(booking: Booking) -> DepositSummary:
     total = max(booking.total_price or Decimal("0"), Decimal("0"))
     paid = max(booking.amount_paid or Decimal("0"), Decimal("0"))
     balance_due = max(total - paid, Decimal("0")).quantize(MONEY)
-    policy, amount = deposit_amount_for_total(total)
+    policy, value = _effective_policy(booking)
+    amount = _amount_for(total, policy, value)
     currency = booking.currency or settings.HOTEL["currency"]
 
     if policy == "none" or amount <= Decimal("0.00"):
@@ -105,14 +122,14 @@ def deposit_summary(booking: Booking) -> DepositSummary:
         deposit_due = min(max(amount - paid, Decimal("0")).quantize(MONEY), balance_due)
         due_now = deposit_due
         if policy == "percent":
-            value = _policy_value().normalize()
+            percent_value = format(value, "f").rstrip("0").rstrip(".") or "0"
             if due_now > Decimal("0.00"):
                 policy_text = _(
                     "A deposit of %(deposit)s %(currency)s (%(percent)s%% of the total) is required. "
                     "Amount due now: %(due_now)s %(currency)s. Remaining balance: %(balance)s %(currency)s."
                 ) % {
                     "deposit": amount,
-                    "percent": value,
+                    "percent": percent_value,
                     "due_now": due_now,
                     "balance": balance_due,
                     "currency": currency,
@@ -123,7 +140,7 @@ def deposit_summary(booking: Booking) -> DepositSummary:
                     "The deposit is covered. Remaining balance: %(balance)s %(currency)s."
                 ) % {
                     "deposit": amount,
-                    "percent": value,
+                    "percent": percent_value,
                     "balance": balance_due,
                     "currency": currency,
                 }

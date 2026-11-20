@@ -931,5 +931,15 @@ TRANSLATIONS: dict[str, str] = {
         "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s. "
         "Zaliczka zosta?a pokryta. Pozosta?e saldo: %(balance)s %(currency)s."
     ),
+    # Deposit policy overrides (v0.9.0 rate plans)
+    "Inherit hotel policy": "Dziedzicz polityk? hotelu",
+    "No deposit": "Brak zaliczki",
+    "Percentage of total": "Procent kwoty ca?kowitej",
+    "Override the hotel deposit policy for this rate plan. Leave blank to inherit the hotel setting.": (
+        "Zast?p polityk? zaliczek hotelu dla tego planu cenowego. Pozostaw puste, aby dziedziczy? ustawienie hotelu."
+    ),
+    "Deposit percentage or fixed amount when a deposit policy override is selected.": (
+        "Procent lub sta?a kwota zaliczki, gdy wybrano nadpisanie polityki zaliczek."
+    ),
 
 }

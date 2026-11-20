@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 10:03+0100\n"
+"POT-Creation-Date: 2026-11-20 10:37+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -136,7 +136,7 @@ msgid "All rooms are clean."
 msgstr "Wszystkie pokoje są czyste."
 
 msgid "Amount due now"
-msgstr ""
+msgstr "Do zap?aty teraz"
 
 msgid "Amount must be zero or greater."
 msgstr "Kwota musi by? r?wna zero lub wi?ksza."
@@ -530,8 +530,11 @@ msgstr "Wyjazdy"
 msgid "Departures today"
 msgstr "Dzisiejsze wyjazdy"
 
+msgid "Deposit percentage or fixed amount when a deposit policy override is selected."
+msgstr "Procent lub sta?a kwota zaliczki, gdy wybrano nadpisanie polityki zaliczek."
+
 msgid "Deposit required"
-msgstr ""
+msgstr "Wymagana zaliczka"
 
 msgid "Direct booking"
 msgstr "Rezerwacja bezpośrednia"
@@ -769,6 +772,9 @@ msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
 msgid "Inbound SMS replies"
 msgstr "Przychodzące odpowiedzi SMS"
 
+msgid "Inherit hotel policy"
+msgstr "Dziedzicz polityk? hotelu"
+
 msgid "Inspected"
 msgstr "Sprawdzony"
 
@@ -925,6 +931,9 @@ msgstr "Brak problemów z dostarczaniem."
 msgid "No departures scheduled for today."
 msgstr "Brak zaplanowanych wyjazdów na dziś."
 
+msgid "No deposit"
+msgstr "Brak zaliczki"
+
 msgid "No emails logged yet."
 msgstr "Brak zapisanych e-maili."
 
@@ -987,6 +996,13 @@ msgstr "Inny"
 msgid "Out of order"
 msgstr "Wyłączony z użytku"
 
+msgid ""
+"Override the hotel deposit policy for this rate plan. Leave blank to inherit the "
+"hotel setting."
+msgstr ""
+"Zast?p polityk? zaliczek hotelu dla tego planu cenowego. Pozostaw puste, aby "
+"dziedziczy? ustawienie hotelu."
+
 msgid "Paid"
 msgstr "Opłacona"
 
@@ -1033,6 +1049,9 @@ msgstr "Procent"
 #, python-format
 msgid "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."
 msgstr "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
+
+msgid "Percentage of total"
+msgstr "Procent kwoty ca?kowitej"
 
 msgid "Phone"
 msgstr "Telefon"
@@ -1850,6 +1869,12 @@ msgstr "domyślny identyfikator kalendarza"
 
 msgid "default provider"
 msgstr "domyślny dostawca"
+
+msgid "deposit policy"
+msgstr ""
+
+msgid "deposit value"
+msgstr ""
 
 msgid "description"
 msgstr "opis"

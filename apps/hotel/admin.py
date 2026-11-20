@@ -583,7 +583,19 @@ class RatePlanAdmin(admin.ModelAdmin):
     search_fields = ("name", "slug", "description")
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("sort_order", "name")
-    fields = ("name", "slug", "room_type", "description", "kind", "adjustment", "is_refundable", "is_active", "sort_order")
+    fields = (
+        "name",
+        "slug",
+        "room_type",
+        "description",
+        "kind",
+        "adjustment",
+        "is_refundable",
+        "deposit_policy",
+        "deposit_value",
+        "is_active",
+        "sort_order",
+    )
 
 
 @admin.register(DailyRate)
