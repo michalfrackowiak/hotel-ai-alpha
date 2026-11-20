@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 20 November 2026 - **Version:** v0.9.0 (released) - **Tests:** 313 passing (local gate) on v0.10.0 work from `develop`
+**Last updated:** 20 November 2026 - **Version:** v0.9.0 (released) - **Tests:** 315 passing (local gate) on v0.10.0 work from `develop`
 
 ## Current state
 
@@ -300,6 +300,6 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-`develop` is at `7fd73e1` (PR #31 merged, CI green; 310 tests passing). v0.10.0 core slices are implemented (guest identity/linkage, email/password auth with verification/reset/change, profile/settings + `Client` sync, Google OAuth sign-in/linking, enriched unified `/my-bookings/`) with recent hardening for account-aware authenticated listing/copy, account-linked booking access after verified email change, phone-only reference+contact lookup/open fallback coverage, guest auth authorization/anti-enumeration tests, and EN/PL rendering and accessibility coverage for guest account pages. This slice adds cache-based guest password-login brute-force throttling (`allow_password_login_attempt` + `GUEST_PASSWORD_LOGIN_*` settings) and password-reset request cooldown/throttling with neutral responses, plus coverage (313 tests passing locally). Signed-link/reference+contact/magic-link fallbacks remain preserved.
+`develop` is at `b5da0b6` (PR #32 merged, CI green; 313 tests passing). v0.10.0 core slices are implemented (guest identity/linkage, email/password auth with verification/reset/change, profile/settings + `Client` sync, Google OAuth sign-in/linking, enriched unified `/my-bookings/`) with recent hardening for account-aware authenticated listing/copy, account-linked booking access after verified email change, phone-only reference+contact lookup/open fallback coverage, guest auth authorization/anti-enumeration tests, EN/PL rendering and accessibility coverage for guest account pages, and password-login/reset throttling with anti-enumeration-neutral responses. This slice hardens guest auth anti-enumeration/authorization/linkage coverage: Google OAuth callback no longer reveals staff account type (generic failure response, 400), and adds tests for staff Google callback handling, Google activation+linkage of an existing inactive/unverified guest, and neutral staff password-reset requests (315 tests passing locally). Signed-link/reference+contact/magic-link fallbacks remain preserved.
 
 Remaining v0.10.0 work before milestone completion: finish end-to-end access/unification hardening and coherence across authenticated/magic-link/signed/reference+contact paths (including remaining phone-only and pre-account/linked booking cases), close any remaining profile/email-change consistency gaps, complete security/UX hardening and test coverage (any remaining throttling/rate-limiting, anti-enumeration, authorization, linkage edge cases), and update API/config/docs/roadmap as needed. Keep the full gate green per slice. No release cut unless explicitly requested.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
+from django.utils import timezone
 
 from apps.hotel.booking_service import create_booking
 from apps.hotel.models import GuestAccount
@@ -195,6 +196,69 @@ def test_google_callback_rejects_staff_account(client, settings, monkeypatch):
         HTTP_ACCEPT_LANGUAGE="en",
     )
 
-    assert response.status_code == 403
-    assert "cannot be used" in response.content.decode().lower()
+    assert response.status_code == 400
+    assert "could not be completed" in response.content.decode().lower()
+    assert "cannot be used" not in response.content.decode().lower()
     assert not client.session.get("_auth_user_id")
+
+
+@pytest.mark.django_db
+def test_google_callback_activates_and_links_existing_unverified_guest(
+    client, settings, monkeypatch, room_type, rooms, stay_dates
+):
+    settings.GOOGLE_OAUTH_CLIENT_ID = "client-id"
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = "client-secret"
+    settings.HOTEL["public_url"] = "http://testserver"
+    session = client.session
+    session["google_oauth_state"] = "good-state"
+    session.save()
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    assert booking.client.account_id is None
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="",
+        last_name="",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+
+    fake = _FakeHttpxClient(
+        token_payload={"access_token": "access-token"},
+        userinfo_payload={
+            "email": "anna@example.com",
+            "email_verified": True,
+            "given_name": "Anna",
+            "family_name": "Kowalska",
+        },
+    )
+    monkeypatch.setattr("apps.web.views.httpx.Client", lambda timeout=10.0: fake)
+
+    response = client.get("/my-bookings/google/callback/?state=good-state&code=good-code")
+
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/")
+    user.refresh_from_db()
+    assert user.is_active is True
+    assert user.first_name == "Anna"
+    assert user.last_name == "Kowalska"
+    account = GuestAccount.objects.get(user=user)
+    assert account.is_email_verified is True
+    assert account.email_verified_at is not None
+    assert account.email_verified_at <= timezone.now()
+
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
