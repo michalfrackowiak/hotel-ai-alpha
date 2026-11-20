@@ -299,4 +299,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.8.0 is released and tagged (`v0.8.0`) on `main`; `main` and `develop` are in sync. All roadmap items listed for v0.8.0 are complete (SMS retry/backoff parity with scheduler/command/ops visibility and SMS scheduler load coverage for pending and due retry backlogs). Next milestone scope is not yet defined — choose the next slice and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before starting implementation.
+v0.8.0 is released and tagged (`v0.8.0`) on `main`; `main` and `develop` are in sync. **v0.9.0 (planned, not started)** is scoped in [docs/ROADMAP.md](docs/ROADMAP.md): payments and deposit tracking (manual/admin-first payment state, policy visibility, ops/admin/guest surfaces, audit trail, API/docs/tests/i18n) without direct card processing. Next: refine scope if needed, then branch `feature/v0.9.0-<topic>` from `develop` and implement the first slice. No release has been cut.

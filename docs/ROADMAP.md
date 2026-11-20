@@ -316,3 +316,30 @@ Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SM
 - [x] Scheduler load coverage for pending confirmation SMS backlog and due SMS retry backlog (`tests/test_scheduler_load.py`)
 
 **Exit criteria:** failed or unsent confirmation SMS messages retry automatically on the same operational model as email, and reception can see retry state from `/ops/` and the admin. **All met in v0.8.0.**
+
+---
+
+## Milestone v0.9.0 — Planned
+
+Theme: **payments and deposit tracking**. Record what a guest owes and has paid without introducing card processing into the alpha, so reception can see payment state alongside every booking and the guest journey can reflect it.
+
+### Proposed scope
+
+- [ ] Payment tracking on bookings: amount due, amount paid, currency, payment/deposit status, method/reference, and timestamps (manual/admin-first; no online card capture required in this slice)
+- [ ] Configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot (e.g. no deposit, fixed amount, or percentage of total), with a clear guest-facing summary
+- [ ] Show payment state in booking detail/admin and surface unpaid/deposit-due bookings in `/ops/`
+- [ ] Include payment/deposit summary in confirmation messaging and guest-facing booking views where appropriate
+- [ ] Append-only payment/audit events for recorded payments, adjustments, and refunds/waivers recorded by staff
+- [ ] API fields/endpoints (token-gated where guest-facing) to read payment status; staff-only paths for recording updates as appropriate
+- [ ] Tests, migrations, docs, and Polish translations for the new payment flow
+
+### Out of scope (unless explicitly planned later)
+
+- Direct card/acquirer integration (Stripe/Adyen/etc.) and PCI-sensitive payment form handling
+- Automatic capture, chargeback handling, or accounting-system sync
+
+### Exit criteria
+
+- Reception can record and review deposit/payment state for a booking from the admin and `/ops/` without editing raw database rows.
+- The guest-facing booking view and confirmation clearly communicate what is due/paid when a deposit or prepayment applies.
+- Payment changes are attributable in the audit trail, and existing booking, confirmation, and cancellation flows continue to pass the full gate.
