@@ -569,10 +569,12 @@ def guest_profile(request):
             email_change_form = GuestEmailChangeForm(request.POST, user=user)
             if email_change_form.is_valid():
                 new_email = email_change_form.cleaned_data["new_email"]
-                # Best-effort anti-spam: issue/send only when cooldown allows.
-                # Response remains clear for the account owner without exposing
-                # whether delivery was throttled.
-                _send_guest_verification(request, user, email=new_email)
+                target_taken = User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists()
+                # Best-effort anti-spam: issue/send only when eligible and cooldown allows.
+                # Response remains neutral to avoid revealing whether the target email is
+                # unavailable or delivery was throttled.
+                if not target_taken:
+                    _send_guest_verification(request, user, email=new_email)
                 email_change_sent = True
                 email_change_target = new_email
                 email_change_form = GuestEmailChangeForm(user=user)
