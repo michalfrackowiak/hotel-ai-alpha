@@ -38,7 +38,7 @@ def verified_guest_account_for_email(email: str) -> GuestAccount | None:
     email = normalise_email(email)
     if not email:
         return None
-    return (
+    account = (
         GuestAccount.objects.select_related("user")
         .filter(
             email_verified_at__isnull=False,
@@ -46,6 +46,21 @@ def verified_guest_account_for_email(email: str) -> GuestAccount | None:
             user__is_staff=False,
             user__email__iexact=email,
         )
+        .first()
+    )
+    if account is not None:
+        return account
+    # Fallback: the email may belong to a client linked to a verified account
+    # even after the account's primary/verified email was changed.
+    return (
+        GuestAccount.objects.select_related("user")
+        .filter(
+            email_verified_at__isnull=False,
+            user__is_active=True,
+            user__is_staff=False,
+            clients__email__iexact=email,
+        )
+        .distinct()
         .first()
     )
 
