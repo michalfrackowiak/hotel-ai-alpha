@@ -70,6 +70,9 @@ from apps.hotel.models import (
     RoomType,
     SmsDelivery,
 )
+from apps.hotel.models import (
+    Client as HotelClient,
+)
 from apps.hotel.notifications import (
     max_email_attempts,
     max_sms_attempts,
@@ -615,6 +618,21 @@ def guest_profile(request):
                     if update_fields:
                         update_fields.append("updated_at")
                         client_obj.save(update_fields=update_fields)
+
+                if not linked_clients:
+                    contact_email = normalise_email(getattr(user, "email", ""))
+                    if contact_email:
+                        linked_clients = [
+                            HotelClient.objects.create(
+                                account=account,
+                                first_name=(user.first_name or "").strip() or (contact_email.split("@")[0] or "Guest"),
+                                last_name=(user.last_name or "").strip(),
+                                email=contact_email,
+                                phone=phone,
+                                language=language,
+                                marketing_consent=marketing_consent,
+                            )
+                        ]
                 saved = True
 
     return render(
