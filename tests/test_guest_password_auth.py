@@ -395,3 +395,87 @@ def test_password_reset_confirm_sets_new_password(client):
     )
     user.refresh_from_db()
     assert user.check_password("brand new strong password")
+
+
+@pytest.mark.django_db
+def test_staff_cannot_password_login_via_guest_form(client):
+    User.objects.create_user(
+        username="staff@example.com",
+        email="staff@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+
+    response = client.post(
+        "/my-bookings/password-login/",
+        {"username": "staff@example.com", "password": "correct horse battery"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response.status_code == 400
+    assert not client.session.get("_auth_user_id")
+
+
+@pytest.mark.django_db
+def test_register_existing_staff_email_is_neutral_and_does_not_send(client, settings):
+    settings.BOOKING_EMAILS_ENABLED = True
+    staff = User.objects.create_user(
+        username="staff@example.com",
+        email="staff@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "first_name": "Staff",
+            "last_name": "User",
+            "email": "staff@example.com",
+            "password1": "another strong passphrase",
+            "password2": "another strong passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert mail.outbox == []
+    staff.refresh_from_db()
+    assert staff.is_staff is True
+    assert staff.check_password("correct horse battery")
+
+
+@pytest.mark.django_db
+def test_password_change_done_requires_authenticated_non_staff(client):
+    response = client.get("/my-bookings/password-change/done/")
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/")
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    client.force_login(user)
+    ok = client.get("/my-bookings/password-change/done/", HTTP_ACCEPT_LANGUAGE="en")
+    assert ok.status_code == 200
+
+    staff = User.objects.create_user(
+        username="staff2@example.com",
+        email="staff2@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+    staff_client = Client()
+    staff_client.force_login(staff)
+    denied = staff_client.get("/my-bookings/password-change/done/")
+    assert denied.status_code == 302
+    assert denied["Location"].endswith("/my-bookings/")
