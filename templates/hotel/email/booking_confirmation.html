@@ -42,6 +42,16 @@
                     <td style="padding:6px 0;color:#6b7280;">{% trans "Amount paid" %}</td>
                     <td style="padding:6px 0;text-align:right;">{{ booking.amount_paid }} {{ booking.currency }}</td>
                   </tr>
+                  {% if deposit.applies %}
+                  <tr>
+                    <td style="padding:6px 0;color:#6b7280;">{% trans "Deposit required" %}</td>
+                    <td style="padding:6px 0;text-align:right;">{{ deposit.deposit_amount }} {{ booking.currency }}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 0;color:#6b7280;">{% trans "Amount due now" %}</td>
+                    <td style="padding:6px 0;text-align:right;">{{ deposit.amount_due_now }} {{ booking.currency }}</td>
+                  </tr>
+                  {% endif %}
                   <tr>
                     <td style="padding:6px 0;color:#6b7280;">{% trans "Balance due" %}</td>
                     <td style="padding:6px 0;text-align:right;">{{ booking.amount_due }} {{ booking.currency }}</td>

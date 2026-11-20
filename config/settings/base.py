@@ -180,6 +180,8 @@ HOTEL = {
     "advance_booking_days": int(os.getenv("BOOKING_ADVANCE_DAYS", "365")),
     "cancellation_free_days": int(os.getenv("CANCELLATION_FREE_DAYS", "3")),
     "cancellation_fee_nights": int(os.getenv("CANCELLATION_FEE_NIGHTS", "1")),
+    "deposit_policy": os.getenv("DEPOSIT_POLICY", "none").strip().lower(),
+    "deposit_value": Decimal(os.getenv("DEPOSIT_VALUE", "0")),
     "contact_email": os.getenv("HOTEL_CONTACT_EMAIL", "reception@resort-neptun.example"),
     "contact_phone": os.getenv("HOTEL_CONTACT_PHONE", "+48 58 000 00 00"),
     "address": os.getenv("HOTEL_ADDRESS", "ul. Morska 1, 84-104 Jastrzębia Góra"),

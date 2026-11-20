@@ -31,6 +31,7 @@ from apps.hotel.booking_service import (
     get_booking,
 )
 from apps.hotel.cancellation import cancellation_preview
+from apps.hotel.deposit import deposit_summary
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
     bookings_for_email,
@@ -325,6 +326,7 @@ def booking_detail(request, reference: str):
             "booking": booking,
             "access_token": token,
             "cancellation": cancellation_preview(booking),
+            "deposit": deposit_summary(booking),
             "room_types": RoomType.objects.filter(is_active=True).order_by("sort_order", "base_price", "name"),
             "today": timezone.localdate(),
         },

@@ -6,7 +6,9 @@
 {% trans "Total" %}: {{ booking.total_price }} {{ booking.currency }}
 {% trans "Payment status" %}: {{ booking.get_payment_status_display }}
 {% trans "Amount paid" %}: {{ booking.amount_paid }} {{ booking.currency }}
-{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
+{% if deposit.applies %}{% trans "Deposit required" %}: {{ deposit.deposit_amount }} {{ booking.currency }}
+{% trans "Amount due now" %}: {{ deposit.amount_due_now }} {{ booking.currency }}
+{% endif %}{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
 {{ manage_url }}
 {{ hotel.contact_phone }}
 {% endautoescape %}
