@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -51,14 +56,8 @@ class GuestRegistrationForm(forms.Form):
             except ValidationError as exc:
                 self.add_error("password2", exc)
 
-    def clean(self):
-        cleaned = super().clean()
-        email = cleaned.get("email")
-        if email and User.objects.filter(email__iexact=email).exists():
-            # Avoid account enumeration; registration flow can show a neutral
-            # follow-up, but keep validation usable for now.
-            raise ValidationError(_("An account with this email address already exists."), code="email_exists")
-        return cleaned
+    # Existence checks are handled in the view with a neutral response to avoid
+    # account enumeration. Password and field validation remain form-level.
 
 
 class GuestAuthenticationForm(AuthenticationForm):
@@ -70,3 +69,46 @@ class GuestAuthenticationForm(AuthenticationForm):
             "Please enter a correct email address and password. Note that both fields may be case-sensitive."
         ),
     }
+
+
+class GuestPasswordResetForm(PasswordResetForm):
+    email = forms.EmailField(label=_("Email"), max_length=254, widget=forms.EmailInput(attrs={"autocomplete": "email"}))
+
+    def get_users(self, email):
+        """Only allow password reset for non-staff guest users."""
+        email_field_name = User.get_email_field_name()
+        active_users = User._default_manager.filter(
+            **{f"{email_field_name}__iexact": email, "is_active": True, "is_staff": False}
+        )
+        return (user for user in active_users if user.has_usable_password())
+
+
+class GuestSetPasswordForm(SetPasswordForm):
+    new_password1 = forms.CharField(
+        label=_("New password"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        strip=False,
+    )
+    new_password2 = forms.CharField(
+        label=_("Confirm new password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+
+class GuestPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label=_("Current password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password", "autofocus": True}),
+    )
+    new_password1 = forms.CharField(
+        label=_("New password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    new_password2 = forms.CharField(
+        label=_("Confirm new password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )

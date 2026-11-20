@@ -59,6 +59,7 @@
       {% if login_form and login_form.password.errors %}<p class="field-error">{{ login_form.password.errors|join:", " }}</p>{% endif %}
       <button class="btn btn--primary btn--block" type="submit">{% trans "Sign in" %}</button>
     </form>
+    <p><a class="link-button" href="{% url 'web:guest-password-reset' %}">{% trans "Forgot your password?" %}</a></p>
 
     <hr class="lookup-divider">
 

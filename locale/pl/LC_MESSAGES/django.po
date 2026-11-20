@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 10:37+0100\n"
+"POT-Creation-Date: 2026-11-20 19:45+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -205,6 +205,9 @@ msgstr "Aurora pisze"
 msgid "Availability and prices come from the hotel's booking engine, never from guesswork."
 msgstr "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domysłów."
 
+msgid "Back to My bookings"
+msgstr "Wróć do Moich rezerwacji"
+
 msgid "Back to rooms"
 msgstr "Wróć do pokoi"
 
@@ -351,6 +354,9 @@ msgstr "Pojemność i cena"
 msgid "Change dates or room"
 msgstr "Zmień daty lub pokój"
 
+msgid "Change password"
+msgstr "Zmień hasło"
+
 msgid "Change reservation"
 msgstr "Zmień rezerwację"
 
@@ -390,6 +396,23 @@ msgstr ""
 
 msgid "Check this stay"
 msgstr "Sprawdź ten pobyt"
+
+msgid "Check your email"
+msgstr "Sprawdź swoją skrzynkę e-mail"
+
+msgid ""
+"Check your inbox and spam folder, then open the link to activate your account. The "
+"link can be used once and expires in 24 hours."
+msgstr ""
+"Sprawdź skrzynkę odbiorczą i folder spam, a następnie otwórz link, aby aktywować "
+"konto. Link można użyć jednorazowo i wygasa po 24 godzinach."
+
+msgid ""
+"Check your inbox and spam folder. The link can be used once and may expire for "
+"security reasons."
+msgstr ""
+"Sprawdź skrzynkę odbiorczą i folder spam. Link można użyć jednorazowo i może wygasnąć"
+" ze względów bezpieczeństwa."
 
 msgid "Check-in"
 msgstr "Zameldowanie"
@@ -453,6 +476,12 @@ msgstr "Zgłoszona skarga"
 msgid "Confirm booking"
 msgstr "Potwierdź rezerwację"
 
+msgid "Confirm new password"
+msgstr "Potwierdź nowe hasło"
+
+msgid "Confirm password"
+msgstr "Potwierdź hasło"
+
 msgid "Confirm selected bookings"
 msgstr "Potwierdź wybrane rezerwacje"
 
@@ -489,6 +518,12 @@ msgstr "Rozmowa"
 msgid "Conversation language"
 msgstr "Język rozmowy"
 
+msgid "Create account"
+msgstr "Utwórz konto"
+
+msgid "Create an account"
+msgstr "Utwórz konto"
+
 msgid "Created"
 msgstr "Utworzono"
 
@@ -497,6 +532,9 @@ msgstr "Dane uwierzytelniające"
 
 msgid "Currency"
 msgstr "Waluta"
+
+msgid "Current password"
+msgstr "Obecne hasło"
 
 msgid "Dates"
 msgstr "Terminy"
@@ -596,6 +634,13 @@ msgstr "Angielski"
 msgid "English prompts"
 msgstr "Podpowiedzi angielskie"
 
+msgid ""
+"Enter the email address for your guest account. If an account exists, we will send a "
+"link to reset your password."
+msgstr ""
+"Wpisz adres e-mail powiązany z kontem gościa. Jeśli konto istnieje, wyślemy link do "
+"zresetowania hasła."
+
 msgid "Enter the email address or phone number you booked with to protect your reservation."
 msgstr ""
 "Podaj adres e-mail lub numer telefonu użyty przy rezerwacji, aby chronić swoją "
@@ -607,6 +652,9 @@ msgid ""
 msgstr ""
 "Podaj adres e-mail użyty przy rezerwacji. Wyślemy jednorazowy link, który otworzy "
 "wszystkie rezerwacje powiązane z tym adresem."
+
+msgid "Enter your current password and choose a new one."
+msgstr "Wpisz obecne hasło i wybierz nowe."
 
 msgid ""
 "Enter your reference and the email address or phone number you booked with. We will "
@@ -663,6 +711,9 @@ msgstr "Stała kwota"
 msgid "Fixed amount per night"
 msgstr "Stała kwota za noc"
 
+msgid "Forgot your password?"
+msgstr "Nie pamiętasz hasła?"
+
 msgid "Found another option"
 msgstr "Znaleziono inną opcję"
 
@@ -707,12 +758,22 @@ msgid "Held until"
 msgstr "Zablokowane do"
 
 #, python-format
+msgid "Hello, Please confirm your email address to activate your guest account at %(hotel)s."
+msgstr "Witaj, potwierdź swój adres e-mail, aby aktywować konto gościa w %(hotel)s."
+
+#, python-format
 msgid ""
 "Hello, Use the link below to open your booking account at %(hotel)s. You will see "
 "every reservation made with this email address."
 msgstr ""
 "Dzień dobry, użyj poniższego linku, aby otworzyć konto rezerwacji w %(hotel)s. "
 "Zobaczysz wszystkie rezerwacje złożone na ten adres e-mail."
+
+#, python-format
+msgid ""
+"Hello, We received a request to reset the password for your guest account at "
+"%(hotel)s."
+msgstr "Witaj, otrzymaliśmy prośbę o zresetowanie hasła do konta gościa w %(hotel)s."
 
 msgid "Hold"
 msgstr "Blokada"
@@ -757,6 +818,33 @@ msgid ""
 msgstr ""
 "Jeśli %(email)s ma u nas rezerwację, link do logowania jest już w drodze. Sprawdź "
 "skrzynkę odbiorczą i folder spam."
+
+#, python-format
+msgid ""
+"If an account can be created or verified for %(email)s, a verification email is on "
+"its way."
+msgstr ""
+"Jeśli dla adresu %(email)s można utworzyć lub zweryfikować konto, wiadomość "
+"weryfikacyjna jest w drodze."
+
+msgid ""
+"If an account exists for the email address you entered, a password reset link is on "
+"its way."
+msgstr ""
+"Jeśli dla podanego adresu e-mail istnieje konto, link do zresetowania hasła jest w "
+"drodze."
+
+msgid ""
+"If you did not request a password reset, you can ignore this message. Your password "
+"will not change."
+msgstr ""
+"Jeśli nie prosiłeś(-aś) o zresetowanie hasła, możesz zignorować tę wiadomość. Twoje "
+"hasło nie zostanie zmienione."
+
+msgid "If you have a guest account, sign in to see all bookings linked to your email."
+msgstr ""
+"Jeśli masz konto gościa, zaloguj się, aby zobaczyć wszystkie rezerwacje powiązane z "
+"Twoim adresem e-mail."
 
 msgid ""
 "If you need to change or cancel your reservation, use the link above or contact "
@@ -882,6 +970,9 @@ msgstr "Potrzebujesz człowieka?"
 
 msgid "New conversation started."
 msgstr "Rozpoczęto nową rozmowę."
+
+msgid "New password"
+msgstr "Nowe hasło"
 
 msgid "Next month"
 msgstr "Następny miesiąc"
@@ -1009,6 +1100,18 @@ msgstr "Opłacona"
 msgid "Partially paid"
 msgstr "Częściowo opłacona"
 
+msgid "Password"
+msgstr "Hasło"
+
+msgid "Password changed"
+msgstr "Hasło zmienione"
+
+msgid "Password reset complete"
+msgstr "Resetowanie hasła zakończone"
+
+msgid "Password updated"
+msgstr "Hasło zaktualizowane"
+
 msgid "Payment"
 msgstr "Płatność"
 
@@ -1064,8 +1167,22 @@ msgstr "Wybierz terminy, taryfę i podaj dane kontaktowe. Potwierdzenie wyślemy
 msgid "Plans changed"
 msgstr "Zmiana planów"
 
+#, python-format
+msgid "Please confirm your email address to activate your guest account at %(hotel)s."
+msgstr "Potwierdź swój adres e-mail, aby aktywować konto gościa w %(hotel)s."
+
+msgid ""
+"Please enter a correct email address and password. Note that both fields may be case-"
+"sensitive."
+msgstr ""
+"Wpisz poprawny adres e-mail i hasło. Pamiętaj, że w obu polach wielkość liter może "
+"mieć znaczenie."
+
 msgid "Please enter your first name."
 msgstr "Podaj imię."
+
+msgid "Please enter your new password twice so we can verify you typed it correctly."
+msgstr "Wpisz nowe hasło dwukrotnie, abyśmy mogli sprawdzić, czy zostało wpisane poprawnie."
 
 msgid "Please provide an email address or a phone number."
 msgstr "Podaj adres e-mail lub numer telefonu."
@@ -1159,6 +1276,14 @@ msgstr "Zwrotna"
 msgid "Refunded"
 msgstr "Zwrócona"
 
+msgid "Register with your email and a password to access your bookings anytime."
+msgstr ""
+"Zarejestruj się, podając adres e-mail i hasło, aby mieć dostęp do swoich rezerwacji w"
+" dowolnym momencie."
+
+msgid "Request a new reset link"
+msgstr "Poproś o nowy link resetujący"
+
 msgid "Resend confirmation SMS"
 msgstr "Wyślij ponownie SMS z potwierdzeniem"
 
@@ -1176,6 +1301,13 @@ msgstr "Rezerwacja potwierdzona. Do zobaczenia!"
 
 msgid "Reservation updated."
 msgstr "Rezerwacja zaktualizowana."
+
+msgid "Reset password"
+msgstr "Zresetuj hasło"
+
+#, python-format
+msgid "Reset your %(hotel)s account password"
+msgstr "Zresetuj hasło do konta %(hotel)s"
 
 msgid "Retry calendar sync"
 msgstr "Ponów synchronizację kalendarza"
@@ -1234,6 +1366,9 @@ msgstr "SMS-y oczekujące na ponowną próbę"
 msgid "Save changes"
 msgstr "Zapisz zmiany"
 
+msgid "Save new password"
+msgstr "Zapisz nowe hasło"
+
 msgid "Save rate calendar"
 msgstr "Zapisz kalendarz stawek"
 
@@ -1251,6 +1386,9 @@ msgstr "Zobacz rzeczywistą dostępność"
 
 msgid "Send"
 msgstr "Wyślij"
+
+msgid "Send reset link"
+msgstr "Wyślij link resetujący"
 
 msgid "Send sign-in link"
 msgstr "Wyślij link do logowania"
@@ -1278,8 +1416,20 @@ msgstr ""
 "Klucz konta usługi w formacie JSON lub token autoryzowanego użytkownika. "
 "Alternatywnie ustaw GOOGLE_CALENDAR_CREDENTIALS_FILE w środowisku."
 
+msgid "Set a new password"
+msgstr "Ustaw nowe hasło"
+
+msgid "Set new password"
+msgstr "Ustaw nowe hasło"
+
 msgid "Show rooms"
 msgstr "Pokaż pokoje"
+
+msgid "Sign in"
+msgstr "Zaloguj się"
+
+msgid "Sign in with password"
+msgstr "Zaloguj się hasłem"
 
 msgid "Sign out"
 msgstr "Wyloguj się"
@@ -1389,6 +1539,9 @@ msgstr ""
 "Ten link do logowania jest nieprawidłowy, został już użyty lub wygasł. Poproś o nowy "
 "poniżej."
 
+msgid "That verification link is invalid, already used or expired."
+msgstr "Ten link weryfikacyjny jest nieprawidłowy, został już użyty lub wygasł."
+
 msgid "The Google Calendar id dedicated to this room."
 msgstr "Identyfikator kalendarza Google przypisanego do tego pokoju."
 
@@ -1440,6 +1593,9 @@ msgstr "Wybrany typ pokoju jest niedostępny."
 msgid "The shift at a glance for %(date)s."
 msgstr "Zmiana w skrócie na %(date)s."
 
+msgid "The two password fields didn't match."
+msgstr "Podane hasła nie są zgodne."
+
 msgid "The voice concierge is unavailable right now. Please use chat instead."
 msgstr "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
 
@@ -1484,11 +1640,21 @@ msgid "This is a temporary hold. Cancelling it is free."
 msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
 
 msgid ""
+"This link can be used once and expires in 24 hours. If you did not create an account,"
+" you can ignore this message."
+msgstr ""
+"Ten link można użyć jednorazowo i wygasa po 24 godzinach. Jeśli nie zakładałeś(-aś) "
+"konta, możesz zignorować tę wiadomość."
+
+msgid ""
 "This link can be used once and expires in 30 minutes. If you did not request it, you "
 "can ignore this message."
 msgstr ""
 "Ten link można użyć tylko raz i wygasa po 30 minutach. Jeśli go nie zamawiałeś, "
 "zignoruj tę wiadomość."
+
+msgid "This password reset link is invalid or has expired. Please request a new one."
+msgstr "Ten link do resetowania hasła jest nieprawidłowy lub wygasł. Poproś o nowy."
 
 msgid "This rate plan is not available for the selected room type."
 msgstr "Ten plan cenowy nie jest dostępny dla wybranego typu pokoju."
@@ -1564,8 +1730,24 @@ msgstr ""
 "Użyj poniższego przycisku, aby otworzyć konto rezerwacji w %(hotel)s. Zobaczysz "
 "wszystkie rezerwacje złożone na ten adres e-mail."
 
+msgid "Use the link below to choose a new password:"
+msgstr "Użyj poniższego linku, aby wybrać nowe hasło:"
+
 msgid "Validity"
 msgstr "Ważność"
+
+msgid "Verify email"
+msgstr "Zweryfikuj e-mail"
+
+msgid "Verify email address"
+msgstr "Zweryfikuj adres e-mail"
+
+#, python-format
+msgid "Verify your %(hotel)s account email"
+msgstr "Zweryfikuj adres e-mail konta %(hotel)s"
+
+msgid "Verify your email"
+msgstr "Zweryfikuj swój adres e-mail"
 
 msgid "View booking"
 msgstr "Zobacz rezerwację"
@@ -1588,6 +1770,10 @@ msgid ""
 msgstr ""
 "Nie udało się dopasować numeru rezerwacji i danych kontaktowych. Sprawdź je i spróbuj"
 " ponownie lub zadzwoń na recepcję."
+
+#, python-format
+msgid "We received a request to reset the password for your guest account at %(hotel)s."
+msgstr "Otrzymaliśmy prośbę o zresetowanie hasła do konta gościa w %(hotel)s."
 
 msgid "Website"
 msgstr "Strona internetowa"
@@ -1612,6 +1798,12 @@ msgstr "Ty"
 
 msgid "You can ask to cancel or look up an existing booking."
 msgstr "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
+
+msgid "You can create an account again to receive a new verification email."
+msgstr "Możesz ponownie utworzyć konto, aby otrzymać nową wiadomość weryfikacyjną."
+
+msgid "You can now sign in with your password to view your bookings."
+msgstr "Możesz teraz zalogować się hasłem, aby zobaczyć swoje rezerwacje."
 
 msgid ""
 "You can still open a single reservation with its reference and the email or phone "
@@ -1641,8 +1833,18 @@ msgstr ""
 msgid "Your details"
 msgstr "Twoje dane"
 
+#, python-format
+msgid "Your email address %(email)s has been verified."
+msgstr "Twój adres e-mail %(email)s został zweryfikowany."
+
 msgid "Your message"
 msgstr "Twoja wiadomość"
+
+msgid "Your password has been changed successfully."
+msgstr "Twoje hasło zostało pomyślnie zmienione."
+
+msgid "Your password has been set. You can now sign in with your new password."
+msgstr "Twoje hasło zostało ustawione. Możesz teraz zalogować się nowym hasłem."
 
 msgid "Your reservation"
 msgstr "Twoja rezerwacja"
@@ -1871,10 +2073,10 @@ msgid "default provider"
 msgstr "domyślny dostawca"
 
 msgid "deposit policy"
-msgstr ""
+msgstr "Polityka depozytu"
 
 msgid "deposit value"
-msgstr ""
+msgstr "Wartość depozytu"
 
 msgid "description"
 msgstr "opis"
@@ -1887,6 +2089,9 @@ msgstr "dostawy e-maili"
 
 msgid "email delivery"
 msgstr "dostawa e-maila"
+
+msgid "email verified at"
+msgstr "E-mail zweryfikowany dnia"
 
 msgid "enabled"
 msgstr "włączony"
@@ -1950,6 +2155,18 @@ msgstr "powitanie (polskie)"
 
 msgid "guest"
 msgstr "gość"
+
+msgid "guest account"
+msgstr "Konto gościa"
+
+msgid "guest accounts"
+msgstr "Konta gości"
+
+msgid "guest email verification token"
+msgstr "Token weryfikacji e-mail gościa"
+
+msgid "guest email verification tokens"
+msgstr "Tokeny weryfikacji e-mail gościa"
 
 msgid "guest login token"
 msgstr "token logowania gościa"
@@ -2196,6 +2413,9 @@ msgstr "do"
 
 msgid "used at"
 msgstr "użyto o"
+
+msgid "user"
+msgstr "Użytkownik"
 
 msgid "valid from"
 msgstr "ważna od"

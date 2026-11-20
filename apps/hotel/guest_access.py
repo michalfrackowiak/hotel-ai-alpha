@@ -18,7 +18,7 @@ from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
-from .models import Booking, GuestLoginToken
+from .models import Booking, GuestAccount, GuestEmailVerificationToken, GuestLoginToken
 
 GUEST_SESSION_KEY = "guest_email"
 
@@ -94,6 +94,85 @@ def guest_session_matches(request, booking: Booking) -> bool:
             return True
     email = session_email(request)
     return bool(email) and email == normalise_email(booking.client.email)
+
+
+def issue_email_verification_token(user, email: str | None = None) -> tuple[GuestEmailVerificationToken, str] | None:
+    """Create a single-use email verification token for a guest user."""
+    if user is None or getattr(user, "is_staff", False):
+        return None
+    email = normalise_email(email or getattr(user, "email", ""))
+    if not email:
+        return None
+
+    now = timezone.now()
+    GuestEmailVerificationToken.objects.filter(user=user).filter(
+        Q(expires_at__lte=now) | Q(used_at__isnull=False)
+    ).delete()
+
+    raw_token = secrets.token_urlsafe(32)
+    max_age_minutes = int(getattr(settings, "GUEST_EMAIL_VERIFICATION_MAX_AGE_MINUTES", 24 * 60) or 24 * 60)
+    record = GuestEmailVerificationToken.objects.create(
+        user=user,
+        email=email,
+        token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+        expires_at=now + timedelta(minutes=max_age_minutes),
+    )
+    return record, raw_token
+
+
+def consume_email_verification_token(raw_token: str | None) -> str | None:
+    """Mark a verification token used and return the verified email, or ``None``."""
+    raw_token = (raw_token or "").strip()
+    if not raw_token:
+        return None
+
+    digest = hashlib.sha256(raw_token.encode()).hexdigest()
+    with transaction.atomic():
+        record = (
+            GuestEmailVerificationToken.objects.select_for_update()
+            .select_related("user")
+            .filter(token_hash=digest)
+            .first()
+        )
+        if record is None or not record.is_usable:
+            return None
+        now = timezone.now()
+        record.used_at = now
+        record.save(update_fields=["used_at"])
+        user = record.user
+        email = normalise_email(record.email)
+        if email and normalise_email(getattr(user, "email", "")) != email:
+            user.email = email
+            user.save(update_fields=["email"])
+        account, _created = GuestAccount.objects.get_or_create(user=user)
+        if account.email_verified_at is None:
+            account.email_verified_at = now
+            account.save(update_fields=["email_verified_at", "updated_at"])
+        if not getattr(user, "is_active", False) and not getattr(user, "is_staff", False):
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+    return email
+
+
+def can_issue_email_verification(request, user) -> bool:
+    """Cache-based cooldown so verification emails cannot be spammed."""
+    if user is None:
+        return False
+    email = normalise_email(getattr(user, "email", ""))
+    if not email:
+        return False
+    email_cooldown = int(getattr(settings, "GUEST_EMAIL_VERIFICATION_COOLDOWN_SECONDS", 300) or 0)
+    if email_cooldown > 0 and not cache.add(
+        _throttle_key("verify-email", str(user.pk)), 1, timeout=email_cooldown
+    ):
+        return False
+    client_ip = (getattr(request, "META", {}) or {}).get("REMOTE_ADDR", "")
+    ip_cooldown = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
+    if client_ip and ip_cooldown > 0 and not cache.add(
+        _throttle_key("verify-ip", client_ip), 1, timeout=ip_cooldown
+    ):
+        return False
+    return True
 
 
 def _throttle_key(scope: str, value: str) -> str:

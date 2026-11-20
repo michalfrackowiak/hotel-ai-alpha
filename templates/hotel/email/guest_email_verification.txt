@@ -1,0 +1,12 @@
+{% load i18n %}{% autoescape off %}{% blocktrans with hotel=hotel.name %}Hello,
+
+Please confirm your email address to activate your guest account at {{ hotel }}.{% endblocktrans %}
+
+{{ verification_url }}
+
+{% trans "This link can be used once and expires in 24 hours. If you did not create an account, you can ignore this message." %}
+
+{{ hotel.name }}
+{{ hotel.address }}
+{{ hotel.contact_phone }} · {{ hotel.contact_email }}
+{% endautoescape %}
