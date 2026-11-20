@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 240 passing
+**Last updated:** 20 November 2026 - **Version:** v0.9.0 - **Tests:** 240 passing
 
 ## Current state
 
@@ -12,9 +12,10 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Confirmation SMS is delivered through a pluggable provider layer: the offline `console` provider by default, or Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded as a `SmsDelivery` row; the booking stores the current SMS delivery state/attempt/retry metadata. Failed or unsent confirmations are retried with exponential backoff from the scheduler (`send_booking_sms`, `SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`), and `/ops/` shows SMS delivery health, retries and problem deliveries. Provider delivery-receipt webhooks (`POST /api/v1/sms/webhooks/<provider>/`, gated by `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret` when configured) update the booking and matching/latest delivery, and inbound guest replies are stored as `InboundSmsMessage` records (linked to a booking by normalized phone when possible). Read-only SMS delivery history and inbound replies are shown in `/ops/` and the admin.
 - Non-booking enquiries and explicit requests for a receptionist call `transfer_to_human`, which records a handover request in the conversation state.
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
+- Payments and deposits are tracked manually/admin-first (no direct card processing): bookings record payment state/amounts/method/reference/notes, hotel-level and per-rate-plan deposit policies determine deposit/amount-due-now, guest views/confirmations/API expose payment+deposit summaries, and staff can record payment changes via admin, `manage.py record_payment`, or the staff-only `POST /api/v1/bookings/<reference>/payments/` API (append-only payment audit events, `hotel.0017`–`0019`).
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.6.10` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.9.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -299,4 +300,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.8.0 is released and tagged (`v0.8.0`) on `main`; `develop` includes the **v0.9.0 payment tracking foundation** (PR #7, `616ea2b`, migration `hotel.0017_booking_payment_tracking`), **guest-facing payment summaries** (PR #8, `bba8ccf`), **payment audit trail + staff recording path** (PR #9, `a9eebf0`, migration `hotel.0018_bookingevent_payment_types`), **hotel-level deposit/prepayment policy and guest-facing deposit summary** (PR #10, `83567e6`), **payment/deposit documentation alignment** (PR #11, `10eeb55`), **rate-plan-specific deposit/prepayment policy overrides** (PR #12, `a0cf96d`, migration `hotel.0019_rateplan_deposit_policy`), and **staff-only payment-recording API** (PR #13, `05555d7`): `POST /api/v1/bookings/<reference>/payments/` for authenticated `is_staff` users (DRF `IsAdminUser`, no guest booking tokens), accepting `record_payment`-aligned fields and returning the updated booking via `record_booking_payment()` (append-only audit). **v0.9.0 planned scope is implemented on `develop`** (see [docs/ROADMAP.md](docs/ROADMAP.md)); no remaining items are listed. Next: reassess whether a v0.9.0 release cut is desired (no release cut unless explicitly asked).
+v0.9.0 is released and tagged (`v0.9.0`) on `main`; `develop` is synced with `main`. The next milestone has not been scoped yet. Plan and document it in [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PROJECT_MEMORY.md](docs/PROJECT_MEMORY.md) before starting implementation on `develop`.
