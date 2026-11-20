@@ -1,9 +1,8 @@
-from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from . import views
-from .forms import GuestPasswordResetForm, GuestSetPasswordForm
+from .forms import GuestSetPasswordForm
 
 app_name = "web"
 
@@ -23,15 +22,7 @@ urlpatterns = [
     path("my-bookings/verify-email/<str:token>/", views.guest_verify_email, name="guest-verify-email"),
     path(
         "my-bookings/password-reset/",
-        auth_views.PasswordResetView.as_view(
-            template_name="web/guest_password_reset.html",
-            email_template_name="hotel/email/guest_password_reset.txt",
-            subject_template_name="hotel/email/guest_password_reset_subject.txt",
-            html_email_template_name="hotel/email/guest_password_reset.html",
-            form_class=GuestPasswordResetForm,
-            success_url=reverse_lazy("web:guest-password-reset-done"),
-            extra_email_context={"hotel": settings.HOTEL},
-        ),
+        views.GuestPasswordResetView.as_view(),
         name="guest-password-reset",
     ),
     path(

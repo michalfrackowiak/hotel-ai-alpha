@@ -272,21 +272,65 @@ def _throttle_key(scope: str, value: str) -> str:
     return f"guest-login:{scope}:{digest}"
 
 
-def reserve_login_request(email: str, client_ip: str = "") -> bool:
-    """Cache-based cooldown so the form cannot be used to bomb an inbox."""
+def _reserve_email_request(scope_email: str, scope_ip: str, email: str, client_ip: str = "") -> bool:
     email = normalise_email(email)
     if not email:
         return False
 
     email_cooldown = int(getattr(settings, "GUEST_LOGIN_COOLDOWN_SECONDS", 300) or 0)
     if email_cooldown > 0 and not cache.add(
-        _throttle_key("email", email), 1, timeout=email_cooldown
+        _throttle_key(scope_email, email), 1, timeout=email_cooldown
     ):
         return False
 
     ip_cooldown = int(getattr(settings, "GUEST_LOGIN_IP_COOLDOWN_SECONDS", 60) or 0)
     if client_ip and ip_cooldown > 0 and not cache.add(
-        _throttle_key("ip", client_ip), 1, timeout=ip_cooldown
+        _throttle_key(scope_ip, client_ip), 1, timeout=ip_cooldown
     ):
         return False
+    return True
+
+
+def reserve_login_request(email: str, client_ip: str = "") -> bool:
+    """Cache-based cooldown so the form cannot be used to bomb an inbox."""
+    return _reserve_email_request("email", "ip", email, client_ip)
+
+
+def reserve_password_reset_request(email: str, client_ip: str = "") -> bool:
+    """Cache-based cooldown so password reset emails cannot be spammed."""
+    return _reserve_email_request("reset-email", "reset-ip", email, client_ip)
+
+
+def _increment_throttle(scope: str, value: str, window: int) -> int:
+    key = _throttle_key(scope, value)
+    if cache.add(key, 1, timeout=window):
+        return 1
+    try:
+        return int(cache.incr(key))
+    except ValueError:
+        cache.set(key, 1, timeout=window)
+        return 1
+
+
+def allow_password_login_attempt(email: str, client_ip: str = "") -> bool:
+    """Return True when a guest password-login attempt is within rate limits.
+
+    Attempts are counted per email address and per client IP in a fixed window
+    to slow brute-force guessing. The caller should return the same generic
+    failure response when this returns False to avoid enumeration side channels.
+    """
+    email = normalise_email(email)
+    window = int(getattr(settings, "GUEST_PASSWORD_LOGIN_WINDOW_SECONDS", 900) or 0)
+    if window <= 0:
+        return True
+
+    if email:
+        limit = int(getattr(settings, "GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL", 10) or 0)
+        if limit > 0 and _increment_throttle("pwd-email", email, window) > limit:
+            return False
+
+    if client_ip:
+        limit = int(getattr(settings, "GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP", 20) or 0)
+        if limit > 0 and _increment_throttle("pwd-ip", client_ip, window) > limit:
+            return False
     return True

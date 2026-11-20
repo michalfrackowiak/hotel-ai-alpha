@@ -13,11 +13,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import views as auth_views
 from django.db import connection
 from django.db.models import Q, QuerySet
+from django.forms.utils import ErrorDict
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone, translation
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext as _
@@ -40,6 +42,7 @@ from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.deposit import deposit_summary
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
+    allow_password_login_attempt,
     bookings_for_email,
     can_issue_email_verification,
     consume_email_verification_token,
@@ -50,6 +53,7 @@ from apps.hotel.guest_access import (
     link_clients_for_guest_account,
     normalise_email,
     reserve_login_request,
+    reserve_password_reset_request,
     session_email,
 )
 from apps.hotel.models import (
@@ -77,6 +81,7 @@ from .forms import (
     GuestAuthenticationForm,
     GuestEmailChangeForm,
     GuestPasswordChangeForm,
+    GuestPasswordResetForm,
     GuestProfileForm,
     GuestRegistrationForm,
 )
@@ -358,8 +363,14 @@ def guest_login(request, token: str):
 def guest_password_login(request):
     if request.method != "POST":
         return redirect("web:guest-bookings")
+
+    submitted_email = normalise_email(request.POST.get("username"))
+    client_ip = request.META.get("REMOTE_ADDR", "")
+    attempt_allowed = allow_password_login_attempt(submitted_email, client_ip)
+
     form = GuestAuthenticationForm(request, data=request.POST)
-    if form.is_valid():
+    valid = form.is_valid()
+    if attempt_allowed and valid:
         user = form.get_user()
         if user is None or user.is_staff or not getattr(user, "is_active", False):
             form.add_error(None, form.error_messages["invalid_login"])
@@ -368,6 +379,12 @@ def guest_password_login(request):
             request.session.pop(GUEST_SESSION_KEY, None)
             request.session.cycle_key()
             return redirect("web:guest-bookings")
+
+    if not attempt_allowed:
+        # Anti-enumeration: throttled attempts get the same generic failure.
+        form._errors = ErrorDict()
+        form.add_error(None, form.error_messages["invalid_login"])
+
     return render(
         request,
         "web/guest_login.html",
@@ -471,6 +488,25 @@ def guest_verify_email(request, token: str):
         "web/guest_verify_email.html",
         {"verified": True, "email": email},
     )
+
+
+class GuestPasswordResetView(auth_views.PasswordResetView):
+    template_name = "web/guest_password_reset.html"
+    email_template_name = "hotel/email/guest_password_reset.txt"
+    subject_template_name = "hotel/email/guest_password_reset_subject.txt"
+    html_email_template_name = "hotel/email/guest_password_reset.html"
+    form_class = GuestPasswordResetForm
+    success_url = reverse_lazy("web:guest-password-reset-done")
+
+    def get_extra_email_context(self):
+        return {"hotel": settings.HOTEL}
+
+    def form_valid(self, form):
+        email = normalise_email(form.cleaned_data.get("email"))
+        if reserve_password_reset_request(email, self.request.META.get("REMOTE_ADDR", "")):
+            return super().form_valid(form)
+        # Anti-enumeration/anti-spam: behave as if the request was accepted.
+        return redirect(self.get_success_url())
 
 
 def guest_password_change(request):
