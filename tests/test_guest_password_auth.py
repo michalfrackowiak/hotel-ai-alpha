@@ -479,3 +479,95 @@ def test_password_change_done_requires_authenticated_non_staff(client):
     denied = staff_client.get("/my-bookings/password-change/done/")
     assert denied.status_code == 302
     assert denied["Location"].endswith("/my-bookings/")
+
+@pytest.mark.django_db
+def test_password_login_is_rate_limited_per_email_with_generic_error(client, settings):
+    settings.GUEST_PASSWORD_LOGIN_WINDOW_SECONDS = 900
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = 2
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP = 100
+    User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+
+    url = "/my-bookings/password-login/"
+    payload = {"username": "anna@example.com", "password": "wrong-password"}
+    first = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+    second = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+    third = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+
+    assert first.status_code == 400
+    assert second.status_code == 400
+    assert third.status_code == 400
+    assert not client.session.get("_auth_user_id")
+    assert "please enter a correct" in third.content.decode().lower()
+
+
+@pytest.mark.django_db
+def test_password_login_rate_limit_does_not_authenticate_even_with_correct_password(client, settings):
+    settings.GUEST_PASSWORD_LOGIN_WINDOW_SECONDS = 900
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = 100
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP = 1
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+
+    url = "/my-bookings/password-login/"
+    first = client.post(
+        url,
+        {"username": "anna@example.com", "password": "wrong-password"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.9",
+    )
+    second = client.post(
+        url,
+        {"username": "anna@example.com", "password": "correct horse battery"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.9",
+    )
+
+    assert first.status_code == 400
+    assert second.status_code == 400
+    assert not client.session.get("_auth_user_id")
+    assert "please enter a correct" in second.content.decode().lower()
+
+@pytest.mark.django_db
+def test_password_reset_request_is_rate_limited_but_response_stays_neutral(client, settings):
+    settings.BOOKING_EMAILS_ENABLED = False
+    # Ensure email backend captures locally in test environment.
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.GUEST_LOGIN_COOLDOWN_SECONDS = 300
+    settings.GUEST_LOGIN_IP_COOLDOWN_SECONDS = 60
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+
+    first = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    second = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert first.status_code == 302
+    assert second.status_code == 302
+    assert first["Location"].endswith("/my-bookings/password-reset/done/")
+    assert second["Location"].endswith("/my-bookings/password-reset/done/")
+    assert len(mail.outbox) == 1
