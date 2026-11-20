@@ -319,19 +319,25 @@ Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SM
 
 ---
 
-## Milestone v0.9.0 — Planned
+## Milestone v0.9.0 — In progress (on `develop`)
 
 Theme: **payments and deposit tracking**. Record what a guest owes and has paid without introducing card processing into the alpha, so reception can see payment state alongside every booking and the guest journey can reflect it.
 
-### Proposed scope
+### Delivered so far
 
-- [ ] Payment tracking on bookings: amount due, amount paid, currency, payment/deposit status, method/reference, and timestamps (manual/admin-first; no online card capture required in this slice)
-- [ ] Configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot (e.g. no deposit, fixed amount, or percentage of total), with a clear guest-facing summary
-- [ ] Show payment state in booking detail/admin and surface unpaid/deposit-due bookings in `/ops/`
-- [ ] Include payment/deposit summary in confirmation messaging and guest-facing booking views where appropriate
+- [x] Payment tracking foundation on bookings (PR #7, `616ea2b`): `payment_status` (unpaid/partially paid/paid/refunded), `amount_paid`, `payment_method`, `payment_reference`, `paid_at`, `payment_notes`, and migration `hotel.0017_booking_payment_tracking`
+- [x] Manual/admin visibility: booking admin list/filter/fieldset for payment state
+- [x] Operations visibility: `/ops/` card and table for active/pending bookings needing payment attention (unpaid or partially paid)
+- [x] API read exposure: token-gated booking responses include payment tracking fields
+- [x] Tests, migration, and Polish translations for the payment tracking foundation
+
+### Remaining scope
+
+- [ ] Payment amount due/deposit expectations and configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot, with a clear guest-facing summary
+- [ ] Show payment state in guest-facing booking detail views and include payment/deposit summary in confirmation messaging where appropriate
 - [ ] Append-only payment/audit events for recorded payments, adjustments, and refunds/waivers recorded by staff
-- [ ] API fields/endpoints (token-gated where guest-facing) to read payment status; staff-only paths for recording updates as appropriate
-- [ ] Tests, migrations, docs, and Polish translations for the new payment flow
+- [ ] Staff-only API/command paths for recording payment updates as appropriate (beyond direct admin editing)
+- [ ] Additional docs and tests for the remaining payment flow
 
 ### Out of scope (unless explicitly planned later)
 
