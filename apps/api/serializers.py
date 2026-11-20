@@ -237,6 +237,54 @@ class BookingCancelSerializer(serializers.Serializer):
     note = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
 
 
+class BookingPaymentRecordSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["recorded", "adjusted", "refunded", "waived"])
+    amount = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
+    amount_paid = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
+    status = serializers.ChoiceField(
+        choices=Booking.PaymentStatus.values, required=False, allow_blank=True, default=""
+    )
+    payment_status = serializers.ChoiceField(
+        choices=Booking.PaymentStatus.values, required=False, allow_blank=True, default=""
+    )
+    method = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
+    payment_method = serializers.CharField(
+        max_length=40, required=False, allow_blank=True, default=""
+    )
+    payment_reference = serializers.CharField(
+        max_length=120, required=False, allow_blank=True, default=""
+    )
+    notes = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
+    payment_notes = serializers.CharField(
+        max_length=2000, required=False, allow_blank=True, default=""
+    )
+    paid_at = serializers.DateTimeField(required=False, allow_null=True)
+    summary = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+    @staticmethod
+    def _present(data: dict, *names: str) -> bool:
+        return any(name in data for name in names)
+
+    def to_internal_value(self, data):
+        value = super().to_internal_value(data)
+        if not self._present(data, "status", "payment_status"):
+            value["status"] = None
+            value["payment_status"] = None
+        if not self._present(data, "method", "payment_method"):
+            value["method"] = None
+            value["payment_method"] = None
+        if not self._present(data, "payment_reference"):
+            value["payment_reference"] = None
+        if not self._present(data, "notes", "payment_notes"):
+            value["notes"] = None
+            value["payment_notes"] = None
+        return value
+
+
 class ChatSessionCreateSerializer(serializers.Serializer):
     language = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="pl", required=False)
     channel = serializers.ChoiceField(

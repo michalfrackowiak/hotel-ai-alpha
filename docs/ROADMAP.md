@@ -335,10 +335,11 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 - [x] Hotel-level deposit/prepayment policy and guest-facing deposit summary (PR #10, `83567e6`): configurable policy via `settings.HOTEL`/env (`DEPOSIT_POLICY=none|percent|fixed`, `DEPOSIT_VALUE`), `apps/hotel/deposit.py` `deposit_summary()` single source of truth, and deposit details surfaced via `Booking` helpers, booking API (`deposit_amount`, `amount_due_now`, `deposit`), guest booking detail, and confirmation email/SMS templates with tests and translations
 
 - [x] Rate-plan-specific deposit/prepayment policy overrides (PR #12, `a0cf96d`): optional per-`RatePlan` deposit policy/value (inherit hotel policy, no deposit, percentage of total, or fixed amount) with migration `hotel.0019_rateplan_deposit_policy`, admin fields, effective-policy resolution in `deposit_summary()`, tests and translations
+- [x] Staff-only payment-recording API path (staff `IsAdminUser`, no guest booking tokens): `POST /api/v1/bookings/<reference>/payments/` accepting `record_payment`-aligned fields, calling `record_booking_payment()` and returning the updated booking, with tests and API docs
 
 ### Remaining scope
 
-- [ ] Staff-only payment-recording API path if needed beyond the existing admin/`record_payment` command (recording and payment audit are already available)
+- (none for v0.9.0 scope as currently planned; no release cut unless explicitly requested)
 
 ### Out of scope (unless explicitly planned later)
 

@@ -304,3 +304,156 @@ def test_record_payment_management_command(room_type, rooms, stay_dates):
     assert booking.payment_reference == "TR-1"
     assert booking.payment_notes == "Bank transfer"
     assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_RECORDED).exists()
+
+
+@pytest.mark.django_db
+def test_staff_payment_api_requires_staff_and_rejects_guest_token(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    url = f"/api/v1/bookings/{booking.reference}/payments/"
+    payload = {"action": "recorded", "amount": "50.00"}
+
+    client = APIClient()
+    response = client.post(url, payload, format="json")
+    assert response.status_code in {401, 403}
+
+    # Guest booking token must not grant access to the staff-only path.
+    guest = APIClient()
+    guest.credentials(HTTP_X_BOOKING_TOKEN=make_booking_token(booking))
+    guest_response = guest.post(url, payload, format="json")
+    assert guest_response.status_code in {401, 403}
+    booking.refresh_from_db()
+    assert booking.amount_paid == Decimal("0.00")
+    assert not booking.events.filter(event_type=BookingEvent.Type.PAYMENT_RECORDED).exists()
+
+    non_staff = get_user_model().objects.create_user(
+        username="guest-user", password="pw", is_staff=False
+    )
+    user_client = APIClient()
+    user_client.force_authenticate(user=non_staff)
+    user_response = user_client.post(url, payload, format="json")
+    assert user_response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_staff_payment_api_records_payment_and_returns_updated_booking(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Piotr",
+        last_name="Nowak",
+        email="piotr@example.com",
+        adults=2,
+    )
+    staff = get_user_model().objects.create_user(username="staff-payments", password="pw", is_staff=True)
+    client = APIClient()
+    client.force_authenticate(user=staff)
+
+    response = client.post(
+        f"/api/v1/bookings/{booking.reference}/payments/",
+        {
+            "action": "recorded",
+            "amount": "100.00",
+            "status": "partially_paid",
+            "method": "card",
+            "payment_reference": "PAY-API-1",
+            "notes": "Front desk",
+            "paid_at": "2026-11-20T10:30:00Z",
+            "summary": "Desk payment",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["reference"] == booking.reference
+    assert Decimal(str(payload["amount_paid"])) == Decimal("100.00")
+    assert payload["payment_status"] == "partially_paid"
+    assert payload["payment_method"] == "card"
+    assert payload["payment_reference"] == "PAY-API-1"
+    assert payload["payment_notes"] == "Front desk"
+    assert payload["paid_at"] is not None
+    assert Decimal(str(payload["amount_due"])) == (booking.total_price - Decimal("100.00")).quantize(
+        Decimal("0.01")
+    )
+
+    booking.refresh_from_db()
+    assert booking.amount_paid == Decimal("100.00")
+    assert booking.payment_status == Booking.PaymentStatus.PARTIALLY_PAID
+    assert booking.payment_method == "card"
+    assert booking.payment_reference == "PAY-API-1"
+    assert booking.payment_notes == "Front desk"
+    assert booking.paid_at is not None
+    event = booking.events.get(event_type=BookingEvent.Type.PAYMENT_RECORDED)
+    assert event.actor == BookingEvent.Actor.STAFF
+    assert event.channel == "api"
+    assert event.summary == "Desk payment"
+    assert event.data["action"] == "recorded"
+    assert event.data["after"]["amount_paid"] == "100.00"
+
+
+@pytest.mark.django_db
+def test_staff_payment_api_supports_other_actions_and_validation_errors(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Jan",
+        last_name="Kowal",
+        email="jan@example.com",
+        adults=2,
+    )
+    staff = get_user_model().objects.create_user(username="staff-payments-2", password="pw", is_staff=True)
+    client = APIClient()
+    client.force_authenticate(user=staff)
+    base_url = f"/api/v1/bookings/{booking.reference}/payments/"
+
+    paid = client.post(
+        base_url, {"action": "recorded", "amount": str(booking.total_price)}, format="json"
+    )
+    assert paid.status_code == 200
+    assert Decimal(str(paid.json()["amount_due"])) == Decimal("0.00")
+
+    refunded = client.post(base_url, {"action": "refunded", "amount": "50.00"}, format="json")
+    assert refunded.status_code == 200
+    assert refunded.json()["payment_status"] == "partially_paid"
+
+    adjusted = client.post(
+        base_url, {"action": "adjusted", "amount_paid": "0.00", "status": "unpaid"}, format="json"
+    )
+    assert adjusted.status_code == 200
+    assert Decimal(str(adjusted.json()["amount_paid"])) == Decimal("0.00")
+    assert adjusted.json()["payment_status"] == "unpaid"
+
+    waived = client.post(base_url, {"action": "waived", "amount": "0.00"}, format="json")
+    assert waived.status_code == 200
+    assert waived.json()["payment_status"] == "unpaid"
+    booking.refresh_from_db()
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_REFUNDED).exists()
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_ADJUSTED).exists()
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_WAIVED).exists()
+
+    missing = client.post(base_url, {"action": "recorded"}, format="json")
+    assert missing.status_code == 400
+    assert missing.json()["error"]["code"] == "amount_required"
+
+    invalid = client.post(base_url, {"action": "recorded", "amount": "-1.00"}, format="json")
+    assert invalid.status_code == 400
+    assert invalid.json()["error"]["code"] in {"validation_error", "invalid_amount"}
+
+    not_found = client.post(
+        "/api/v1/bookings/HA-NOPE00/payments/", {"action": "recorded", "amount": "10.00"}, format="json"
+    )
+    assert not_found.status_code == 404
+    assert not_found.json()["error"]["code"] == "booking_not_found"
