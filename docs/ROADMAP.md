@@ -330,11 +330,11 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 - [x] Operations visibility: `/ops/` card and table for active/pending bookings needing payment attention (unpaid or partially paid)
 - [x] API read exposure: token-gated booking responses include payment tracking fields
 - [x] Tests, migration, and Polish translations for the payment tracking foundation
+- [x] Guest-facing payment summaries (PR #8, `bba8ccf`): `Booking.amount_due` and token-gated API exposure, payment summary on the guest booking detail page, and payment summary in confirmation email/SMS templates with updated tests and Polish translations
 
 ### Remaining scope
 
 - [ ] Payment amount due/deposit expectations and configurable deposit/prepayment policy per hotel or rate plan context as needed for the pilot, with a clear guest-facing summary
-- [ ] Show payment state in guest-facing booking detail views and include payment/deposit summary in confirmation messaging where appropriate
 - [ ] Append-only payment/audit events for recorded payments, adjustments, and refunds/waivers recorded by staff
 - [ ] Staff-only API/command paths for recording payment updates as appropriate (beyond direct admin editing)
 - [ ] Additional docs and tests for the remaining payment flow

@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 223 passing
+**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 227 passing
 
 ## Current state
 
@@ -299,4 +299,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.8.0 is released and tagged (`v0.8.0`) on `main`; `develop` includes the **v0.9.0 payment tracking foundation** (PR #7, `616ea2b`, migration `hotel.0017_booking_payment_tracking`): booking payment fields, admin and `/ops/` visibility, token-gated API read exposure, tests, and Polish translations. **v0.9.0 remains in progress on `develop`** (see [docs/ROADMAP.md](docs/ROADMAP.md)); remaining work includes deposit/policy logic, guest-facing payment summaries/messaging, append-only payment audit events, and staff payment-update paths beyond direct admin editing. Next: choose and implement the next v0.9.0 slice from `develop` (no release cut).
+v0.8.0 is released and tagged (`v0.8.0`) on `main`; `develop` includes the **v0.9.0 payment tracking foundation** (PR #7, `616ea2b`, migration `hotel.0017_booking_payment_tracking`) and **guest-facing payment summaries** (PR #8, `bba8ccf`): `Booking.amount_due`, token-gated API exposure, guest booking detail payment summary, and confirmation email/SMS payment summaries with tests and Polish translations. **v0.9.0 remains in progress on `develop`** (see [docs/ROADMAP.md](docs/ROADMAP.md)); remaining work includes deposit/policy logic and configurable prepayment expectations, append-only payment audit events, and staff payment-update paths beyond direct admin editing. Next: choose and implement the next v0.9.0 slice from `develop` (no release cut).
