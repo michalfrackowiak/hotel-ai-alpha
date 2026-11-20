@@ -8,6 +8,9 @@ Your stay at {{ hotel }} is confirmed. We look forward to welcoming you.{% endbl
 {% trans "Room" %}: {{ booking.room.number }} · {{ booking.room_type.name }}
 {% trans "Guests" %}: {{ booking.adults }} {% trans "adults" %}{% if booking.children %}, {{ booking.children }} {% trans "children" %}{% endif %}
 {% trans "Total (VAT included)" %}: {{ booking.total_price }} {{ booking.currency }}
+{% trans "Payment status" %}: {{ booking.get_payment_status_display }}
+{% trans "Amount paid" %}: {{ booking.amount_paid }} {{ booking.currency }}
+{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
 
 {% trans "Manage your booking" %}: {{ manage_url }}
 

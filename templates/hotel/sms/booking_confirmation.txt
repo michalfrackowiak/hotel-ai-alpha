@@ -4,6 +4,9 @@
 {% trans "Check-out" %}: {{ booking.check_out|date:"d.m.Y" }}
 {% trans "Room" %}: {{ booking.room.number }} · {{ booking.room_type.name }}
 {% trans "Total" %}: {{ booking.total_price }} {{ booking.currency }}
+{% trans "Payment status" %}: {{ booking.get_payment_status_display }}
+{% trans "Amount paid" %}: {{ booking.amount_paid }} {{ booking.currency }}
+{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
 {{ manage_url }}
 {{ hotel.contact_phone }}
 {% endautoescape %}
