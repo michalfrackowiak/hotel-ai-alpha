@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 20:11+0100\n"
+"POT-Creation-Date: 2026-11-20 20:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -515,6 +515,9 @@ msgstr "Kontakt"
 msgid "Content"
 msgstr "Treść"
 
+msgid "Continue with Google"
+msgstr "Kontynuuj z Google"
+
 msgid "Conversation"
 msgstr "Rozmowa"
 
@@ -743,6 +746,18 @@ msgstr "Warto wiedzieć"
 
 msgid "Google Calendar"
 msgstr "Google Calendar"
+
+msgid "Google did not provide a verified email address."
+msgstr "Google nie przekazało zweryfikowanego adresu e-mail."
+
+msgid "Google sign-in could not be verified. Please try again."
+msgstr "Nie udało się zweryfikować logowania Google. Spróbuj ponownie."
+
+msgid "Google sign-in is not configured."
+msgstr "Logowanie przez Google nie jest skonfigurowane."
+
+msgid "Google sign-in was cancelled or could not be completed."
+msgstr "Logowanie przez Google zostało anulowane lub nie mogło zostać ukończone."
 
 msgid "Guest"
 msgstr "Gość"
@@ -1440,6 +1455,9 @@ msgstr "Pokaż pokoje"
 msgid "Sign in"
 msgstr "Zaloguj się"
 
+msgid "Sign in with Google"
+msgstr "Zaloguj się przez Google"
+
 msgid "Sign in with password"
 msgstr "Zaloguj się hasłem"
 
@@ -1620,6 +1638,9 @@ msgid ""
 "try again."
 msgstr "Brak rezerwacji o numerze <strong>%(ref)s</strong>. Sprawdź numer i spróbuj ponownie."
 
+msgid "This account cannot be used for guest sign-in."
+msgstr "Tego konta nie można użyć do logowania gościa."
+
 msgid "This booking can no longer be cancelled."
 msgstr "Tej rezerwacji nie można już anulować."
 
@@ -1744,6 +1765,9 @@ msgstr ""
 
 msgid "Use the link below to choose a new password:"
 msgstr "Użyj poniższego linku, aby wybrać nowe hasło:"
+
+msgid "Use your Google account for fast and secure access to your bookings."
+msgstr "Użyj konta Google, aby szybko i bezpiecznie uzyskać dostęp do swoich rezerwacji."
 
 msgid "Validity"
 msgstr "Ważność"

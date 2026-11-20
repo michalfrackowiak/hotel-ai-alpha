@@ -18,6 +18,8 @@ urlpatterns = [
     path("my-bookings/login/<str:token>/", views.guest_login, name="guest-login"),
     path("my-bookings/password-login/", views.guest_password_login, name="guest-password-login"),
     path("my-bookings/register/", views.guest_register, name="guest-register"),
+    path("my-bookings/google/", views.guest_google_login, name="guest-google-login"),
+    path("my-bookings/google/callback/", views.guest_google_callback, name="guest-google-callback"),
     path("my-bookings/verify-email/<str:token>/", views.guest_verify_email, name="guest-verify-email"),
     path(
         "my-bookings/password-reset/",
