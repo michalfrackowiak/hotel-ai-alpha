@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 07:32+0100\n"
+"POT-Creation-Date: 2026-11-20 08:54+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -135,6 +135,9 @@ msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
 msgid "All rooms are clean."
 msgstr "Wszystkie pokoje są czyste."
 
+msgid "Amount paid"
+msgstr "Zapłacona kwota"
+
 msgid "Anthropic"
 msgstr "Anthropic"
 
@@ -192,6 +195,9 @@ msgstr "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domy
 
 msgid "Back to rooms"
 msgstr "Wróć do pokoi"
+
+msgid "Balance due"
+msgstr "Pozostało do zapłaty"
 
 msgid "Behaviour"
 msgstr "Zachowanie"

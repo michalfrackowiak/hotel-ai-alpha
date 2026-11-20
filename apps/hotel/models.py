@@ -632,6 +632,12 @@ class Booking(TimeStampedModel):
     def room_type(self) -> RoomType:
         return self.room.room_type
 
+    @property
+    def amount_due(self) -> Decimal:
+        """Outstanding balance against the booking total."""
+        due = (self.total_price or Decimal("0")) - (self.amount_paid or Decimal("0"))
+        return max(due, Decimal("0")).quantize(Decimal("0.01"))
+
     def clean(self) -> None:
         super().clean()
         if self.check_in and self.check_out and self.check_out <= self.check_in:

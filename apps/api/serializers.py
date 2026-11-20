@@ -83,6 +83,7 @@ class BookingSerializer(serializers.ModelSerializer):
     room_type_name = serializers.CharField(source="room.room_type.name", read_only=True)
     rate_plan = serializers.CharField(source="rate_plan.slug", read_only=True, allow_null=True)
     nights = serializers.IntegerField(read_only=True)
+    amount_due = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     can_confirm = serializers.BooleanField(read_only=True)
     can_cancel = serializers.BooleanField(read_only=True)
     can_modify = serializers.BooleanField(read_only=True)
@@ -136,6 +137,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "payment_status",
             "payment_status_display",
             "amount_paid",
+            "amount_due",
             "payment_method",
             "payment_reference",
             "paid_at",

@@ -894,4 +894,6 @@ TRANSLATIONS: dict[str, str] = {
     "Bookings needing payment": "Rezerwacje wymagające płatności",
     "Payment attention": "Płatności wymagające uwagi",
     "No bookings need payment attention.": "Brak rezerwacji wymagających uwagi dotyczącej płatności.",
+    "Amount paid": "Zapłacona kwota",
+    "Balance due": "Pozostało do zapłaty",
 }
