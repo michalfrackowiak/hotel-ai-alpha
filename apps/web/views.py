@@ -468,6 +468,8 @@ def guest_profile(request):
         return redirect("web:guest-bookings")
 
     account, _created = GuestAccount.objects.get_or_create(user=user)
+    linked_clients = list(account.clients.all().order_by("-updated_at", "-pk"))
+    primary_client = linked_clients[0] if linked_clients else None
     saved = False
     if request.method == "POST":
         form = GuestProfileForm(request.POST)
@@ -475,10 +477,47 @@ def guest_profile(request):
             user.first_name = (form.cleaned_data.get("first_name") or "").strip()
             user.last_name = (form.cleaned_data.get("last_name") or "").strip()
             user.save(update_fields=["first_name", "last_name"])
+
+            phone = (form.cleaned_data.get("phone") or "").strip()
+            language = (form.cleaned_data.get("language") or "").strip() or "pl"
+            if language not in {"en", "pl"}:
+                language = "pl"
+            marketing_consent = bool(form.cleaned_data.get("marketing_consent"))
+
+            for client_obj in linked_clients:
+                update_fields = []
+                if client_obj.first_name != user.first_name and user.first_name:
+                    client_obj.first_name = user.first_name
+                    update_fields.append("first_name")
+                if client_obj.last_name != user.last_name:
+                    client_obj.last_name = user.last_name
+                    update_fields.append("last_name")
+                if client_obj.language != language:
+                    client_obj.language = language
+                    update_fields.append("language")
+                if client_obj.marketing_consent != marketing_consent:
+                    client_obj.marketing_consent = marketing_consent
+                    update_fields.append("marketing_consent")
+                # Keep client contact valid: phone can be cleared only when email exists.
+                new_phone = phone
+                if not new_phone and not (client_obj.email or "").strip():
+                    new_phone = client_obj.phone
+                if client_obj.phone != new_phone:
+                    client_obj.phone = new_phone
+                    update_fields.append("phone")
+                if update_fields:
+                    update_fields.append("updated_at")
+                    client_obj.save(update_fields=update_fields)
             saved = True
     else:
         form = GuestProfileForm(
-            initial={"first_name": user.first_name, "last_name": user.last_name}
+            initial={
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "phone": (primary_client.phone if primary_client else ""),
+                "language": (primary_client.language if primary_client else "pl"),
+                "marketing_consent": bool(primary_client.marketing_consent) if primary_client else False,
+            }
         )
 
     return render(

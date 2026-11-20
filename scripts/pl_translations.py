@@ -1017,4 +1017,5 @@ TRANSLATIONS: dict[str, str] = {
     "This account cannot be used for guest sign-in.": "Tego konta nie można użyć do logowania gościa.",
     "Use your Google account for fast and secure access to your bookings.": "Użyj konta Google, aby szybko i bezpiecznie uzyskać dostęp do swoich rezerwacji.",
     "View reservation": "Zobacz rezerwację",
+    "Preferred language": "Preferowany język",
 }

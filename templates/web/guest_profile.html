@@ -34,11 +34,31 @@
         {{ form.first_name }}
       </label>
       {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|join:", " }}</p>{% endif %}
+
       <label class="field" for="{{ form.last_name.id_for_label }}">
         <span>{% trans "Last name" %}</span>
         {{ form.last_name }}
       </label>
       {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|join:", " }}</p>{% endif %}
+
+      <label class="field" for="{{ form.phone.id_for_label }}">
+        <span>{% trans "Phone" %}</span>
+        {{ form.phone }}
+      </label>
+      {% if form.phone.errors %}<p class="field-error">{{ form.phone.errors|join:", " }}</p>{% endif %}
+
+      <label class="field" for="{{ form.language.id_for_label }}">
+        <span>{% trans "Preferred language" %}</span>
+        {{ form.language }}
+      </label>
+      {% if form.language.errors %}<p class="field-error">{{ form.language.errors|join:", " }}</p>{% endif %}
+
+      <label class="field field--checkbox" for="{{ form.marketing_consent.id_for_label }}">
+        {{ form.marketing_consent }}
+        <span>{% trans "Marketing consent" %}</span>
+      </label>
+      {% if form.marketing_consent.errors %}<p class="field-error">{{ form.marketing_consent.errors|join:", " }}</p>{% endif %}
+
       <button class="btn btn--primary btn--block" type="submit">{% trans "Save changes" %}</button>
     </form>
 
