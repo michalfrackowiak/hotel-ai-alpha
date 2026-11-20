@@ -909,4 +909,27 @@ TRANSLATIONS: dict[str, str] = {
     "Choose a valid payment status.": "Wybierz prawid?owy status p?atno?ci.",
     "Payment %(action)s (%(delta)s %(currency)s).": "P?atno??: %(action)s (%(delta)s %(currency)s).",
 
+    # Deposit policy (v0.9.0)
+    "Deposit required": "Wymagana zaliczka",
+    "Amount due now": "Do zap?aty teraz",
+    "No deposit is required. The balance due is %(amount)s %(currency)s.": (
+        "Zaliczka nie jest wymagana. Pozosta?o do zap?aty: %(amount)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s (%(percent)s%% of the total) is required. Amount due now: %(due_now)s %(currency)s. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s (%(percent)s%% ca?kowitej kwoty). "
+        "Do zap?aty teraz: %(due_now)s %(currency)s. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s (%(percent)s%% of the total) is required. The deposit is covered. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s (%(percent)s%% ca?kowitej kwoty). "
+        "Zaliczka zosta?a pokryta. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s is required. Amount due now: %(due_now)s %(currency)s. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s. "
+        "Do zap?aty teraz: %(due_now)s %(currency)s. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s is required. The deposit is covered. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s. "
+        "Zaliczka zosta?a pokryta. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+
 }

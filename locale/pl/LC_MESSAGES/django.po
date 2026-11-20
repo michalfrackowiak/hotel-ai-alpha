@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 09:09+0100\n"
+"POT-Creation-Date: 2026-11-20 10:03+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -134,6 +134,9 @@ msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
 
 msgid "All rooms are clean."
 msgstr "Wszystkie pokoje są czyste."
+
+msgid "Amount due now"
+msgstr ""
 
 msgid "Amount must be zero or greater."
 msgstr "Kwota musi by? r?wna zero lub wi?ksza."
@@ -526,6 +529,9 @@ msgstr "Wyjazdy"
 
 msgid "Departures today"
 msgstr "Dzisiejsze wyjazdy"
+
+msgid "Deposit required"
+msgstr ""
 
 msgid "Direct booking"
 msgstr "Rezerwacja bezpośrednia"

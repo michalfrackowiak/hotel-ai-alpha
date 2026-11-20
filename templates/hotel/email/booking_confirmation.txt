@@ -10,7 +10,9 @@ Your stay at {{ hotel }} is confirmed. We look forward to welcoming you.{% endbl
 {% trans "Total (VAT included)" %}: {{ booking.total_price }} {{ booking.currency }}
 {% trans "Payment status" %}: {{ booking.get_payment_status_display }}
 {% trans "Amount paid" %}: {{ booking.amount_paid }} {{ booking.currency }}
-{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
+{% if deposit.applies %}{% trans "Deposit required" %}: {{ deposit.deposit_amount }} {{ booking.currency }}
+{% trans "Amount due now" %}: {{ deposit.amount_due_now }} {{ booking.currency }}
+{% endif %}{% trans "Balance due" %}: {{ booking.amount_due }} {{ booking.currency }}
 
 {% trans "Manage your booking" %}: {{ manage_url }}
 

@@ -84,6 +84,8 @@ class BookingSerializer(serializers.ModelSerializer):
     rate_plan = serializers.CharField(source="rate_plan.slug", read_only=True, allow_null=True)
     nights = serializers.IntegerField(read_only=True)
     amount_due = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    deposit_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    amount_due_now = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     can_confirm = serializers.BooleanField(read_only=True)
     can_cancel = serializers.BooleanField(read_only=True)
     can_modify = serializers.BooleanField(read_only=True)
@@ -94,6 +96,7 @@ class BookingSerializer(serializers.ModelSerializer):
     payment_status_display = serializers.CharField(source="get_payment_status_display", read_only=True)
     confirmation_email_status = serializers.CharField(source="get_confirmation_email_status_display", read_only=True)
     confirmation_sms_status = serializers.CharField(source="get_confirmation_sms_status_display", read_only=True)
+    deposit = serializers.SerializerMethodField()
     cancellation = serializers.SerializerMethodField()
     calendar = serializers.SerializerMethodField()
     manage_token = serializers.SerializerMethodField()
@@ -138,6 +141,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "payment_status_display",
             "amount_paid",
             "amount_due",
+            "deposit_amount",
+            "amount_due_now",
+            "deposit",
             "payment_method",
             "payment_reference",
             "paid_at",
@@ -158,6 +164,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def get_manage_url(self, obj: Booking) -> str:
         return booking_manage_url(obj)
+
+    def get_deposit(self, obj: Booking):
+        return obj.deposit_summary.as_dict()
 
     def get_cancellation(self, obj: Booking):
         return cancellation_preview(obj).as_dict()

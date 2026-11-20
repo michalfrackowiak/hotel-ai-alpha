@@ -638,6 +638,20 @@ class Booking(TimeStampedModel):
         due = (self.total_price or Decimal("0")) - (self.amount_paid or Decimal("0"))
         return max(due, Decimal("0")).quantize(Decimal("0.01"))
 
+    @property
+    def deposit_summary(self):
+        from .deposit import deposit_summary
+
+        return deposit_summary(self)
+
+    @property
+    def deposit_amount(self) -> Decimal:
+        return self.deposit_summary.deposit_amount
+
+    @property
+    def amount_due_now(self) -> Decimal:
+        return self.deposit_summary.amount_due_now
+
     def clean(self) -> None:
         super().clean()
         if self.check_in and self.check_out and self.check_out <= self.check_in:
