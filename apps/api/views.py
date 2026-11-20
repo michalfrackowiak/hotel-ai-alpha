@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from rest_framework import generics, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework.views import APIView
@@ -23,6 +23,7 @@ from apps.hotel.booking_service import (
     create_booking,
     get_booking,
     modify_booking,
+    record_booking_payment,
 )
 from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.models import RoomType
@@ -40,6 +41,7 @@ from .serializers import (
     BookingCancelSerializer,
     BookingCreateSerializer,
     BookingModifySerializer,
+    BookingPaymentRecordSerializer,
     BookingSerializer,
     ChatMessageCreateSerializer,
     ChatSessionCreateSerializer,
@@ -256,6 +258,44 @@ class BookingCancelView(APIView):
                 note=data.get("note", ""),
                 actor="guest",
                 channel=booking.source,
+            )
+        except BookingError as exc:
+            _raise_booking_error(exc)
+        return Response(BookingSerializer(booking).data)
+
+
+class BookingPaymentRecordView(APIView):
+    """Staff-only payment recording path (v0.9.0). Does not accept guest booking tokens."""
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, reference: str):
+        serializer = BookingPaymentRecordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        payment_status = data.get("payment_status") or data.get("status") or None
+        payment_method = data.get("payment_method")
+        if payment_method is None or payment_method == "":
+            payment_method = data.get("method")
+        payment_notes = data.get("payment_notes")
+        if payment_notes is None or payment_notes == "":
+            payment_notes = data.get("notes")
+
+        try:
+            booking = record_booking_payment(
+                reference.upper(),
+                action=data["action"],
+                amount=data.get("amount"),
+                amount_paid=data.get("amount_paid"),
+                payment_status=payment_status or None,
+                payment_method=payment_method,
+                payment_reference=data.get("payment_reference"),
+                paid_at=data.get("paid_at"),
+                payment_notes=payment_notes,
+                actor="staff",
+                channel="api",
+                summary=data.get("summary") or "",
             )
         except BookingError as exc:
             _raise_booking_error(exc)

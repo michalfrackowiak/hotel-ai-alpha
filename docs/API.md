@@ -330,6 +330,41 @@ Changes dates, room type or occupancy through the single booking write path. At 
 
 Availability and the price are re-checked in one transaction, excluding the booking itself. The response is the updated booking. Only pending and confirmed bookings can be modified; terminal states return `409` with `not_modifiable`. A rate-calendar minimum stay returns `400` with `min_nights`.
 
+### `POST /api/v1/bookings/<REFERENCE>/payments/` (staff only)
+
+Records a manual payment change for a booking through the single `record_booking_payment()` write path and appends an immutable payment audit event. This is a staff-only endpoint: it requires an authenticated Django user with `is_staff` (DRF `IsAdminUser`) and **does not accept guest booking tokens** (`manage_token`, `X-Booking-Token`, or bearer booking tokens do not grant access).
+
+Request body (JSON), aligned with `manage.py record_payment`:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `action` | string | yes | `recorded`, `adjusted`, `refunded`, or `waived` |
+| `amount` | decimal string/number | conditional | Transaction amount. For `recorded` it is added to amount paid; for `refunded`/`waived` it is subtracted; for `adjusted` it is treated as the new absolute amount paid unless `amount_paid` is provided. Provide `amount` or `amount_paid` as required by the action. |
+| `amount_paid` | decimal string/number | conditional | Resulting total amount paid (absolute). |
+| `status` | string | no | Resulting payment status: `unpaid`, `partially_paid`, `paid`, or `refunded`. Also accepted as `payment_status`. When omitted, status is derived from amount paid vs booking total. |
+| `method` | string | no | Payment method label. Also accepted as `payment_method`. |
+| `payment_reference` | string | no | External payment/reference number. |
+| `notes` | string | no | Payment notes. Also accepted as `payment_notes`. |
+| `paid_at` | ISO 8601 datetime | no | Payment timestamp. |
+| `summary` | string | no | Audit summary override; omitted/blank uses the default payment summary. |
+
+```json
+{
+  "action": "recorded",
+  "amount": "100.00",
+  "status": "partially_paid",
+  "method": "card",
+  "payment_reference": "PAY-API-1",
+  "notes": "Front desk deposit",
+  "paid_at": "2026-11-20T10:30:00Z",
+  "summary": "Desk payment"
+}
+```
+
+Response `200`: the updated booking object (same shape as other booking endpoints), including current payment fields, `amount_due`, deposit summary, and payment status.
+
+Errors: `400` with `validation_error`, `invalid_payment_action`, `amount_required`, `invalid_amount`, or `invalid_payment_status` for invalid input; `404` with `booking_not_found` for an unknown reference; `401`/`403` when the caller is not an authenticated staff user. No direct card processing, automatic capture, or accounting sync is performed.
+
 ## Chat
 
 ### `POST /api/v1/chat/sessions/`
