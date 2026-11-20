@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-19 19:24+0100\n"
+"POT-Creation-Date: 2026-11-19 20:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1139,6 +1139,9 @@ msgstr "Historia SMS"
 msgid "SMS provider message id"
 msgstr "Identyfikator wiadomości SMS u dostawcy"
 
+msgid "SMS waiting to retry"
+msgstr "SMS-y oczekujące na ponowną próbę"
+
 msgid "Save changes"
 msgstr "Zapisz zmiany"
 
@@ -1696,6 +1699,9 @@ msgstr "błąd SMS-a z potwierdzeniem"
 
 msgid "confirmation SMS last attempt at"
 msgstr "ostatnia próba wysłania SMS-a z potwierdzeniem"
+
+msgid "confirmation SMS next retry at"
+msgstr "następna próba wysłania SMS-a z potwierdzeniem"
 
 msgid "confirmation SMS sent at"
 msgstr "SMS z potwierdzeniem wysłany o"

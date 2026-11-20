@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of **19 November 2026**.
+Status as of **20 November 2026**.
 
 | Phase | Milestone | Status |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Status as of **19 November 2026**.
 | 10 | Revenue and delivery hardening | ✅ Complete (v0.4.0) |
 | 11 | Guest experience and polish | ✅ Complete (v0.5.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.7.0** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, the v0.6.10 demo-provider fix for a forgotten guest count, and operational-visibility work (email history, scheduler load coverage, SMS delivery receipts and inbound replies).
+The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.8.0** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, the v0.6.10 demo-provider fix for a forgotten guest count, operational-visibility work (email history, scheduler load coverage, SMS delivery receipts and inbound replies), and SMS confirmation retry/backoff parity with scheduler and ops visibility.
 
 ---
 
@@ -299,3 +299,20 @@ Theme: **operational visibility**. Reception can trace confirmation delivery and
 - [x] SMS: per-attempt `SmsDelivery` history and provider delivery-receipt webhooks (`/api/v1/sms/webhooks/<provider>/`, `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret`) that update booking and delivery status; inbound guest SMS replies stored as `InboundSmsMessage` records and matched to a booking by phone when possible; read-only SMS delivery/reply history in `/ops/` and the admin
 
 **Exit criteria:** reception can trace every confirmation attempt and inbound SMS reply from `/ops/` or the admin, in both languages. **All met in v0.7.0.**
+
+---
+
+## Milestone v0.8.0 - ✅ Complete
+
+Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SMS messages are retried automatically with exponential backoff, with scheduler/command support and operational visibility. Documented in [releases/v0.8.0.md](releases/v0.8.0.md).
+
+### Delivered
+
+- [x] Add SMS retry state on bookings (`confirmation_sms_next_retry_at`) and mirror email backoff settings (`SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`)
+- [x] Schedule and clear SMS retries in `send_booking_confirmation_sms()`; add `send_pending_confirmation_sms()` and `send_booking_sms` management command
+- [x] Run SMS retries from the scheduler sidecar alongside email retries
+- [x] Show SMS retry queue/problem next-retry state in `/ops/` and expose retry fields in admin
+- [x] Tests for SMS backoff, pending queue/cap, command behavior, and docs/translations updates
+- [x] Scheduler load coverage for pending confirmation SMS backlog and due SMS retry backlog (`tests/test_scheduler_load.py`)
+
+**Exit criteria:** failed or unsent confirmation SMS messages retry automatically on the same operational model as email, and reception can see retry state from `/ops/` and the admin. **All met in v0.8.0.**
