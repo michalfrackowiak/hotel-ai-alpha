@@ -971,14 +971,15 @@ def guest_google_callback(request):
 
     existing = User.objects.filter(email__iexact=email).order_by("pk").first()
     if existing and existing.is_staff:
+        # Avoid account-type enumeration: treat like other guest auth failures.
         return render(
             request,
             "web/guest_login.html",
             _guest_login_context(
                 request,
-                google_error=_("This account cannot be used for guest sign-in."),
+                google_error=_("Google sign-in was cancelled or could not be completed."),
             ),
-            status=403,
+            status=400,
         )
 
     now = timezone.now()

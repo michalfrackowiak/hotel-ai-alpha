@@ -571,3 +571,24 @@ def test_password_reset_request_is_rate_limited_but_response_stays_neutral(clien
     assert first["Location"].endswith("/my-bookings/password-reset/done/")
     assert second["Location"].endswith("/my-bookings/password-reset/done/")
     assert len(mail.outbox) == 1
+
+@pytest.mark.django_db
+def test_password_reset_request_for_staff_is_neutral_and_does_not_send(client, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    User.objects.create_user(
+        username="admin@example.com",
+        email="admin@example.com",
+        password="staff-password-12345",
+        is_active=True,
+        is_staff=True,
+    )
+
+    response = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "admin@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/password-reset/done/")
+    assert len(mail.outbox) == 0
