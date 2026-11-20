@@ -247,11 +247,18 @@ SMS_RETRY_MAX_SECONDS = int(os.getenv("SMS_RETRY_MAX_SECONDS", "21600"))
 # their reference and contact details, so expiry is a safety net, not a trap.
 BOOKING_ACCESS_MAX_AGE_DAYS = int(os.getenv("BOOKING_ACCESS_MAX_AGE_DAYS", "180"))
 
-# Passwordless guest account. Magic-link tokens are single use and short lived;
-# the cooldowns stop the form from being used to flood an inbox.
+# Guest account access. Magic-link tokens are single use and short lived; email
+# verification tokens confirm new registrations and verified email changes. The
+# cooldowns/throttles limit inbox flooding and brute-force attempts.
 GUEST_LOGIN_MAX_AGE_MINUTES = int(os.getenv("GUEST_LOGIN_MAX_AGE_MINUTES", "30"))
 GUEST_LOGIN_COOLDOWN_SECONDS = int(os.getenv("GUEST_LOGIN_COOLDOWN_SECONDS", "300"))
 GUEST_LOGIN_IP_COOLDOWN_SECONDS = int(os.getenv("GUEST_LOGIN_IP_COOLDOWN_SECONDS", "60"))
+GUEST_EMAIL_VERIFICATION_MAX_AGE_MINUTES = int(
+    os.getenv("GUEST_EMAIL_VERIFICATION_MAX_AGE_MINUTES", "1440")
+)
+GUEST_EMAIL_VERIFICATION_COOLDOWN_SECONDS = int(
+    os.getenv("GUEST_EMAIL_VERIFICATION_COOLDOWN_SECONDS", "300")
+)
 GUEST_PASSWORD_LOGIN_WINDOW_SECONDS = int(os.getenv("GUEST_PASSWORD_LOGIN_WINDOW_SECONDS", "900"))
 GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = int(
     os.getenv("GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL", "10")
