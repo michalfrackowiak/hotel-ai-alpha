@@ -2,7 +2,7 @@
 {% load currency_tags %}
 {% load i18n %}
 
-{% block title %}{% trans "My bookings" %} · {{ hotel.name }}{% endblock %}
+{% block title %}{% trans "My bookings" %} � {{ hotel.name }}{% endblock %}
 
 {% block content %}
 <section class="shell lookup-shell">
@@ -16,20 +16,34 @@
     {% if bookings %}
       <ul class="guest-bookings">
         {% for booking in bookings %}
+          {% with deposit=booking.deposit_summary %}
           <li class="guest-booking">
-            <div>
-              <a class="guest-booking__ref" href="{% url 'web:booking-detail' booking.reference %}">{{ booking.reference }}</a>
+            <div class="guest-booking__main">
+              <div class="guest-booking__heading">
+                <a class="guest-booking__ref" href="{% url 'web:booking-detail' booking.reference %}">{{ booking.reference }}</a>
+                <a class="link-button" href="{% url 'web:booking-detail' booking.reference %}">{% trans "View reservation" %}</a>
+              </div>
               <p class="muted">
-                {{ booking.check_in|date:"D, d M Y" }} → {{ booking.check_out|date:"D, d M Y" }}
-                · {{ booking.nights }} {% trans "nights" %}
+                {{ booking.check_in|date:"D, d M Y" }}  {{ booking.check_out|date:"D, d M Y" }}
+                � {{ booking.nights }} {% trans "nights" %}
               </p>
-              <p class="muted">{{ booking.room.number }} · {{ booking.room_type.name }}</p>
+              <p class="muted">{{ booking.room.number }} � {{ booking.room_type.name }}</p>
+              <p class="muted">
+                {% trans "Rate" %}:
+                {% if booking.rate_plan %}{{ booking.rate_plan.name }}{% else %}{% trans "Standard rate" %}{% endif %}
+              </p>
             </div>
             <div class="guest-booking__meta">
               <span class="badge badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
-              <span>{{ booking.total_price|money }}</span>
+              <p class="muted">{% trans "Payment" %}: {{ booking.get_payment_status_display }}</p>
+              <p class="muted">{% trans "Paid" %}: {{ booking.amount_paid|money }} / {{ booking.total_price|money }}</p>
+              <p class="muted">{% trans "Balance due" %}: {{ booking.amount_due|money }}</p>
+              {% if deposit.applies %}
+                <p class="muted">{% trans "Amount due now" %}: {{ deposit.amount_due_now|money }}</p>
+              {% endif %}
             </div>
           </li>
+          {% endwith %}
         {% endfor %}
       </ul>
     {% else %}

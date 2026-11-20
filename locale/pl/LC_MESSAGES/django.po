@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 20:20+0100\n"
+"POT-Creation-Date: 2026-11-20 20:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1789,6 +1789,9 @@ msgid "Verify your email"
 msgstr "Zweryfikuj swój adres e-mail"
 
 msgid "View booking"
+msgstr "Zobacz rezerwację"
+
+msgid "View reservation"
 msgstr "Zobacz rezerwację"
 
 msgid "Voice"
