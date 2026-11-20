@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.translation import override
 
 from .access import booking_manage_url
+from .deposit import deposit_summary
 from .email_providers import Attachment, EmailMessage, get_email_provider
 from .ics import build_booking_ics
 from .models import Booking, EmailDelivery, SmsDelivery
@@ -51,6 +52,7 @@ def _context(booking: Booking) -> dict:
         "booking": booking,
         "hotel": settings.HOTEL,
         "manage_url": booking_manage_url(booking),
+        "deposit": deposit_summary(booking),
     }
 
 

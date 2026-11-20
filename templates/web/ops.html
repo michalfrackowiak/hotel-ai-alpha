@@ -82,6 +82,10 @@
       <span class="ops-card__value">{{ sms_retry_count }}</span>
       <span class="ops-card__label">{% trans "SMS waiting to retry" %}</span>
     </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ payment_attention_count }}</span>
+      <span class="ops-card__label">{% trans "Bookings needing payment" %}</span>
+    </div>
   </div>
 
   <section class="ops-section">
@@ -144,6 +148,30 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No active holds." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Payment attention" %}</h2>
+    {% if payment_attention %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "Reference" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Check-in" %}</th><th>{% trans "Status" %}</th><th>{% trans "Payment status" %}</th><th>{% trans "Paid" %}</th><th>{% trans "Total" %}</th></tr></thead>
+        <tbody>
+          {% for booking in payment_attention %}
+            <tr>
+              <td>{{ booking.reference }}</td>
+              <td>{{ booking.client.full_name }}</td>
+              <td>{{ booking.check_in|date:"d M Y" }}</td>
+              <td>{{ booking.get_status_display }}</td>
+              <td>{{ booking.get_payment_status_display }}</td>
+              <td>{{ booking.amount_paid }} {{ booking.currency }}</td>
+              <td>{{ booking.total_price }} {{ booking.currency }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No bookings need payment attention." %}</p>
     {% endif %}
   </section>
 

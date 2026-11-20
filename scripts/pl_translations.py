@@ -878,4 +878,68 @@ TRANSLATIONS: dict[str, str] = {
     "inbound SMS messages": "przychodzące wiadomości SMS",
     "received at": "odebrano",
     "to number": "numer odbiorcy",
+    # Payment tracking (v0.9.0)
+    "Payment": "Płatność",
+    "payment status": "status płatności",
+    "amount paid": "zapłacona kwota",
+    "payment method": "metoda płatności",
+    "payment reference": "numer referencyjny płatności",
+    "paid at": "opłacono",
+    "payment notes": "notatki o płatności",
+    "Payment status": "Status płatności",
+    "Unpaid": "Nieopłacona",
+    "Partially paid": "Częściowo opłacona",
+    "Paid": "Opłacona",
+    "Refunded": "Zwrócona",
+    "Bookings needing payment": "Rezerwacje wymagające płatności",
+    "Payment attention": "Płatności wymagające uwagi",
+    "No bookings need payment attention.": "Brak rezerwacji wymagających uwagi dotyczącej płatności.",
+    "Amount paid": "Zapłacona kwota",
+    "Balance due": "Pozostało do zapłaty",
+    # Payment audit (v0.9.0)
+    "Payment recorded": "Zarejestrowano p?atno??",
+    "Payment adjusted": "Skorygowano p?atno??",
+    "Payment refunded": "Zwr?cono p?atno??",
+    "Payment waived": "Umorzono p?atno??",
+    "Provide an amount or amount paid.": "Podaj kwot? lub zap?acon? kwot?.",
+    "Choose a valid payment action.": "Wybierz prawid?owe dzia?anie dotycz?ce p?atno?ci.",
+    "Amount must be zero or greater.": "Kwota musi by? r?wna zero lub wi?ksza.",
+    "Amount paid must be zero or greater.": "Zap?acona kwota musi by? r?wna zero lub wi?ksza.",
+    "Amount paid cannot be negative.": "Zap?acona kwota nie mo?e by? ujemna.",
+    "Choose a valid payment status.": "Wybierz prawid?owy status p?atno?ci.",
+    "Payment %(action)s (%(delta)s %(currency)s).": "P?atno??: %(action)s (%(delta)s %(currency)s).",
+
+    # Deposit policy (v0.9.0)
+    "Deposit required": "Wymagana zaliczka",
+    "Amount due now": "Do zap?aty teraz",
+    "No deposit is required. The balance due is %(amount)s %(currency)s.": (
+        "Zaliczka nie jest wymagana. Pozosta?o do zap?aty: %(amount)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s (%(percent)s%% of the total) is required. Amount due now: %(due_now)s %(currency)s. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s (%(percent)s%% ca?kowitej kwoty). "
+        "Do zap?aty teraz: %(due_now)s %(currency)s. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s (%(percent)s%% of the total) is required. The deposit is covered. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s (%(percent)s%% ca?kowitej kwoty). "
+        "Zaliczka zosta?a pokryta. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s is required. Amount due now: %(due_now)s %(currency)s. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s. "
+        "Do zap?aty teraz: %(due_now)s %(currency)s. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    "A deposit of %(deposit)s %(currency)s is required. The deposit is covered. Remaining balance: %(balance)s %(currency)s.": (
+        "Wymagana jest zaliczka w wysoko?ci %(deposit)s %(currency)s. "
+        "Zaliczka zosta?a pokryta. Pozosta?e saldo: %(balance)s %(currency)s."
+    ),
+    # Deposit policy overrides (v0.9.0 rate plans)
+    "Inherit hotel policy": "Dziedzicz polityk? hotelu",
+    "No deposit": "Brak zaliczki",
+    "Percentage of total": "Procent kwoty ca?kowitej",
+    "Override the hotel deposit policy for this rate plan. Leave blank to inherit the hotel setting.": (
+        "Zast?p polityk? zaliczek hotelu dla tego planu cenowego. Pozostaw puste, aby dziedziczy? ustawienie hotelu."
+    ),
+    "Deposit percentage or fixed amount when a deposit policy override is selected.": (
+        "Procent lub sta?a kwota zaliczki, gdy wybrano nadpisanie polityki zaliczek."
+    ),
+
 }

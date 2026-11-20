@@ -17,7 +17,7 @@ Status as of **20 November 2026**.
 | 10 | Revenue and delivery hardening | ✅ Complete (v0.4.0) |
 | 11 | Guest experience and polish | ✅ Complete (v0.5.0) |
 
-The alpha release covering phases 0–7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.8.0** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, the v0.6.10 demo-provider fix for a forgotten guest count, operational-visibility work (email history, scheduler load coverage, SMS delivery receipts and inbound replies), and SMS confirmation retry/backoff parity with scheduler and ops visibility.
+The alpha release covering phases 0-7 is documented in [releases/v0.1.0.md](releases/v0.1.0.md). The operational-confidence release covering phase 8 is documented in [releases/v0.2.0.md](releases/v0.2.0.md). The guest self-service release covering phase 9 is documented in [releases/v0.3.0.md](releases/v0.3.0.md). The revenue-hardening release covering phase 10 is documented in [releases/v0.4.0.md](releases/v0.4.0.md); the guest-experience release covering phase 11 is in [releases/v0.5.0.md](releases/v0.5.0.md). Subsequent releases through **v0.9.0** are documented in [`docs/releases/`](releases/), including channel manager/currency/PWA slices, agent improvements (post-confirmation email offer, flexible natural-language date parsing), the guided seven-step booking scenario with Polish-first language handling and SMS confirmation delivery, the v0.6.10 demo-provider fix for a forgotten guest count, operational-visibility work (email history, scheduler load coverage, SMS delivery receipts and inbound replies), SMS confirmation retry/backoff parity, and manual/admin-first payment/deposit tracking with staff payment recording and a staff-only payments API.
 
 ---
 
@@ -316,3 +316,34 @@ Theme: **SMS retry/backoff parity with email**. Failed or unsent confirmation SM
 - [x] Scheduler load coverage for pending confirmation SMS backlog and due SMS retry backlog (`tests/test_scheduler_load.py`)
 
 **Exit criteria:** failed or unsent confirmation SMS messages retry automatically on the same operational model as email, and reception can see retry state from `/ops/` and the admin. **All met in v0.8.0.**
+
+---
+
+## Milestone v0.9.0 - ? Complete
+
+Theme: **payments and deposit tracking**. Record what a guest owes and has paid without introducing card processing into the alpha, so reception can see payment state alongside every booking and the guest journey can reflect it. Documented in [releases/v0.9.0.md](releases/v0.9.0.md).
+
+### Delivered
+
+- [x] Payment tracking foundation on bookings (PR #7, `616ea2b`): `payment_status` (unpaid/partially paid/paid/refunded), `amount_paid`, `payment_method`, `payment_reference`, `paid_at`, `payment_notes`, and migration `hotel.0017_booking_payment_tracking`
+- [x] Manual/admin visibility: booking admin list/filter/fieldset for payment state
+- [x] Operations visibility: `/ops/` card and table for active/pending bookings needing payment attention (unpaid or partially paid)
+- [x] API read exposure: token-gated booking responses include payment tracking fields
+- [x] Tests, migration, and Polish translations for the payment tracking foundation
+- [x] Guest-facing payment summaries (PR #8, `bba8ccf`): `Booking.amount_due` and token-gated API exposure, payment summary on the guest booking detail page, and payment summary in confirmation email/SMS templates with updated tests and Polish translations
+- [x] Payment audit trail and staff recording path (PR #9, `a9eebf0`): append-only `BookingEvent` payment types (`payment_recorded`/`payment_adjusted`/`payment_refunded`/`payment_waived`, migration `hotel.0018_bookingevent_payment_types`), `record_booking_payment()` single write path, and `manage.py record_payment` staff command with tests and Polish translations
+- [x] Hotel-level deposit/prepayment policy and guest-facing deposit summary (PR #10, `83567e6`): configurable policy via `settings.HOTEL`/env (`DEPOSIT_POLICY=none|percent|fixed`, `DEPOSIT_VALUE`), `apps/hotel/deposit.py` `deposit_summary()` single source of truth, and deposit details surfaced via `Booking` helpers, booking API (`deposit_amount`, `amount_due_now`, `deposit`), guest booking detail, and confirmation email/SMS templates with tests and translations
+- [x] Payment/deposit documentation alignment (PR #11, `10eeb55`)
+- [x] Rate-plan-specific deposit/prepayment policy overrides (PR #12, `a0cf96d`): optional per-`RatePlan` deposit policy/value (inherit hotel policy, no deposit, percentage of total, or fixed amount) with migration `hotel.0019_rateplan_deposit_policy`, admin fields, effective-policy resolution in `deposit_summary()`, tests and translations
+- [x] Staff-only payment-recording API path (PR #13, `05555d7`): `POST /api/v1/bookings/<reference>/payments/` for authenticated `is_staff` users (DRF `IsAdminUser`, no guest booking tokens), accepting `record_payment`-aligned fields, calling `record_booking_payment()` and returning the updated booking, with tests and API docs
+
+### Remaining scope
+
+- (none)
+
+### Out of scope (unless explicitly planned later)
+
+- Direct card/acquirer integration (Stripe/Adyen/etc.) and PCI-sensitive payment form handling
+- Automatic capture, chargeback handling, or accounting-system sync
+
+**Exit criteria:** reception can record and review deposit/payment state for a booking from the admin and `/ops/` (and via the staff-only payments API) without editing raw database rows; the guest-facing booking view and confirmations clearly communicate what is due/paid when a deposit or prepayment applies; payment changes are attributable in the audit trail; and existing booking, confirmation, and cancellation flows continue to pass the full gate. **All met in v0.9.0.**

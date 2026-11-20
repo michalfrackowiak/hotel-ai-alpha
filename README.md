@@ -2,7 +2,7 @@
 
 An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **Polish and English**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, sends a bilingual confirmation by email or SMS and mirrors it into a per-room Google Calendar.
 
-> **Alpha status.** This is a working demonstration, not a production PMS. There is no payment processing and no hardening against hostile internet traffic yet. See [Known limitations](#known-limitations).
+> **Alpha status.** This is a working demonstration, not a production PMS. Payments and deposits are tracked manually (no direct card processing or automatic capture) and the app is not hardened against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
 ---
 
@@ -21,6 +21,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Rate calendar**: nightly rates and minimum-stay rules editable in a month grid in the admin.
 - **Confirmation email** in the guest's language, with a text body, HTML body and an `.ics` calendar attachment. Failed sends retry with exponential backoff from the scheduler, and the `/ops/` dashboard tracks delivered, failed, bounced and complained messages.
 - **Confirmation SMS** through a pluggable provider layer: the offline console provider by default, Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded, provider delivery receipts update the booking/status history, and inbound guest replies are stored and shown in `/ops/` and the admin.
+- **Payment and deposit tracking (manual/admin-first)**: bookings track payment status, amount paid/due, method/reference/notes and a configurable deposit policy (hotel-level `DEPOSIT_POLICY`/`DEPOSIT_VALUE`, with optional per-rate-plan overrides). Guests see what is due/paid (including deposit/amount due now) on the booking page and in confirmations; staff can record payment changes via the admin, `record_payment`, or the staff-only booking payments API (append-only payment audit events). No direct card processing or automatic capture.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
@@ -177,6 +178,17 @@ To receive delivery receipts and inbound replies, point the provider at `POST /a
 
 ---
 
+## Payments and deposit policy
+
+Payment handling is **manual/admin-first**: there is no direct card/acquirer integration, automatic capture, chargeback handling or accounting sync.
+
+- **Deposit policy** is configured at the hotel level (`DEPOSIT_POLICY=none|percent|fixed`, `DEPOSIT_VALUE` in `.env` / settings) and can be overridden per rate plan in the admin (inherit hotel policy, no deposit, percentage of total, or fixed amount). `PERCENT` treats the value as a percentage of the booking total; `FIXED` treats it as an amount in the hotel currency. `apps/hotel/deposit.py` `deposit_summary()` is the single source of truth for deposit amount, amount due now and the guest-facing policy text.
+- **Booking payment state** tracks `payment_status` (unpaid/partially paid/paid/refunded), `amount_paid`, `amount_due`, `payment_method`, `payment_reference`, `paid_at` and `payment_notes`. Guests see payment and deposit summaries on the signed booking page and in confirmation email/SMS; token-gated booking API responses expose the same fields.
+- **Recording payments**: staff can update payment state in the admin, with `manage.py record_payment`, or via `POST /api/v1/bookings/<reference>/payments/` (authenticated `is_staff` only, no guest booking tokens). Actions: `recorded`, `adjusted`, `refunded`, `waived`. Each change goes through `apps.hotel.booking_service.record_booking_payment()` and appends an immutable `BookingEvent` (`payment_recorded`/`payment_adjusted`/`payment_refunded`/`payment_waived`).
+- **Operations visibility**: `/ops/` highlights active/pending bookings needing payment attention (unpaid or partially paid).
+
+---
+
 ## Google Calendar
 
 The calendar layer is **one calendar per room**:
@@ -246,6 +258,7 @@ The translation scripts exist because GNU gettext is not guaranteed on Windows. 
 | `send_booking_sms` | Retry confirmation SMS messages that are due, honouring exponential backoff (`--force` resends sent messages) |
 | `sync_calendars` | Sync bookings, retry failures or sync one reference |
 | `reconcile_calendars` | Report calendar drift; `--apply` repairs it |
+| `record_payment` | Record a staff payment change (recorded/adjusted/refunded/waived) and append a payment audit event (also available via the staff-only booking payments API) |
 | `rotate_provider_keys` | Re-encrypt provider API keys after an encryption-key rotation |
 | `google_calendar_authorize` | Produce an OAuth token for an authorised user |
 
@@ -276,7 +289,7 @@ docs/             architecture, API, roadmap, branching, release notes
 ## Known limitations
 
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
-- No payment, deposit or invoice integration. (iCal channel manager is available; see `sync_channel_feeds`.)
+- No direct card/acquirer payment processing, automatic capture, chargeback handling or accounting/invoice integration. Payments and deposit policy are tracked manually (admin, `record_payment`, or the staff-only payments API) with append-only audit events. (iCal channel manager is available; see `sync_channel_feeds`.)
 - Booking access uses signed links; the guest account is passwordless (single-use magic link), so there is no password to reset or leak.
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.

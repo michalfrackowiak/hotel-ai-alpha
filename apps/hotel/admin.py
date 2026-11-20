@@ -364,8 +364,10 @@ class BookingAdmin(admin.ModelAdmin):
         "room",
         "stay",
         "status",
+        "payment_status",
         "source",
         "total_price",
+        "amount_paid",
         "cancellation_fee",
         "hold_state",
         "confirmation_email_status",
@@ -374,6 +376,7 @@ class BookingAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "status",
+        "payment_status",
         "source",
         "language",
         "cancelled_by",
@@ -410,6 +413,19 @@ class BookingAdmin(admin.ModelAdmin):
         (_("Guest"), {"fields": ("client",)}),
         (_("Stay"), {"fields": ("room", "check_in", "check_out", "adults", "children")}),
         (_("Price"), {"fields": ("currency", "total_price", "price_breakdown")}),
+        (
+            _("Payment"),
+            {
+                "fields": (
+                    "payment_status",
+                    "amount_paid",
+                    "payment_method",
+                    "payment_reference",
+                    "paid_at",
+                    "payment_notes",
+                )
+            },
+        ),
         (_("Extras"), {"fields": ("special_requests", "hold_expires_at", "external_event_id")}),
         (
             _("Confirmation SMS"),
@@ -567,7 +583,19 @@ class RatePlanAdmin(admin.ModelAdmin):
     search_fields = ("name", "slug", "description")
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("sort_order", "name")
-    fields = ("name", "slug", "room_type", "description", "kind", "adjustment", "is_refundable", "is_active", "sort_order")
+    fields = (
+        "name",
+        "slug",
+        "room_type",
+        "description",
+        "kind",
+        "adjustment",
+        "is_refundable",
+        "deposit_policy",
+        "deposit_value",
+        "is_active",
+        "sort_order",
+    )
 
 
 @admin.register(DailyRate)

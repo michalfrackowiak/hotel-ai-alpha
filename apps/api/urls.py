@@ -20,6 +20,11 @@ urlpatterns = [
         views.BookingCancellationPreviewView.as_view(),
         name="booking-cancellation-preview",
     ),
+    path(
+        "bookings/<str:reference>/payments/",
+        views.BookingPaymentRecordView.as_view(),
+        name="booking-payments",
+    ),
     path("chat/sessions/", views.ChatSessionCreateView.as_view(), name="chat-session-create"),
     path("chat/sessions/<str:session_key>/", views.ChatSessionDetailView.as_view(), name="chat-session"),
     path(

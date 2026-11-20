@@ -31,6 +31,7 @@ from apps.hotel.booking_service import (
     get_booking,
 )
 from apps.hotel.cancellation import cancellation_preview
+from apps.hotel.deposit import deposit_summary
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
     bookings_for_email,
@@ -325,6 +326,7 @@ def booking_detail(request, reference: str):
             "booking": booking,
             "access_token": token,
             "cancellation": cancellation_preview(booking),
+            "deposit": deposit_summary(booking),
             "room_types": RoomType.objects.filter(is_active=True).order_by("sort_order", "base_price", "name"),
             "today": timezone.localdate(),
         },
@@ -433,6 +435,20 @@ def ops_dashboard(request):
         InboundSmsMessage.objects.select_related("booking", "booking__client")
         .order_by("-received_at", "-created_at")[:20]
     )
+    payment_attention_statuses = (Booking.PaymentStatus.UNPAID, Booking.PaymentStatus.PARTIALLY_PAID)
+    payment_attention = (
+        Booking.objects.filter(
+            status__in=(Booking.Status.PENDING, *active_statuses),
+            payment_status__in=payment_attention_statuses,
+        )
+        .select_related("client", "room", "room__room_type")
+        .order_by("check_in", "reference")[:20]
+    )
+    payment_attention_count = Booking.objects.filter(
+        status__in=(Booking.Status.PENDING, *active_statuses),
+        payment_status__in=payment_attention_statuses,
+    ).count()
+
     recent_events = BookingEvent.objects.select_related("booking").order_by("-created_at", "-pk")[:20]
     dirty_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.DIRTY).select_related("room_type").order_by("number")
     out_of_order_rooms = Room.objects.filter(housekeeping_status=Room.HousekeepingStatus.OUT_OF_ORDER).select_related("room_type").order_by("number")
@@ -469,6 +485,8 @@ def ops_dashboard(request):
             "sms_failed_count": sms_failed_count,
             "sms_sent_count": sms_sent_count,
             "sms_retry_count": sms_retry_count,
+            "payment_attention": payment_attention,
+            "payment_attention_count": payment_attention_count,
             "problem_sms": problem_sms,
             "sms_history": sms_history,
             "inbound_sms": inbound_sms,

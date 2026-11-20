@@ -68,6 +68,39 @@
       {% endif %}
     {% endif %}
 
+    <h2 class="booking-card__section-title">{% trans "Payment" %}</h2>
+    <div class="detail-grid">
+      <div class="detail">
+        <span class="detail__label">{% trans "Payment status" %}</span>
+        <span class="detail__value">{{ booking.get_payment_status_display }}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Amount paid" %}</span>
+        <span class="detail__value">{{ booking.amount_paid|money }}</span>
+      </div>
+      {% if deposit.applies %}
+      <div class="detail">
+        <span class="detail__label">{% trans "Deposit required" %}</span>
+        <span class="detail__value">{{ deposit.deposit_amount|money }}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Amount due now" %}</span>
+        <span class="detail__value">{{ deposit.amount_due_now|money }}</span>
+      </div>
+      {% endif %}
+      <div class="detail">
+        <span class="detail__label">{% trans "Balance due" %}</span>
+        <span class="detail__value">{{ booking.amount_due|money }}</span>
+      </div>
+      <div class="detail">
+        <span class="detail__label">{% trans "Total" %}</span>
+        <span class="detail__value">{{ booking.total_price|money }}</span>
+      </div>
+    </div>
+    {% if deposit.applies %}
+      <p class="muted">{{ deposit.policy_text }}</p>
+    {% endif %}
+
     <div class="detail-grid">
       <div class="detail">
         <span class="detail__label">{% trans "Check-in" %}</span>

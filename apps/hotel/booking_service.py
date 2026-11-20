@@ -85,6 +85,21 @@ def booking_snapshot(booking: Booking) -> dict[str, Any]:
     }
 
 
+def payment_snapshot(booking: Booking) -> dict[str, Any]:
+    """Payment state stored in payment audit events."""
+    return {
+        "payment_status": booking.payment_status,
+        "amount_paid": str(booking.amount_paid),
+        "amount_due": str(booking.amount_due),
+        "payment_method": booking.payment_method,
+        "payment_reference": booking.payment_reference,
+        "paid_at": booking.paid_at.isoformat() if booking.paid_at else None,
+        "payment_notes": booking.payment_notes,
+        "currency": booking.currency,
+        "total_price": str(booking.total_price),
+    }
+
+
 def actor_for_source(source: str) -> str:
     if source == Booking.Source.ADMIN:
         return BookingEvent.Actor.STAFF
@@ -564,6 +579,149 @@ def modify_booking(
 
     logger.info("Modified booking %s (%s → %s)", booking.reference, booking.check_in, booking.check_out)
     _schedule_calendar_sync(booking)
+    return booking
+
+
+PAYMENT_ACTIONS = {
+    "recorded": BookingEvent.Type.PAYMENT_RECORDED,
+    "adjusted": BookingEvent.Type.PAYMENT_ADJUSTED,
+    "refunded": BookingEvent.Type.PAYMENT_REFUNDED,
+    "waived": BookingEvent.Type.PAYMENT_WAIVED,
+}
+
+
+def _to_decimal(value: Decimal | str | int | float) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value))
+
+
+def _resolve_amount_paid(
+    booking: Booking, action: str, *, amount: Decimal | None, amount_paid: Decimal | None
+) -> Decimal:
+    if amount_paid is not None:
+        return amount_paid.quantize(Decimal("0.01"))
+    if amount is None:
+        raise BookingError("amount_required", _("Provide an amount or amount paid."))
+    current = booking.amount_paid or Decimal("0")
+    if action == "recorded":
+        return (current + amount).quantize(Decimal("0.01"))
+    if action in {"refunded", "waived"}:
+        return (current - amount).quantize(Decimal("0.01"))
+    # adjusted: treat amount as the new absolute amount paid
+    return amount.quantize(Decimal("0.01"))
+
+
+def _resolve_payment_status(booking: Booking, new_amount_paid: Decimal, payment_status: str | None) -> str:
+    if payment_status:
+        if payment_status not in Booking.PaymentStatus.values:
+            raise BookingError("invalid_payment_status", _("Choose a valid payment status."))
+        return payment_status
+    total = booking.total_price or Decimal("0")
+    if new_amount_paid <= Decimal("0"):
+        return Booking.PaymentStatus.UNPAID
+    if new_amount_paid >= total:
+        return Booking.PaymentStatus.PAID
+    return Booking.PaymentStatus.PARTIALLY_PAID
+
+
+@transaction.atomic
+def record_booking_payment(
+    reference: str,
+    *,
+    action: str,
+    amount: Decimal | str | int | float | None = None,
+    amount_paid: Decimal | str | int | float | None = None,
+    payment_status: str | None = None,
+    payment_method: str | None = None,
+    payment_reference: str | None = None,
+    paid_at=None,
+    payment_notes: str | None = None,
+    actor: str = BookingEvent.Actor.STAFF,
+    channel: str = "admin",
+    summary: str = "",
+) -> Booking:
+    """Record a staff payment change and append an immutable audit event."""
+    if action not in PAYMENT_ACTIONS:
+        raise BookingError("invalid_payment_action", _("Choose a valid payment action."))
+
+    amount_value = _to_decimal(amount) if amount is not None else None
+    amount_paid_value = _to_decimal(amount_paid) if amount_paid is not None else None
+    if amount_value is not None and amount_value < Decimal("0"):
+        raise BookingError("invalid_amount", _("Amount must be zero or greater."))
+    if amount_paid_value is not None and amount_paid_value < Decimal("0"):
+        raise BookingError("invalid_amount", _("Amount paid must be zero or greater."))
+
+    try:
+        booking = Booking.objects.select_for_update().select_related("room", "room__room_type", "client").get(
+            reference=reference
+        )
+    except Booking.DoesNotExist as exc:
+        raise BookingError("booking_not_found", _("Booking not found."), status=404) from exc
+
+    before = payment_snapshot(booking)
+    new_amount_paid = _resolve_amount_paid(booking, action, amount=amount_value, amount_paid=amount_paid_value)
+    if new_amount_paid < Decimal("0"):
+        raise BookingError("invalid_amount", _("Amount paid cannot be negative."))
+
+    new_status = _resolve_payment_status(booking, new_amount_paid, payment_status)
+    booking.amount_paid = new_amount_paid
+    booking.payment_status = new_status
+    if payment_method is not None:
+        booking.payment_method = payment_method
+    if payment_reference is not None:
+        booking.payment_reference = payment_reference
+    if payment_notes is not None:
+        booking.payment_notes = payment_notes
+    if paid_at is not None:
+        booking.paid_at = paid_at
+    elif action == "recorded" and new_amount_paid > Decimal("0") and booking.paid_at is None:
+        booking.paid_at = timezone.now()
+
+    try:
+        booking.full_clean()
+    except ValidationError as exc:
+        raise _translate_validation_error(exc) from exc
+
+    update_fields = [
+        "amount_paid",
+        "payment_status",
+        "payment_method",
+        "payment_reference",
+        "paid_at",
+        "payment_notes",
+        "updated_at",
+    ]
+    booking.save(update_fields=update_fields)
+
+    after = payment_snapshot(booking)
+    delta = (Decimal(after["amount_paid"]) - Decimal(before["amount_paid"])).quantize(Decimal("0.01"))
+    event_summary = summary or _("Payment %(action)s (%(delta)s %(currency)s).") % {
+        "action": action,
+        "delta": delta,
+        "currency": booking.currency,
+    }
+    record_event(
+        booking,
+        PAYMENT_ACTIONS[action],
+        actor=actor,
+        channel=channel or booking.source,
+        summary=event_summary,
+        data={
+            "action": action,
+            "before": before,
+            "after": after,
+            "delta": str(delta),
+            "amount": str(amount_value) if amount_value is not None else None,
+        },
+    )
+    logger.info(
+        "Recorded booking payment %s action=%s amount_paid=%s status=%s",
+        booking.reference,
+        action,
+        booking.amount_paid,
+        booking.payment_status,
+    )
     return booking
 
 

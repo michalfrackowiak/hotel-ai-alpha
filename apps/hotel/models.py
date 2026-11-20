@@ -324,6 +324,12 @@ class RatePlan(TimeStampedModel):
         PERCENT = "percent", _("Percentage")
         FIXED = "fixed", _("Fixed amount")
 
+    class DepositPolicy(models.TextChoices):
+        INHERIT = "", _("Inherit hotel policy")
+        NONE = "none", _("No deposit")
+        PERCENT = "percent", _("Percentage of total")
+        FIXED = "fixed", _("Fixed amount")
+
     room_type = models.ForeignKey(
         RoomType,
         on_delete=models.CASCADE,
@@ -344,6 +350,22 @@ class RatePlan(TimeStampedModel):
         help_text=_("Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."),
     )
     is_refundable = models.BooleanField(_("refundable"), default=True)
+    deposit_policy = models.CharField(
+        _("deposit policy"),
+        max_length=10,
+        choices=DepositPolicy.choices,
+        blank=True,
+        default="",
+        help_text=_("Override the hotel deposit policy for this rate plan. Leave blank to inherit the hotel setting."),
+    )
+    deposit_value = models.DecimalField(
+        _("deposit value"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_("Deposit percentage or fixed amount when a deposit policy override is selected."),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
 
@@ -444,6 +466,12 @@ class Booking(TimeStampedModel):
         AGENT = "agent", _("AI concierge")
         SYSTEM = "system", _("System")
 
+    class PaymentStatus(models.TextChoices):
+        UNPAID = "unpaid", _("Unpaid")
+        PARTIALLY_PAID = "partially_paid", _("Partially paid")
+        PAID = "paid", _("Paid")
+        REFUNDED = "refunded", _("Refunded")
+
     ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED, Status.CHECKED_IN)
     BLOCKING_STATUSES = (Status.CONFIRMED, Status.CHECKED_IN)
 
@@ -491,6 +519,24 @@ class Booking(TimeStampedModel):
         choices=CancelledBy.choices,
         blank=True,
     )
+    payment_status = models.CharField(
+        _("payment status"),
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.UNPAID,
+        db_index=True,
+    )
+    amount_paid = models.DecimalField(
+        _("amount paid"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    payment_method = models.CharField(_("payment method"), max_length=40, blank=True, default="")
+    payment_reference = models.CharField(_("payment reference"), max_length=120, blank=True, default="")
+    paid_at = models.DateTimeField(_("paid at"), null=True, blank=True)
+    payment_notes = models.TextField(_("payment notes"), blank=True, default="")
     confirmation_email_sent_at = models.DateTimeField(_("confirmation email sent at"), null=True, blank=True)
     confirmation_email_status = models.CharField(
         _("confirmation email status"),
@@ -607,6 +653,26 @@ class Booking(TimeStampedModel):
     @property
     def room_type(self) -> RoomType:
         return self.room.room_type
+
+    @property
+    def amount_due(self) -> Decimal:
+        """Outstanding balance against the booking total."""
+        due = (self.total_price or Decimal("0")) - (self.amount_paid or Decimal("0"))
+        return max(due, Decimal("0")).quantize(Decimal("0.01"))
+
+    @property
+    def deposit_summary(self):
+        from .deposit import deposit_summary
+
+        return deposit_summary(self)
+
+    @property
+    def deposit_amount(self) -> Decimal:
+        return self.deposit_summary.deposit_amount
+
+    @property
+    def amount_due_now(self) -> Decimal:
+        return self.deposit_summary.amount_due_now
 
     def clean(self) -> None:
         super().clean()
@@ -799,6 +865,10 @@ class BookingEvent(models.Model):
         NO_SHOW = "no_show", _("No show")
         EMAIL_SENT = "email_sent", _("Email sent")
         CALENDAR_SYNCED = "calendar_synced", _("Calendar synced")
+        PAYMENT_RECORDED = "payment_recorded", _("Payment recorded")
+        PAYMENT_ADJUSTED = "payment_adjusted", _("Payment adjusted")
+        PAYMENT_REFUNDED = "payment_refunded", _("Payment refunded")
+        PAYMENT_WAIVED = "payment_waived", _("Payment waived")
 
     class Actor(models.TextChoices):
         GUEST = "guest", _("Guest")

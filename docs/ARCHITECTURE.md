@@ -30,7 +30,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 
 | App | Responsibility |
 | --- | --- |
-| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, audit events, signed access tokens, guest magic-link tokens, confirmation email and SMS (including delivery history and inbound replies), admin, seed/ops commands |
+| `apps.hotel` | Rooms, room types, clients, pricing rules, daily rates, bookings, availability, transactional booking service, cancellation policy, deposit policy, manual payment tracking/recording, audit events, signed access tokens, guest magic-link tokens, confirmation email and SMS (including delivery history and inbound replies), admin, seed/ops commands |
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
@@ -113,6 +113,12 @@ stateDiagram-v2
 `apps.hotel.booking_service` is the only write path. It locks the room type row (`select_for_update`), checks capacity and availability, prices the stay, deduplicates/creates the client, validates and saves the booking, and schedules calendar sync and the confirmation email with `transaction.on_commit`. `modify_booking()` reuses the same availability and pricing code with `exclude_booking`, so a guest can move dates or room type without double-booking themselves.
 
 Every transition appends a `BookingEvent` with the actor (`guest`, `staff`, `agent`, `system`), channel, a summary and JSON before/after data. The model rejects updates, and the admin is read-only, so the trail is append-only by construction.
+
+### Payment tracking and deposit policy
+
+Payment handling is manual/admin-first (no direct card/acquirer integration or automatic capture). `Booking` stores `payment_status`, `amount_paid`, `amount_due` (derived), `payment_method`, `payment_reference`, `paid_at` and `payment_notes`. `record_booking_payment()` in `apps.hotel.booking_service` is the single write path for staff payment changes (recorded/adjusted/refunded/waived): it updates the booking, derives status when not explicitly set, and appends an immutable `BookingEvent` (`payment_recorded`, `payment_adjusted`, `payment_refunded`, `payment_waived`) with before/after payment snapshots. The `record_payment` management command and the admin use this path.
+
+`apps.hotel.deposit` `deposit_summary()` is the single source of truth for the deposit/prepayment policy: hotel-level defaults from `HOTEL["deposit_policy"]` / `HOTEL["deposit_value"]` (`DEPOSIT_POLICY=none|percent|fixed`, `DEPOSIT_VALUE`), optionally overridden per `RatePlan` (`inherit`/`none`/`percent`/`fixed`). The summary (deposit amount, amount due now, balance due and policy text) is surfaced on the guest booking page, in confirmation email/SMS, and in token-gated booking API responses. `/ops/` highlights active/pending bookings needing payment attention (unpaid or partially paid).
 
 ### Cancellation policy
 
@@ -272,9 +278,9 @@ Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise ser
 
 ### Security posture
 
-Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, single-use hashed magic links, encrypted provider keys, append-only booking audit events, no card data collection.
+Implemented: CSRF, clickjacking protection, HttpOnly session cookies, SameSite=Lax, optional secure cookies/HSTS, API throttling backed by the database cache, signed booking tokens, single-use hashed magic links, encrypted provider keys, append-only booking and payment audit events, no card data collection or direct payment processing.
 
-Deliberately out of scope for the alpha: payment, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
+Deliberately out of scope for the alpha: card/acquirer integration and automatic capture, virus scanning of uploads, multi-factor admin, rate limiting at the proxy, external secret management.
 
 ## Extension points
 

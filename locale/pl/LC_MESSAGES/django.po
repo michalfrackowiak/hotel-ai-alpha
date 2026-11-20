@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-19 20:33+0100\n"
+"POT-Creation-Date: 2026-11-20 10:37+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -135,6 +135,21 @@ msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
 msgid "All rooms are clean."
 msgstr "Wszystkie pokoje są czyste."
 
+msgid "Amount due now"
+msgstr "Do zap?aty teraz"
+
+msgid "Amount must be zero or greater."
+msgstr "Kwota musi by? r?wna zero lub wi?ksza."
+
+msgid "Amount paid"
+msgstr "Zapłacona kwota"
+
+msgid "Amount paid cannot be negative."
+msgstr "Zap?acona kwota nie mo?e by? ujemna."
+
+msgid "Amount paid must be zero or greater."
+msgstr "Zap?acona kwota musi by? r?wna zero lub wi?ksza."
+
 msgid "Anthropic"
 msgstr "Anthropic"
 
@@ -192,6 +207,9 @@ msgstr "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domy
 
 msgid "Back to rooms"
 msgstr "Wróć do pokoi"
+
+msgid "Balance due"
+msgstr "Pozostało do zapłaty"
 
 msgid "Behaviour"
 msgstr "Zachowanie"
@@ -251,6 +269,9 @@ msgstr "Numer rezerwacji"
 #, python-format
 msgid "Bookings can be made at most %(days)s days ahead."
 msgstr "Rezerwacji można dokonać najwyżej %(days)s dni wcześniej."
+
+msgid "Bookings needing payment"
+msgstr "Rezerwacje wymagające płatności"
 
 msgid "Both check-in and check-out dates are required."
 msgstr "Wymagane są daty zameldowania i wymeldowania."
@@ -404,6 +425,12 @@ msgstr "Najpierw wybierz typ pokoju i terminy."
 msgid "Choose a valid cancellation reason."
 msgstr "Wybierz prawidłowy powód anulowania."
 
+msgid "Choose a valid payment action."
+msgstr "Wybierz prawid?owe dzia?anie dotycz?ce p?atno?ci."
+
+msgid "Choose a valid payment status."
+msgstr "Wybierz prawid?owy status p?atno?ci."
+
 msgid "Choose your rate"
 msgstr "Wybierz taryfę"
 
@@ -502,6 +529,12 @@ msgstr "Wyjazdy"
 
 msgid "Departures today"
 msgstr "Dzisiejsze wyjazdy"
+
+msgid "Deposit percentage or fixed amount when a deposit policy override is selected."
+msgstr "Procent lub sta?a kwota zaliczki, gdy wybrano nadpisanie polityki zaliczek."
+
+msgid "Deposit required"
+msgstr "Wymagana zaliczka"
 
 msgid "Direct booking"
 msgstr "Rezerwacja bezpośrednia"
@@ -739,6 +772,9 @@ msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
 msgid "Inbound SMS replies"
 msgstr "Przychodzące odpowiedzi SMS"
 
+msgid "Inherit hotel policy"
+msgstr "Dziedzicz polityk? hotelu"
+
 msgid "Inspected"
 msgstr "Sprawdzony"
 
@@ -880,6 +916,9 @@ msgstr "Żadna rezerwacja nie może obejmować tej nocy."
 msgid "No booking yet. Share your dates to get started."
 msgstr "Nie ma jeszcze rezerwacji. Podaj terminy, aby zacząć."
 
+msgid "No bookings need payment attention."
+msgstr "Brak rezerwacji wymagających uwagi dotyczącej płatności."
+
 msgid "No card details are needed in the chat."
 msgstr "W czacie nie są potrzebne dane karty."
 
@@ -891,6 +930,9 @@ msgstr "Brak problemów z dostarczaniem."
 
 msgid "No departures scheduled for today."
 msgstr "Brak zaplanowanych wyjazdów na dziś."
+
+msgid "No deposit"
+msgstr "Brak zaliczki"
 
 msgid "No emails logged yet."
 msgstr "Brak zapisanych e-maili."
@@ -954,6 +996,44 @@ msgstr "Inny"
 msgid "Out of order"
 msgstr "Wyłączony z użytku"
 
+msgid ""
+"Override the hotel deposit policy for this rate plan. Leave blank to inherit the "
+"hotel setting."
+msgstr ""
+"Zast?p polityk? zaliczek hotelu dla tego planu cenowego. Pozostaw puste, aby "
+"dziedziczy? ustawienie hotelu."
+
+msgid "Paid"
+msgstr "Opłacona"
+
+msgid "Partially paid"
+msgstr "Częściowo opłacona"
+
+msgid "Payment"
+msgstr "Płatność"
+
+#, python-format
+msgid "Payment %(action)s (%(delta)s %(currency)s)."
+msgstr "P?atno??: %(action)s (%(delta)s %(currency)s)."
+
+msgid "Payment adjusted"
+msgstr "Skorygowano p?atno??"
+
+msgid "Payment attention"
+msgstr "Płatności wymagające uwagi"
+
+msgid "Payment recorded"
+msgstr "Zarejestrowano p?atno??"
+
+msgid "Payment refunded"
+msgstr "Zwr?cono p?atno??"
+
+msgid "Payment status"
+msgstr "Status płatności"
+
+msgid "Payment waived"
+msgstr "Umorzono p?atno??"
+
 msgid "Pending"
 msgstr "Oczekująca"
 
@@ -969,6 +1049,9 @@ msgstr "Procent"
 #, python-format
 msgid "Percentage (e.g. -10 for 10% off) or a fixed amount in the hotel currency."
 msgstr "Procent (np. -10 dla 10% rabatu) lub stała kwota w walucie hotelu."
+
+msgid "Percentage of total"
+msgstr "Procent kwoty ca?kowitej"
 
 msgid "Phone"
 msgstr "Telefon"
@@ -1027,6 +1110,9 @@ msgstr "Ceny zawierają VAT i dotyczą całego pobytu."
 msgid "Print"
 msgstr "Drukuj"
 
+msgid "Provide an amount or amount paid."
+msgstr "Podaj kwot? lub zap?acon? kwot?."
+
 msgid "Provide at least an email address or a phone number."
 msgstr "Podaj co najmniej adres e-mail lub numer telefonu."
 
@@ -1069,6 +1155,9 @@ msgstr "Numer"
 
 msgid "Refundable"
 msgstr "Zwrotna"
+
+msgid "Refunded"
+msgstr "Zwrócona"
 
 msgid "Resend confirmation SMS"
 msgstr "Wyślij ponownie SMS z potwierdzeniem"
@@ -1458,6 +1547,9 @@ msgstr "Niedostarczony"
 msgid "Unknown rate plan."
 msgstr "Nieznany plan cenowy."
 
+msgid "Unpaid"
+msgstr "Nieopłacona"
+
 msgid "Updating your reservation…"
 msgstr "Aktualizuję rezerwację…"
 
@@ -1588,6 +1680,9 @@ msgstr "udogodnienia"
 
 msgid "amount"
 msgstr "kwota"
+
+msgid "amount paid"
+msgstr "zapłacona kwota"
 
 msgid "assistant name"
 msgstr "nazwa asystenta"
@@ -1775,6 +1870,12 @@ msgstr "domyślny identyfikator kalendarza"
 msgid "default provider"
 msgstr "domyślny dostawca"
 
+msgid "deposit policy"
+msgstr ""
+
+msgid "deposit value"
+msgstr ""
+
 msgid "description"
 msgstr "opis"
 
@@ -1930,6 +2031,21 @@ msgstr "notatki"
 
 msgid "number"
 msgstr "numer"
+
+msgid "paid at"
+msgstr "opłacono"
+
+msgid "payment method"
+msgstr "metoda płatności"
+
+msgid "payment notes"
+msgstr "notatki o płatności"
+
+msgid "payment reference"
+msgstr "numer referencyjny płatności"
+
+msgid "payment status"
+msgstr "status płatności"
 
 msgid "phone"
 msgstr "telefon"
