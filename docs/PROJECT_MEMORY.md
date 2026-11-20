@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 19 November 2026 - **Version:** v0.7.0 - **Tests:** 223 passing
+**Last updated:** 20 November 2026 - **Version:** v0.8.0 - **Tests:** 223 passing
 
 ## Current state
 
@@ -281,6 +281,12 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-19 | v0.7.0 (unreleased) | `ruff check .` | clean |
 | 2026-11-19 | v0.7.0 (unreleased) | Polish catalogue | 642 strings extracted, 643 translated and compiled |
 | 2026-11-19 | v0.7.0 (unreleased) | GitHub Actions CI (PR #3, `feature/v0.7.0-sms-receipts-replies`) | green: test, docker and smoke jobs pass |
+| 2026-11-20 | v0.8.0 (release gate) | `pytest` | 223 passed |
+| 2026-11-20 | v0.8.0 (release gate) | `manage.py check` | 0 issues |
+| 2026-11-20 | v0.8.0 (release gate) | `makemigrations --check --dry-run` | no changes detected |
+| 2026-11-20 | v0.8.0 (release gate) | `ruff check .` | clean |
+| 2026-11-20 | v0.8.0 (release gate) | Docker compose build/up + `/healthz` | image built, web healthy, `/healthz` returned `{"status":"ok"}` |
+| 2026-11-20 | v0.8.0 (release gate) | EN/PL smoke (Docker) | `/`, `/book/`, `/chat/` returned 200 in EN/PL with expected language; API booking create+confirm succeeded in EN (`HA-QEGZLM`) and PL (`HA-EZX967`) |
 
 Update this table when the release gate is re-run.
 
@@ -293,4 +299,4 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.7.0 is released and tagged (`v0.7.0`, `b4e9b60`) on `main`. **v0.8.0 (unreleased, on `develop`)** includes SMS retry/backoff parity (PR #4, `5418604`), scheduler load coverage for pending SMS confirmations (PR #5, `d39606d`), and scheduler load coverage for due SMS retry backlogs (PR #6, `6dc890a`, `tests/test_scheduler_load.py`). No release has been cut. Next: choose the next slice (or prepare a v0.8.0 release if asked) and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
+v0.8.0 is released and tagged (`v0.8.0`) on `main`; `main` and `develop` are in sync. All roadmap items listed for v0.8.0 are complete (SMS retry/backoff parity with scheduler/command/ops visibility and SMS scheduler load coverage for pending and due retry backlogs). Next milestone scope is not yet defined — choose the next slice and plan it in [docs/ROADMAP.md](docs/ROADMAP.md) before starting implementation.
