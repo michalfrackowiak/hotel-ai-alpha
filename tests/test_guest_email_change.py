@@ -306,3 +306,45 @@ def test_authenticated_guest_still_sees_account_linked_booking_after_email_chang
     detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+@pytest.mark.django_db
+def test_magic_link_session_still_accesses_account_bookings_after_verified_email_change(
+    web_client, room_type, rooms, stay_dates
+):
+    """A magic-link session for the old email keeps access after email change."""
+    from apps.hotel.guest_access import GUEST_SESSION_KEY
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
+
+    # Simulate an active magic-link session for the old (now-verified) email.
+    session = web_client.session
+    session[GUEST_SESSION_KEY] = "anna@example.com"
+    session.save()
+
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+
+    user.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+
+    listing = web_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
