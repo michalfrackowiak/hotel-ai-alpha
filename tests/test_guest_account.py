@@ -93,13 +93,19 @@ def test_magic_link_signs_in_and_lists_every_booking(client, room_type, rooms, a
     assert response.status_code == 302
     assert response["Location"] == "/my-bookings/"
 
-    listing = client.get("/my-bookings/")
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
     content = listing.content.decode()
     assert listing.status_code == 200
     assert "anna@example.com" in content
     assert anna.reference in content
     assert second.reference in content
     assert client.session[GUEST_SESSION_KEY] == "anna@example.com"
+    # Unified My bookings shows rate/payment summary and a clear path to details.
+    assert "View reservation" in content
+    assert "Standard rate" in content
+    assert "Payment" in content
+    assert "Balance due" in content
+    assert f'/booking/{anna.reference}/' in content
 
 
 @pytest.mark.django_db
