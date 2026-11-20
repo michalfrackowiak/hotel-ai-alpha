@@ -100,3 +100,53 @@ def test_authenticated_guest_can_view_and_update_profile(client):
     # My bookings should offer account settings for authenticated guests
     listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
     assert "Account settings" in listing.content.decode()
+
+
+@pytest.mark.django_db
+def test_guest_profile_persists_preferences_when_no_linked_clients(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="",
+        last_name="",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    assert not account.clients.exists()
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "phone": "+48123123123",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert "saved" in response.content.decode().lower()
+
+    user.refresh_from_db()
+    assert user.first_name == "Anna"
+    assert user.last_name == "Kowalska"
+
+    linked = account.clients.get()
+    assert linked.email == "anna@example.com"
+    assert linked.first_name == "Anna"
+    assert linked.last_name == "Kowalska"
+    assert linked.phone == "+48123123123"
+    assert linked.language == "en"
+    assert linked.marketing_consent is True
+
+    page = client.get("/my-bookings/profile/", HTTP_ACCEPT_LANGUAGE="en")
+    content = page.content.decode()
+    assert "Anna" in content
+    assert "Kowalska" in content
+    assert "+48123123123" in content
