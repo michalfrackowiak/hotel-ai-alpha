@@ -117,3 +117,10 @@ class GuestPasswordChangeForm(PasswordChangeForm):
 class GuestProfileForm(forms.Form):
     first_name = forms.CharField(label=_("First name"), max_length=150, required=False)
     last_name = forms.CharField(label=_("Last name"), max_length=150, required=False)
+    phone = forms.CharField(label=_("Phone"), max_length=40, required=False)
+    language = forms.ChoiceField(
+        label=_("Preferred language"),
+        choices=[("en", _("English")), ("pl", _("Polish"))],
+        required=False,
+    )
+    marketing_consent = forms.BooleanField(label=_("Marketing consent"), required=False)
