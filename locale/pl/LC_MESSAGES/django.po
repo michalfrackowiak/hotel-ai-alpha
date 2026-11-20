@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 08:54+0100\n"
+"POT-Creation-Date: 2026-11-20 09:09+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -135,8 +135,17 @@ msgstr "Wszystkie przypisane kalendarze są zsynchronizowane."
 msgid "All rooms are clean."
 msgstr "Wszystkie pokoje są czyste."
 
+msgid "Amount must be zero or greater."
+msgstr "Kwota musi by? r?wna zero lub wi?ksza."
+
 msgid "Amount paid"
 msgstr "Zapłacona kwota"
+
+msgid "Amount paid cannot be negative."
+msgstr "Zap?acona kwota nie mo?e by? ujemna."
+
+msgid "Amount paid must be zero or greater."
+msgstr "Zap?acona kwota musi by? r?wna zero lub wi?ksza."
 
 msgid "Anthropic"
 msgstr "Anthropic"
@@ -412,6 +421,12 @@ msgstr "Najpierw wybierz typ pokoju i terminy."
 
 msgid "Choose a valid cancellation reason."
 msgstr "Wybierz prawidłowy powód anulowania."
+
+msgid "Choose a valid payment action."
+msgstr "Wybierz prawid?owe dzia?anie dotycz?ce p?atno?ci."
+
+msgid "Choose a valid payment status."
+msgstr "Wybierz prawid?owy status p?atno?ci."
 
 msgid "Choose your rate"
 msgstr "Wybierz taryfę"
@@ -975,11 +990,27 @@ msgstr "Częściowo opłacona"
 msgid "Payment"
 msgstr "Płatność"
 
+#, python-format
+msgid "Payment %(action)s (%(delta)s %(currency)s)."
+msgstr "P?atno??: %(action)s (%(delta)s %(currency)s)."
+
+msgid "Payment adjusted"
+msgstr "Skorygowano p?atno??"
+
 msgid "Payment attention"
 msgstr "Płatności wymagające uwagi"
 
+msgid "Payment recorded"
+msgstr "Zarejestrowano p?atno??"
+
+msgid "Payment refunded"
+msgstr "Zwr?cono p?atno??"
+
 msgid "Payment status"
 msgstr "Status płatności"
+
+msgid "Payment waived"
+msgstr "Umorzono p?atno??"
 
 msgid "Pending"
 msgstr "Oczekująca"
@@ -1053,6 +1084,9 @@ msgstr "Ceny zawierają VAT i dotyczą całego pobytu."
 
 msgid "Print"
 msgstr "Drukuj"
+
+msgid "Provide an amount or amount paid."
+msgstr "Podaj kwot? lub zap?acon? kwot?."
 
 msgid "Provide at least an email address or a phone number."
 msgstr "Podaj co najmniej adres e-mail lub numer telefonu."

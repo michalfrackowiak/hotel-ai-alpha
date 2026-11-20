@@ -7,12 +7,13 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.management import call_command
 from django.test import Client
 from rest_framework.test import APIClient
 
 from apps.hotel.access import make_booking_token
-from apps.hotel.booking_service import confirm_booking, create_booking
-from apps.hotel.models import Booking
+from apps.hotel.booking_service import BookingError, confirm_booking, create_booking, record_booking_payment
+from apps.hotel.models import Booking, BookingEvent
 from apps.hotel.notifications import send_booking_confirmation, send_booking_confirmation_sms
 from apps.hotel.sms_providers import ConsoleSmsProvider
 
@@ -158,3 +159,148 @@ def test_ops_dashboard_surfaces_bookings_needing_payment(room_type, rooms, stay_
     assert booking.reference in content
     assert "Partially paid" in content
     assert "100.00" in content
+
+@pytest.mark.django_db
+def test_record_booking_payment_records_append_only_audit_event(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    assert booking.amount_paid == Decimal("0.00")
+    assert booking.payment_status == Booking.PaymentStatus.UNPAID
+
+    updated = record_booking_payment(
+        booking.reference,
+        action="recorded",
+        amount=Decimal("100.00"),
+        payment_method="card",
+        payment_reference="PAY-100",
+        payment_notes="Deposit",
+    )
+
+    updated.refresh_from_db()
+    assert updated.amount_paid == Decimal("100.00")
+    assert updated.payment_status == Booking.PaymentStatus.PARTIALLY_PAID
+    assert updated.payment_method == "card"
+    assert updated.payment_reference == "PAY-100"
+    assert updated.payment_notes == "Deposit"
+    assert updated.paid_at is not None
+
+    event = updated.events.get(event_type=BookingEvent.Type.PAYMENT_RECORDED)
+    assert event.actor == BookingEvent.Actor.STAFF
+    assert event.channel == "admin"
+    assert event.data["action"] == "recorded"
+    assert event.data["before"]["amount_paid"] == "0.00"
+    assert event.data["after"]["amount_paid"] == "100.00"
+    assert event.data["delta"] == "100.00"
+
+    with pytest.raises(ValueError):
+        event.summary = "mutated"
+        event.save()
+
+
+@pytest.mark.django_db
+def test_record_booking_payment_supports_adjust_refund_and_waive(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Piotr",
+        last_name="Nowak",
+        email="piotr@example.com",
+        adults=2,
+    )
+
+    record_booking_payment(booking.reference, action="recorded", amount=booking.total_price)
+    booking.refresh_from_db()
+    assert booking.payment_status == Booking.PaymentStatus.PAID
+    assert booking.amount_due == Decimal("0.00")
+
+    record_booking_payment(booking.reference, action="refunded", amount=Decimal("50.00"))
+    booking.refresh_from_db()
+    assert booking.amount_paid == (booking.total_price - Decimal("50.00")).quantize(Decimal("0.01"))
+    assert booking.payment_status == Booking.PaymentStatus.PARTIALLY_PAID
+
+    record_booking_payment(booking.reference, action="adjusted", amount_paid=Decimal("0.00"), payment_status=Booking.PaymentStatus.UNPAID)
+    booking.refresh_from_db()
+    assert booking.amount_paid == Decimal("0.00")
+    assert booking.payment_status == Booking.PaymentStatus.UNPAID
+
+    record_booking_payment(booking.reference, action="waived", amount=Decimal("0.00"), amount_paid=booking.total_price, payment_status=Booking.PaymentStatus.PAID, payment_notes="Waived")
+    booking.refresh_from_db()
+    assert booking.payment_status == Booking.PaymentStatus.PAID
+    assert booking.amount_paid == booking.total_price
+    assert booking.payment_notes == "Waived"
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_RECORDED).count() == 1
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_REFUNDED).count() == 1
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_ADJUSTED).count() == 1
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_WAIVED).count() == 1
+
+
+@pytest.mark.django_db
+def test_record_booking_payment_validates_input(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Ola",
+        last_name="Lis",
+        email="ola@example.com",
+        adults=2,
+    )
+
+    with pytest.raises(BookingError) as exc:
+        record_booking_payment(booking.reference, action="bogus", amount=Decimal("10.00"))
+    assert exc.value.code == "invalid_payment_action"
+
+    with pytest.raises(BookingError) as exc:
+        record_booking_payment(booking.reference, action="recorded")
+    assert exc.value.code == "amount_required"
+
+    with pytest.raises(BookingError) as exc:
+        record_booking_payment(booking.reference, action="recorded", amount=Decimal("-1.00"))
+    assert exc.value.code == "invalid_amount"
+
+    with pytest.raises(BookingError) as exc:
+        record_booking_payment("HA-NOPE00", action="recorded", amount=Decimal("10.00"))
+    assert exc.value.code == "booking_not_found"
+
+
+@pytest.mark.django_db
+def test_record_payment_management_command(room_type, rooms, stay_dates):
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Jan",
+        last_name="Kowal",
+        email="jan@example.com",
+        adults=2,
+    )
+
+    call_command(
+        "record_payment",
+        booking.reference,
+        action="recorded",
+        amount="120.00",
+        method="transfer",
+        payment_reference="TR-1",
+        notes="Bank transfer",
+    )
+
+    booking.refresh_from_db()
+    assert booking.amount_paid == Decimal("120.00")
+    assert booking.payment_status == Booking.PaymentStatus.PARTIALLY_PAID
+    assert booking.payment_method == "transfer"
+    assert booking.payment_reference == "TR-1"
+    assert booking.payment_notes == "Bank transfer"
+    assert booking.events.filter(event_type=BookingEvent.Type.PAYMENT_RECORDED).exists()

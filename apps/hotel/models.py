@@ -829,6 +829,10 @@ class BookingEvent(models.Model):
         NO_SHOW = "no_show", _("No show")
         EMAIL_SENT = "email_sent", _("Email sent")
         CALENDAR_SYNCED = "calendar_synced", _("Calendar synced")
+        PAYMENT_RECORDED = "payment_recorded", _("Payment recorded")
+        PAYMENT_ADJUSTED = "payment_adjusted", _("Payment adjusted")
+        PAYMENT_REFUNDED = "payment_refunded", _("Payment refunded")
+        PAYMENT_WAIVED = "payment_waived", _("Payment waived")
 
     class Actor(models.TextChoices):
         GUEST = "guest", _("Guest")

@@ -896,4 +896,17 @@ TRANSLATIONS: dict[str, str] = {
     "No bookings need payment attention.": "Brak rezerwacji wymagających uwagi dotyczącej płatności.",
     "Amount paid": "Zapłacona kwota",
     "Balance due": "Pozostało do zapłaty",
+    # Payment audit (v0.9.0)
+    "Payment recorded": "Zarejestrowano p?atno??",
+    "Payment adjusted": "Skorygowano p?atno??",
+    "Payment refunded": "Zwr?cono p?atno??",
+    "Payment waived": "Umorzono p?atno??",
+    "Provide an amount or amount paid.": "Podaj kwot? lub zap?acon? kwot?.",
+    "Choose a valid payment action.": "Wybierz prawid?owe dzia?anie dotycz?ce p?atno?ci.",
+    "Amount must be zero or greater.": "Kwota musi by? r?wna zero lub wi?ksza.",
+    "Amount paid must be zero or greater.": "Zap?acona kwota musi by? r?wna zero lub wi?ksza.",
+    "Amount paid cannot be negative.": "Zap?acona kwota nie mo?e by? ujemna.",
+    "Choose a valid payment status.": "Wybierz prawid?owy status p?atno?ci.",
+    "Payment %(action)s (%(delta)s %(currency)s).": "P?atno??: %(action)s (%(delta)s %(currency)s).",
+
 }
