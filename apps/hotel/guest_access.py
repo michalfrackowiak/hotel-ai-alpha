@@ -152,7 +152,11 @@ def guest_session_matches(request, booking: Booking) -> bool:
 
 
 def issue_email_verification_token(user, email: str | None = None) -> tuple[GuestEmailVerificationToken, str] | None:
-    """Create a single-use email verification token for a guest user."""
+    """Create a single-use email verification token for a guest user.
+
+    Any previous verification tokens for the user are removed so the newest
+    request is the only active one (including pending email changes).
+    """
     if user is None or getattr(user, "is_staff", False):
         return None
     email = normalise_email(email or getattr(user, "email", ""))
@@ -160,9 +164,7 @@ def issue_email_verification_token(user, email: str | None = None) -> tuple[Gues
         return None
 
     now = timezone.now()
-    GuestEmailVerificationToken.objects.filter(user=user).filter(
-        Q(expires_at__lte=now) | Q(used_at__isnull=False)
-    ).delete()
+    GuestEmailVerificationToken.objects.filter(user=user).delete()
 
     raw_token = secrets.token_urlsafe(32)
     max_age_minutes = int(getattr(settings, "GUEST_EMAIL_VERIFICATION_MAX_AGE_MINUTES", 24 * 60) or 24 * 60)
@@ -176,7 +178,12 @@ def issue_email_verification_token(user, email: str | None = None) -> tuple[Gues
 
 
 def consume_email_verification_token(raw_token: str | None) -> str | None:
-    """Mark a verification token used and return the verified email, or ``None``."""
+    """Mark a verification token used and return the verified email, or ``None``.
+
+    Handles both initial account verification and verified email changes for an
+    existing guest account. Email changes are applied only when the target
+    address is not already owned by another user.
+    """
     raw_token = (raw_token or "").strip()
     if not raw_token:
         return None
@@ -185,30 +192,58 @@ def consume_email_verification_token(raw_token: str | None) -> str | None:
     with transaction.atomic():
         record = (
             GuestEmailVerificationToken.objects.select_for_update()
-            .select_related("user")
+            .select_related("user", "user__guest_account")
             .filter(token_hash=digest)
             .first()
         )
         if record is None or not record.is_usable:
             return None
+
+        user = record.user
+        if getattr(user, "is_staff", False):
+            return None
+
+        target_email = normalise_email(record.email)
+        current_email = normalise_email(getattr(user, "email", ""))
+        if not target_email:
+            return None
+
+        user_model = type(user)
+        # Prevent account takeover: another user must not already own this email.
+        if user_model.objects.filter(email__iexact=target_email).exclude(pk=user.pk).exists():
+            return None
+
         now = timezone.now()
         record.used_at = now
         record.save(update_fields=["used_at"])
-        user = record.user
-        email = normalise_email(record.email)
-        if email and normalise_email(getattr(user, "email", "")) != email:
-            user.email = email
-            user.save(update_fields=["email"])
+
+        update_fields: list[str] = []
+        if target_email != current_email:
+            user.email = target_email
+            update_fields.append("email")
+            # Guest accounts use email as username for password login; keep in sync.
+            if normalise_email(getattr(user, "username", "")) == current_email or not getattr(user, "username", ""):
+                user.username = target_email
+                update_fields.append("username")
+
         account, _created = GuestAccount.objects.get_or_create(user=user)
+        account_update_fields: list[str] = []
         if account.email_verified_at is None:
             account.email_verified_at = now
-            account.save(update_fields=["email_verified_at", "updated_at"])
-        if not getattr(user, "is_active", False) and not getattr(user, "is_staff", False):
+            account_update_fields.append("email_verified_at")
+        if account_update_fields:
+            account_update_fields.append("updated_at")
+            account.save(update_fields=account_update_fields)
+
+        if not getattr(user, "is_active", False):
             user.is_active = True
-            user.save(update_fields=["is_active"])
+            update_fields.append("is_active")
+        if update_fields:
+            user.save(update_fields=update_fields)
+
         # Link existing bookings/clients for this verified email to the account.
         link_clients_for_guest_account(account)
-    return email
+    return target_email
 
 
 def can_issue_email_verification(request, user) -> bool:

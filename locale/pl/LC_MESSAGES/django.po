@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 20:37+0100\n"
+"POT-Creation-Date: 2026-11-20 20:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -357,6 +357,9 @@ msgstr "Pojemność i cena"
 msgid "Change dates or room"
 msgstr "Zmień daty lub pokój"
 
+msgid "Change email address"
+msgstr "Zmień adres e-mail"
+
 msgid "Change password"
 msgstr "Zmień hasło"
 
@@ -643,6 +646,14 @@ msgstr "Angielski"
 msgid "English prompts"
 msgstr "Podpowiedzi angielskie"
 
+msgid "Enter a different email address."
+msgstr "Wpisz inny adres e-mail."
+
+msgid ""
+"Enter a new email address. We will send a verification link before the change takes "
+"effect."
+msgstr "Wpisz nowy adres e-mail. Wyślemy link weryfikacyjny, zanim zmiana zacznie obowiązywać."
+
 msgid ""
 "Enter the email address for your guest account. If an account exists, we will send a "
 "link to reset your password."
@@ -855,6 +866,14 @@ msgstr ""
 "Jeśli dla podanego adresu e-mail istnieje konto, link do zresetowania hasła jest w "
 "drodze."
 
+#, python-format
+msgid ""
+"If this email address can be used, we sent a verification link to %(email)s. Open "
+"that link to confirm the change."
+msgstr ""
+"Jeśli tego adresu e-mail można użyć, wysłaliśmy link weryfikacyjny na adres "
+"%(email)s. Otwórz go, aby potwierdzić zmianę."
+
 msgid ""
 "If you did not request a password reset, you can ignore this message. Your password "
 "will not change."
@@ -997,6 +1016,9 @@ msgstr "Potrzebujesz człowieka?"
 
 msgid "New conversation started."
 msgstr "Rozpoczęto nową rozmowę."
+
+msgid "New email address"
+msgstr "Nowy adres e-mail"
 
 msgid "New password"
 msgstr "Nowe hasło"
@@ -1260,6 +1282,9 @@ msgstr "Ceny zawierają VAT i dotyczą całego pobytu."
 msgid "Print"
 msgstr "Drukuj"
 
+msgid "Profile details"
+msgstr "Dane profilu"
+
 msgid "Provide an amount or amount paid."
 msgstr "Podaj kwot? lub zap?acon? kwot?."
 
@@ -1425,6 +1450,9 @@ msgstr "Wyślij link resetujący"
 
 msgid "Send sign-in link"
 msgstr "Wyślij link do logowania"
+
+msgid "Send verification link"
+msgstr "Wyślij link weryfikacyjny"
 
 msgid "Sent"
 msgstr "Wysłany"
@@ -1675,6 +1703,9 @@ msgstr "Ten zakres dat zawiera zamkniętą noc (%(date)s)."
 msgid "This date range requires a minimum stay of %(nights)s nights."
 msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
 
+msgid "This email address cannot be used."
+msgstr "Tego adresu e-mail nie można użyć."
+
 msgid "This is a temporary hold. Cancelling it is free."
 msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
 
@@ -1850,8 +1881,8 @@ msgstr "Możesz poprosić o anulowanie lub wyszukanie istniejącej rezerwacji."
 msgid "You can create an account again to receive a new verification email."
 msgstr "Możesz ponownie utworzyć konto, aby otrzymać nową wiadomość weryfikacyjną."
 
-msgid "You can now sign in with your password to view your bookings."
-msgstr "Możesz teraz zalogować się hasłem, aby zobaczyć swoje rezerwacje."
+msgid "You can now use this email address to sign in and manage your bookings."
+msgstr "Możesz teraz używać tego adresu e-mail do logowania i zarządzania rezerwacjami."
 
 msgid ""
 "You can still open a single reservation with its reference and the email or phone "

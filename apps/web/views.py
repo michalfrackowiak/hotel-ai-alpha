@@ -75,6 +75,7 @@ from apps.hotel.pricing import StayError
 
 from .forms import (
     GuestAuthenticationForm,
+    GuestEmailChangeForm,
     GuestPasswordChangeForm,
     GuestProfileForm,
     GuestRegistrationForm,
@@ -355,20 +356,27 @@ def guest_password_login(request):
     )
 
 
-def _send_guest_verification(request, user) -> None:
+def _send_guest_verification(request, user, email: str | None = None) -> bool:
+    """Issue and send a guest email verification link.
+
+    When ``email`` is provided, verification is sent to that address (used for
+    verified email changes). Returns True when a token was issued.
+    """
     if not can_issue_email_verification(request, user):
-        return
-    issued = issue_email_verification_token(user)
+        return False
+    target_email = normalise_email(email or getattr(user, "email", ""))
+    issued = issue_email_verification_token(user, email=target_email)
     if issued is None:
-        return
+        return False
     _record, raw_token = issued
     verify_path = reverse("web:guest-verify-email", args=[raw_token])
     verify_url = f"{settings.HOTEL['public_url'].rstrip('/')}{verify_path}"
     send_guest_email_verification(
-        user.email,
+        target_email,
         verify_url,
         language=translation.get_language(),
     )
+    return True
 
 
 def guest_register(request):
@@ -471,62 +479,81 @@ def guest_profile(request):
     linked_clients = list(account.clients.all().order_by("-updated_at", "-pk"))
     primary_client = linked_clients[0] if linked_clients else None
     saved = False
+    email_change_sent = False
+    email_change_target = ""
+
+    form = GuestProfileForm(
+        initial={
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": (primary_client.phone if primary_client else ""),
+            "language": (primary_client.language if primary_client else "pl"),
+            "marketing_consent": bool(primary_client.marketing_consent) if primary_client else False,
+        }
+    )
+    email_change_form = GuestEmailChangeForm(user=user)
+
     if request.method == "POST":
-        form = GuestProfileForm(request.POST)
-        if form.is_valid():
-            user.first_name = (form.cleaned_data.get("first_name") or "").strip()
-            user.last_name = (form.cleaned_data.get("last_name") or "").strip()
-            user.save(update_fields=["first_name", "last_name"])
+        if request.POST.get("form") == "email_change":
+            email_change_form = GuestEmailChangeForm(request.POST, user=user)
+            if email_change_form.is_valid():
+                new_email = email_change_form.cleaned_data["new_email"]
+                # Best-effort anti-spam: issue/send only when cooldown allows.
+                # Response remains clear for the account owner without exposing
+                # whether delivery was throttled.
+                _send_guest_verification(request, user, email=new_email)
+                email_change_sent = True
+                email_change_target = new_email
+                email_change_form = GuestEmailChangeForm(user=user)
+        else:
+            form = GuestProfileForm(request.POST)
+            if form.is_valid():
+                user.first_name = (form.cleaned_data.get("first_name") or "").strip()
+                user.last_name = (form.cleaned_data.get("last_name") or "").strip()
+                user.save(update_fields=["first_name", "last_name"])
 
-            phone = (form.cleaned_data.get("phone") or "").strip()
-            language = (form.cleaned_data.get("language") or "").strip() or "pl"
-            if language not in {"en", "pl"}:
-                language = "pl"
-            marketing_consent = bool(form.cleaned_data.get("marketing_consent"))
+                phone = (form.cleaned_data.get("phone") or "").strip()
+                language = (form.cleaned_data.get("language") or "").strip() or "pl"
+                if language not in {"en", "pl"}:
+                    language = "pl"
+                marketing_consent = bool(form.cleaned_data.get("marketing_consent"))
 
-            for client_obj in linked_clients:
-                update_fields = []
-                if client_obj.first_name != user.first_name and user.first_name:
-                    client_obj.first_name = user.first_name
-                    update_fields.append("first_name")
-                if client_obj.last_name != user.last_name:
-                    client_obj.last_name = user.last_name
-                    update_fields.append("last_name")
-                if client_obj.language != language:
-                    client_obj.language = language
-                    update_fields.append("language")
-                if client_obj.marketing_consent != marketing_consent:
-                    client_obj.marketing_consent = marketing_consent
-                    update_fields.append("marketing_consent")
-                # Keep client contact valid: phone can be cleared only when email exists.
-                new_phone = phone
-                if not new_phone and not (client_obj.email or "").strip():
-                    new_phone = client_obj.phone
-                if client_obj.phone != new_phone:
-                    client_obj.phone = new_phone
-                    update_fields.append("phone")
-                if update_fields:
-                    update_fields.append("updated_at")
-                    client_obj.save(update_fields=update_fields)
-            saved = True
-    else:
-        form = GuestProfileForm(
-            initial={
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "phone": (primary_client.phone if primary_client else ""),
-                "language": (primary_client.language if primary_client else "pl"),
-                "marketing_consent": bool(primary_client.marketing_consent) if primary_client else False,
-            }
-        )
+                for client_obj in linked_clients:
+                    update_fields = []
+                    if client_obj.first_name != user.first_name and user.first_name:
+                        client_obj.first_name = user.first_name
+                        update_fields.append("first_name")
+                    if client_obj.last_name != user.last_name:
+                        client_obj.last_name = user.last_name
+                        update_fields.append("last_name")
+                    if client_obj.language != language:
+                        client_obj.language = language
+                        update_fields.append("language")
+                    if client_obj.marketing_consent != marketing_consent:
+                        client_obj.marketing_consent = marketing_consent
+                        update_fields.append("marketing_consent")
+                    # Keep client contact valid: phone can be cleared only when email exists.
+                    new_phone = phone
+                    if not new_phone and not (client_obj.email or "").strip():
+                        new_phone = client_obj.phone
+                    if client_obj.phone != new_phone:
+                        client_obj.phone = new_phone
+                        update_fields.append("phone")
+                    if update_fields:
+                        update_fields.append("updated_at")
+                        client_obj.save(update_fields=update_fields)
+                saved = True
 
     return render(
         request,
         "web/guest_profile.html",
         {
             "form": form,
+            "email_change_form": email_change_form,
             "guest_account": account,
             "saved": saved,
+            "email_change_sent": email_change_sent,
+            "email_change_target": email_change_target,
             "guest_email": (user.email or "").strip(),
         },
     )

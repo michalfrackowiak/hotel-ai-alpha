@@ -120,10 +120,10 @@ def test_verified_authenticated_guest_sees_and_can_open_linked_booking(client, r
 
 
 @pytest.mark.django_db
-def test_linking_does_not_override_different_account(room_type, rooms, stay_dates):
-    # existing client linked to account A
+def test_linking_rejects_email_owned_by_different_user():
+    # existing client linked to account A and its user already owns the email
     user_a = User.objects.create_user(
-        username="a@example.com",
+        username="anna@example.com",
         email="anna@example.com",
         password="correct horse battery",
         is_active=True,
@@ -141,19 +141,22 @@ def test_linking_does_not_override_different_account(room_type, rooms, stay_date
         account=account_a,
     )
 
-    # another verified account claims same email (edge case) should not steal link
+    # another account must not be able to verify/claim an email owned by user A
     user_b = User.objects.create_user(
         username="b@example.com",
-        email="anna@example.com",
+        email="b@example.com",
         password="correct horse battery",
         is_active=False,
         is_staff=False,
     )
     account_b, _ = GuestAccount.objects.get_or_create(user=user_b)
-    _record, raw = issue_email_verification_token(user_b)
-    consume_email_verification_token(raw)
+    _record, raw = issue_email_verification_token(user_b, email="anna@example.com")
+    verified_email = consume_email_verification_token(raw)
 
+    assert verified_email is None
     existing.refresh_from_db()
     assert existing.account_id == account_a.id
     account_b.refresh_from_db()
-    assert account_b.is_email_verified is True
+    assert account_b.is_email_verified is False
+    user_b.refresh_from_db()
+    assert user_b.email == "b@example.com"
