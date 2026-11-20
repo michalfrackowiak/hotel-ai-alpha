@@ -191,6 +191,14 @@ class Client(TimeStampedModel):
         ENGLISH = "en", _("English")
         POLISH = "pl", _("Polish")
 
+    account = models.ForeignKey(
+        "GuestAccount",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="clients",
+        verbose_name=_("guest account"),
+    )
     first_name = models.CharField(_("first name"), max_length=80)
     last_name = models.CharField(_("last name"), max_length=80, blank=True, default="")
     email = models.EmailField(_("email"), blank=True)
@@ -818,6 +826,40 @@ class InboundSmsMessage(TimeStampedModel):
     def __str__(self) -> str:
         who = self.from_number or "—"
         return f"{who} · {self.received_at:%Y-%m-%d %H:%M}"
+
+
+class GuestAccount(TimeStampedModel):
+    """Authenticated guest account used for self-service booking access.
+
+    Linked to Django's auth user for credentials/sign-in and optionally linked
+    to one or more Client records (and thus bookings) for ownership/history.
+    Email verification and OAuth identities are layered on by later auth flows.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="guest_account",
+        verbose_name=_("user"),
+    )
+    email_verified_at = models.DateTimeField(_("email verified at"), null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("guest account")
+        verbose_name_plural = _("guest accounts")
+
+    def __str__(self) -> str:
+        email = (getattr(self.user, "email", "") or "").strip()
+        return email or self.user.get_username()
+
+    @property
+    def email(self) -> str:
+        return (getattr(self.user, "email", "") or "").strip().lower()
+
+    @property
+    def is_email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
 
 class GuestLoginToken(models.Model):
