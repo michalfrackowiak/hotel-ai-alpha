@@ -160,6 +160,39 @@ def test_booking_lookup_accepts_phone_number(client):
 
 
 @pytest.mark.django_db
+def test_phone_only_booking_can_be_looked_up_and_opened(client, room_type, rooms, stay_dates):
+    from apps.hotel.booking_service import create_booking
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Marek",
+        last_name="Nowak",
+        email="",
+        phone="+48 501 222 333",
+        adults=1,
+    )
+
+    lookup = client.get(
+        "/booking/",
+        {"reference": booking.reference, "contact": "+48 501 222 333"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert lookup.status_code == 302
+    assert f"/booking/{booking.reference}/" in lookup["Location"]
+    assert "token=" in lookup["Location"]
+
+    detail = client.get(lookup["Location"], HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    content = detail.content.decode()
+    assert booking.reference in content
+    assert "+48 501 222 333" in content or "Marek" in content
+    assert 'data-access-token="' in content
+
+
+@pytest.mark.django_db
 def test_healthz(client):
     response = client.get("/healthz")
 
