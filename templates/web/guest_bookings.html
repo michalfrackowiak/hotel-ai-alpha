@@ -10,7 +10,11 @@
     <p class="eyebrow">{% trans "Guest account" %}</p>
     <h1>{% trans "My bookings" %}</h1>
     <p class="lookup-card__lede">
-      {% blocktrans with email=guest_email %}Signed in as {{ email }}. Every reservation made with this address is listed below.{% endblocktrans %}
+      {% if is_authenticated_guest %}
+        {% blocktrans with email=guest_email %}Signed in as {{ email }}. Reservations linked to your guest account and this email address are listed below.{% endblocktrans %}
+      {% else %}
+        {% blocktrans with email=guest_email %}Signed in as {{ email }}. Every reservation made with this address is listed below.{% endblocktrans %}
+      {% endif %}
     </p>
 
     {% if bookings %}
@@ -47,7 +51,11 @@
         {% endfor %}
       </ul>
     {% else %}
-      <p class="notice notice--muted">{% trans "There are no reservations tied to this email address yet." %}</p>
+      {% if is_authenticated_guest %}
+        <p class="notice notice--muted">{% trans "There are no reservations linked to your guest account yet." %}</p>
+      {% else %}
+        <p class="notice notice--muted">{% trans "There are no reservations tied to this email address yet." %}</p>
+      {% endif %}
       <p>
         <a class="btn btn--primary" href="{% url 'web:home' %}#rooms">{% trans "Check availability" %}</a>
       </p>

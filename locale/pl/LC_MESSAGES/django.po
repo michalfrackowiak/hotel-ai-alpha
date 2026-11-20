@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 20:57+0100\n"
+"POT-Creation-Date: 2026-11-20 21:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1502,6 +1502,14 @@ msgstr "Wyloguj się"
 msgid "Signed in as %(email)s. Every reservation made with this address is listed below."
 msgstr "Zalogowano jako %(email)s. Poniżej znajdują się wszystkie rezerwacje z tym adresem."
 
+#, python-format
+msgid ""
+"Signed in as %(email)s. Reservations linked to your guest account and this email "
+"address are listed below."
+msgstr ""
+"Zalogowano jako %(email)s. Poniżej znajdują się rezerwacje powiązane z Twoim kontem "
+"gościa i tym adresem e-mail."
+
 msgid "Skip to content"
 msgstr "Przejdź do treści"
 
@@ -1662,6 +1670,9 @@ msgstr "Podane hasła nie są zgodne."
 
 msgid "The voice concierge is unavailable right now. Please use chat instead."
 msgstr "Konsjerż głosowy jest teraz niedostępny. Skorzystaj z czatu."
+
+msgid "There are no reservations linked to your guest account yet."
+msgstr "Brak rezerwacji powiązanych z Twoim kontem gościa."
 
 msgid "There are no reservations tied to this email address yet."
 msgstr "Z tym adresem e-mail nie są jeszcze powiązane żadne rezerwacje."

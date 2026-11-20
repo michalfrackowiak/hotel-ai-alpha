@@ -261,6 +261,7 @@ TRANSLATIONS: dict[str, str] = {
     "Signed in as %(email)s. Every reservation made with this address is listed below.": (
         "Zalogowano jako %(email)s. Poniżej znajdują się wszystkie rezerwacje z tym adresem."
     ),
+    "Signed in as %(email)s. Reservations linked to your guest account and this email address are listed below.": "Zalogowano jako %(email)s. Poniżej znajdują się rezerwacje powiązane z Twoim kontem gościa i tym adresem e-mail.",
     "Send": "Wyślij",
     "Service account key JSON or OAuth authorised-user JSON. The file path from GOOGLE_CALENDAR_CREDENTIALS_FILE is used when empty.": (
         "Klucz konta usługi w formacie JSON lub plik JSON autoryzacji OAuth. "
@@ -337,6 +338,7 @@ TRANSLATIONS: dict[str, str] = {
     "There are no reservations tied to this email address yet.": (
         "Z tym adresem e-mail nie są jeszcze powiązane żadne rezerwacje."
     ),
+    "There are no reservations linked to your guest account yet.": "Brak rezerwacji powiązanych z Twoim kontem gościa.",
     "This booking can no longer be cancelled.": "Tej rezerwacji nie można już anulować.",
     "This link can be used once and expires in 30 minutes. If you did not request it, you can ignore this message.": (
         "Ten link można użyć tylko raz i wygasa po 30 minutach. "

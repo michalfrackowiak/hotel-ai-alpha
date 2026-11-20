@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -278,8 +278,31 @@ def _current_guest_email(request) -> str:
     return session_email(request)
 
 
+def _bookings_for_authenticated_guest(user) -> QuerySet[Booking]:
+    """Bookings visible to an authenticated non-staff guest account."""
+    query = Q()
+    email = normalise_email(getattr(user, "email", ""))
+    if email:
+        query |= Q(client__email__iexact=email)
+    account = getattr(user, "guest_account", None)
+    if account is not None and getattr(account, "is_email_verified", False):
+        query |= Q(client__account=account)
+    if not query:
+        return Booking.objects.none()
+    return (
+        Booking.objects.filter(query)
+        .select_related("client", "room", "room__room_type", "rate_plan")
+        .distinct()
+        .order_by("-check_in", "-pk")
+    )
+
+
 def guest_bookings(request):
     """Guest account: sign in (password or magic link) or list bookings."""
+    user = getattr(request, "user", None)
+    is_authenticated_guest = bool(
+        user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False)
+    )
     email = _current_guest_email(request)
     if request.method == "POST":
         requested = normalise_email(request.POST.get("email"))
@@ -302,13 +325,15 @@ def guest_bookings(request):
         )
 
     if email:
+        bookings = _bookings_for_authenticated_guest(user) if is_authenticated_guest else bookings_for_email(email)
         return render(
             request,
             "web/guest_bookings.html",
             {
                 "guest_email": email,
-                "bookings": bookings_for_email(email),
+                "bookings": bookings,
                 "today": timezone.localdate(),
+                "is_authenticated_guest": is_authenticated_guest,
             },
         )
     return render(request, "web/guest_login.html", _guest_login_context(request))

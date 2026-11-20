@@ -127,7 +127,11 @@ class GuestProfileForm(forms.Form):
 
 
 class GuestEmailChangeForm(forms.Form):
-    new_email = forms.EmailField(label=_("New email address"), max_length=254)
+    new_email = forms.EmailField(
+        label=_("New email address"),
+        max_length=254,
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
