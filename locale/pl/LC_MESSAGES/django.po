@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 19:45+0100\n"
+"POT-Creation-Date: 2026-11-20 20:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -113,6 +113,9 @@ msgstr "Bazowy adres API"
 
 msgid "API key"
 msgstr "Klucz API"
+
+msgid "Account settings"
+msgstr "Ustawienia konta"
 
 msgid "Active holds"
 msgstr "Aktywne rezerwacje wstępne"
@@ -613,6 +616,9 @@ msgstr "Wymagany jest adres e-mail lub numer telefonu."
 msgid "Email sent"
 msgstr "Wysłano e-mail"
 
+msgid "Email verification"
+msgstr "Weryfikacja e-mail"
+
 msgid "Emails waiting to retry"
 msgstr "E-maile oczekujące na ponowną próbę"
 
@@ -923,6 +929,9 @@ msgstr "Ustaw jako domyślnego"
 msgid "Manage your booking"
 msgstr "Zarządzaj rezerwacją"
 
+msgid "Manage your guest account details."
+msgstr "Zarządzaj danymi konta gościa."
+
 msgid "Manual block"
 msgstr "Blokada ręczna"
 
@@ -1054,6 +1063,9 @@ msgstr "Bezzwrotna"
 
 msgid "Not found"
 msgstr "Nie znaleziono"
+
+msgid "Not verified"
+msgstr "Niezweryfikowano"
 
 msgid "Notes"
 msgstr "Notatki"
@@ -1736,6 +1748,9 @@ msgstr "Użyj poniższego linku, aby wybrać nowe hasło:"
 msgid "Validity"
 msgstr "Ważność"
 
+msgid "Verified"
+msgstr "Zweryfikowano"
+
 msgid "Verify email"
 msgstr "Zweryfikuj e-mail"
 
@@ -1819,6 +1834,9 @@ msgstr "Wszystko gotowe. Czekamy na Ciebie — zameldowanie od %(checkin)s."
 #, python-format
 msgid "Your %(hotel)s booking account"
 msgstr "Twoje konto rezerwacji w %(hotel)s"
+
+msgid "Your account details have been saved."
+msgstr "Dane konta zostały zapisane."
 
 msgid "Your booking"
 msgstr "Twoja rezerwacja"

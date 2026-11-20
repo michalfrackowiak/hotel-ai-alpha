@@ -112,3 +112,8 @@ class GuestPasswordChangeForm(PasswordChangeForm):
         strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
+
+
+class GuestProfileForm(forms.Form):
+    first_name = forms.CharField(label=_("First name"), max_length=150, required=False)
+    last_name = forms.CharField(label=_("Last name"), max_length=150, required=False)

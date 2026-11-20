@@ -1002,4 +1002,10 @@ TRANSLATIONS: dict[str, str] = {
     "guest email verification token": "Token weryfikacji e-mail gościa",
     "guest email verification tokens": "Tokeny weryfikacji e-mail gościa",
     "user": "Użytkownik",
+    "Account settings": "Ustawienia konta",
+    "Email verification": "Weryfikacja e-mail",
+    "Manage your guest account details.": "Zarządzaj danymi konta gościa.",
+    "Not verified": "Niezweryfikowano",
+    "Verified": "Zweryfikowano",
+    "Your account details have been saved.": "Dane konta zostały zapisane.",
 }

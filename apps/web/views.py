@@ -69,7 +69,12 @@ from apps.hotel.notifications import (
 )
 from apps.hotel.pricing import StayError
 
-from .forms import GuestAuthenticationForm, GuestPasswordChangeForm, GuestRegistrationForm
+from .forms import (
+    GuestAuthenticationForm,
+    GuestPasswordChangeForm,
+    GuestProfileForm,
+    GuestRegistrationForm,
+)
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -465,6 +470,37 @@ def guest_password_change_done(request):
     if not user.is_authenticated or user.is_staff:
         return redirect("web:guest-bookings")
     return render(request, "web/guest_password_change_done.html")
+
+
+def guest_profile(request):
+    user = request.user
+    if not user.is_authenticated or user.is_staff:
+        return redirect("web:guest-bookings")
+
+    account, _created = GuestAccount.objects.get_or_create(user=user)
+    saved = False
+    if request.method == "POST":
+        form = GuestProfileForm(request.POST)
+        if form.is_valid():
+            user.first_name = (form.cleaned_data.get("first_name") or "").strip()
+            user.last_name = (form.cleaned_data.get("last_name") or "").strip()
+            user.save(update_fields=["first_name", "last_name"])
+            saved = True
+    else:
+        form = GuestProfileForm(
+            initial={"first_name": user.first_name, "last_name": user.last_name}
+        )
+
+    return render(
+        request,
+        "web/guest_profile.html",
+        {
+            "form": form,
+            "guest_account": account,
+            "saved": saved,
+            "guest_email": (user.email or "").strip(),
+        },
+    )
 
 
 @require_POST

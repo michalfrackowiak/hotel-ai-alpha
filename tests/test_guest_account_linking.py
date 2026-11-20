@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.utils import timezone
 
-from apps.hotel.booking_service import create_booking, find_or_create_client
+from apps.hotel.booking_service import create_booking
 from apps.hotel.guest_access import consume_email_verification_token, issue_email_verification_token
-from apps.hotel.models import Booking, Client as GuestClient, GuestAccount
+from apps.hotel.models import Client as GuestClient
+from apps.hotel.models import GuestAccount
 
 User = get_user_model()
 

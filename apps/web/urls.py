@@ -57,6 +57,7 @@ urlpatterns = [
     ),
     path("my-bookings/password-change/", views.guest_password_change, name="guest-password-change"),
     path("my-bookings/password-change/done/", views.guest_password_change_done, name="guest-password-change-done"),
+    path("my-bookings/profile/", views.guest_profile, name="guest-profile"),
     path("my-bookings/logout/", views.guest_logout, name="guest-logout"),
     path("ops/", views.ops_dashboard, name="ops"),
     path("calendar/<str:token>.ics", views.room_calendar, name="room-calendar"),
