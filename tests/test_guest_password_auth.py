@@ -129,6 +129,44 @@ def test_register_ip_throttle_returns_neutral_response_without_creating_user(cli
 
 
 @pytest.mark.django_db
+def test_register_ip_throttle_is_neutral_for_existing_unverified_account(client, settings):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    cache.set(_throttle_key("register", "10.0.0.1"), 1, timeout=60)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert User.objects.filter(email="anna@example.com").count() == 1
+    assert mail.outbox == []
+    user.refresh_from_db()
+    assert user.is_active is False
+    assert user.check_password("correct horse battery")
+
+
+@pytest.mark.django_db
 def test_verify_email_activates_user_and_marks_verified(client, settings):
     settings.BOOKING_EMAILS_ENABLED = True
     user = User.objects.create_user(
