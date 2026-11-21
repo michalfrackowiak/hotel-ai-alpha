@@ -638,3 +638,51 @@ def test_find_or_create_client_does_not_overwrite_unlinked_client_email_with_oth
     assert booking.client_id == client_record.id
     assert client_record.account_id is None
     assert client_record.email == "legacy@example.com"
+
+
+@pytest.mark.django_db
+def test_bookings_for_email_includes_account_current_email_when_queried_by_associated_email(
+    room_type, rooms, stay_dates
+):
+    from apps.hotel.guest_access import bookings_for_email, email_has_bookings
+    from apps.hotel.models import Client
+
+    account_user = User.objects.create_user(
+        username="new@example.com",
+        email="new@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=account_user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # Linked client with preserved historical email (associated with account).
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        phone="+48555111001",
+        account=account,
+    )
+
+    # Unlinked booking/client whose email matches account's current email.
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="new@example.com",
+        phone="+48555111002",
+        adults=1,
+    )
+    # Ensure it stays unlinked for this scenario (create_booking may link it; force unlinked).
+    booking.client.account = None
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    assert email_has_bookings("old@example.com") is True
+    refs = {b.reference for b in bookings_for_email("old@example.com")}
+    assert booking.reference in refs

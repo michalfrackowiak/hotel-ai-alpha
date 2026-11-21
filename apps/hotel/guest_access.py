@@ -100,6 +100,9 @@ def bookings_for_email(email: str) -> QuerySet[Booking]:
     account = verified_guest_account_for_email(email)
     if account is not None:
         query |= Q(client__account=account)
+        account_email = normalise_email(getattr(account.user, "email", ""))
+        if account_email:
+            query |= Q(client__email__iexact=account_email)
         for linked_email in account.clients.exclude(email="").values_list("email", flat=True).distinct():
             query |= Q(client__email__iexact=linked_email)
     return (
