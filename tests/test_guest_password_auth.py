@@ -896,3 +896,45 @@ def test_pre_account_booking_becomes_visible_after_register_verify_and_login(
     detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+
+@pytest.mark.django_db
+def test_register_existing_unverified_account_wrong_password_when_verification_throttled_is_neutral(
+    client, settings
+):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    cache.set(_throttle_key("verify-email", str(user.pk)), 1, timeout=300)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "NewName",
+            "last_name": "NewLast",
+            "password1": "a different strong passphrase",
+            "password2": "a different strong passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.6",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert User.objects.filter(email="anna@example.com").count() == 1
+    assert mail.outbox == []
+    user.refresh_from_db()
+    assert user.is_active is False
+    # Wrong submitted password must not replace the existing account password.
+    assert user.check_password("correct horse battery")
+    assert not user.check_password("a different strong passphrase")
