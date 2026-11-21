@@ -484,3 +484,27 @@ def test_email_change_request_is_neutral_when_verify_ip_cooldown_blocks_issuance
     assert GuestEmailVerificationToken.objects.filter(user=user, email="new-anna@example.com").count() == 0
     user.refresh_from_db()
     assert user.email == "anna@example.com"
+
+@pytest.mark.django_db
+def test_email_change_request_is_neutral_when_verify_email_cooldown_blocks_issuance(web_client, settings):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    user, _account = _create_verified_guest()
+    web_client.force_login(user)
+    cache.set(_throttle_key("verify-email", str(user.pk)), 1, timeout=300)
+    mail.outbox.clear()
+
+    response = web_client.post(
+        "/my-bookings/profile/",
+        {"form": "email_change", "new_email": "new-anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.9",
+    )
+
+    assert response.status_code == 200
+    assert "verification link" in response.content.decode().lower()
+    assert len(mail.outbox) == 0
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="new-anna@example.com").count() == 0
+    user.refresh_from_db()
+    assert user.email == "anna@example.com"
