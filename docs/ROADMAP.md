@@ -350,42 +350,42 @@ Theme: **payments and deposit tracking**. Record what a guest owes and has paid 
 
 ---
 
-## Milestone v0.10.0 - proposed
+## Milestone v0.10.0 - in progress (on `develop`)
 
-Theme: **guest accounts and trusted self-service**. Give guests a durable account so they can sign in, manage their profile and review all of their bookings in one place, while keeping the existing link/reference flows as secure fallbacks.
+Theme: **guest accounts and trusted self-service**. Give guests a durable account so they can sign in, manage their profile and review all of their bookings in one place, while keeping the existing link/reference flows as secure fallbacks. Core slices are merged on `develop`; hardening, coherence edge cases, and docs/contracts are still being finalized before release.
 
 ### Must have
 
-1. **Standard guest account registration and login**
-   - Email/password registration, login and logout for guests (separate from Django staff/admin accounts).
-   - Password reset ("forgot password") and secure password change flows.
-   - Email verification/confirmation for new registrations and email changes (prevent account takeover via unverified addresses).
-   - Account settings/profile: name, contact details, preferred language and marketing-consent preferences, kept consistent with `Client` records where appropriate.
-   - Strong password validation (reuse Django validators), CSRF-protected forms, throttling/rate limiting and anti-enumeration responses (neutral messaging, matching current magic-link behaviour).
+1. [x] **Standard guest account registration and login**
+   - [x] Email/password registration, login and logout for guests (separate from Django staff/admin accounts).
+   - [x] Password reset ("forgot password") and secure password change flows.
+   - [x] Email verification/confirmation for new registrations and email changes (prevent account takeover via unverified addresses).
+   - [x] Account settings/profile: name, contact details, preferred language and marketing-consent preferences, kept consistent with `Client` records where appropriate.
+   - [x] Strong password validation (reuse Django validators), CSRF-protected forms, throttling/rate limiting and anti-enumeration responses (neutral messaging, matching current magic-link behaviour). Hardening and edge-case coverage continue on `develop`.
 
-2. **Google fast registration and login ("Continue with Google")**
-   - OAuth 2.0 / OpenID Connect sign-in with Google for one-click registration and login.
-   - Account linking by verified email (a Google identity with a verified email can attach to an existing guest account; conflicts handled explicitly and safely).
-   - First-login profile bootstrap from Google claims where available (name, email), with guest review/edit in account settings.
-   - Configurable credentials and callback URLs via environment/settings (client id/secret, redirect URI, enable/disable flag); secrets never committed.
+2. [x] **Google fast registration and login ("Continue with Google")**
+   - [x] OAuth 2.0 / OpenID Connect sign-in with Google for one-click registration and login.
+   - [x] Account linking by verified email (a Google identity with a verified email can attach to an existing guest account; conflicts handled explicitly and safely).
+   - [x] First-login profile bootstrap from Google claims where available (name, email), with guest review/edit in account settings.
+   - [x] Configurable credentials and callback URLs via environment/settings (client id/secret, redirect URI, enable/disable flag); secrets never committed.
 
-3. **Unified "My bookings" and booking access for logged-in guests**
-   - Evolve `/my-bookings/` from magic-link-only access to an authenticated guest account area: after login, show every reservation linked to the guest's verified account/email(s), with status, dates, room/rate, payment/deposit summary and a clear path to the booking detail/manage view.
-   - Link bookings to guest accounts in a backward-compatible way (match/link existing and future bookings by verified email; handle bookings made before account creation). Do not break bookings that only have a phone number.
-   - Preserve existing access paths as fallbacks: signed booking management links, reference + email/phone lookup, and (optionally, as a transitional step) magic-link sign-in for guests who prefer not to create a password account.
-   - Authorization must remain explicit: a logged-in guest may only access bookings they own; the signed token/reference+contact rules remain in force for non-session access. All access paths must be covered by tests.
+3. [x] **Unified "My bookings" and booking access for logged-in guests** *(coherence hardening in progress)*
+   - [x] Evolve `/my-bookings/` from magic-link-only access to an authenticated guest account area: after login, show every reservation linked to the guest's verified account/email(s), with status, dates, room/rate, payment/deposit summary and a clear path to the booking detail/manage view.
+   - [x] Link bookings to guest accounts in a backward-compatible way (match/link existing and future bookings by verified email; handle bookings made before account creation). Do not break bookings that only have a phone number.
+   - [x] Preserve existing access paths as fallbacks: signed booking management links, reference + email/phone lookup, and (optionally, as a transitional step) magic-link sign-in for guests who prefer not to create a password account.
+   - [x] Authorization must remain explicit: a logged-in guest may only access bookings they own; the signed token/reference+contact rules remain in force for non-session access. Access-path and edge-case tests continue to be expanded on `develop`.
 
-4. **Data model, security and compatibility**
-   - Introduce a clear guest identity model (e.g. a guest-facing account linked to Django auth/custom user or an equivalent account entity) with a well-defined relationship to `apps.hotel.Client` and bookings; avoid duplicating or forking booking ownership logic.
-   - Migrate/evolve `GuestLoginToken` magic-link flow coherently (keep, deprecate behind a setting, or fold into the new account flows) with a documented transition.
-   - Session/cookie security aligned with production settings (`Secure`/`HttpOnly`/`SameSite`/TLS), brute-force protection, and safe redirect handling on login/callback.
-   - Admin/staff visibility into guest accounts where operationally useful, without exposing secrets; auditability for sensitive account events considered.
+4. [x] **Data model, security and compatibility** *(hardening in progress)*
+   - [x] Introduce a clear guest identity model (e.g. a guest-facing account linked to Django auth/custom user or an equivalent account entity) with a well-defined relationship to `apps.hotel.Client` and bookings; avoid duplicating or forking booking ownership logic.
+   - [x] Migrate/evolve `GuestLoginToken` magic-link flow coherently (keep, deprecate behind a setting, or fold into the new account flows) with a documented transition.
+   - [x] Session/cookie security aligned with production settings (`Secure`/`HttpOnly`/`SameSite`/TLS), brute-force protection, and safe redirect handling on login/callback.
+   - [x] Admin/staff visibility into guest accounts where operationally useful, without exposing secrets; auditability for sensitive account events considered.
 
-5. **UX, i18n, API and quality**
-   - Guest-facing pages/templates for register, login, Google sign-in, logout, forgot/reset password, email verification and account/bookings views, consistent with existing site style and accessibility standards (labels, landmarks, focus, skip link, contrast) and available in **English and Polish** (gettext strings/catalogue updated).
-   - Review and, if needed, extend API/auth surfaces for guest account use cases (e.g. session-based or token-based access for "my bookings") without weakening existing booking-token protections; document any contract changes in `docs/API.md`.
-   - Tests: registration/login/logout, password reset, email verification, Google OAuth happy-path and failure/linking cases (mocked), booking visibility/linking rules, authorization boundaries, throttling/anti-enumeration behaviour, and EN/PL page rendering/accessibility checks.
-   - Dependencies and configuration documented (`.env.example`, README, architecture/memory notes), with migrations committed and the full gate green.
+5. [x] **UX, i18n, API and quality** *(docs/contracts and hardening still being finalized)*
+   - [x] Guest-facing pages/templates for register, login, Google sign-in, logout, forgot/reset password, email verification and account/bookings views, consistent with existing site style and accessibility standards (labels, landmarks, focus, skip link, contrast) and available in **English and Polish** (gettext strings/catalogue updated).
+   - [x] Review and, if needed, extend API/auth surfaces for guest account use cases (e.g. session-based or token-based access for "my bookings") without weakening existing booking-token protections; document any contract changes in `docs/API.md`.
+   - [x] Tests: registration/login/logout, password reset, email verification, Google OAuth happy-path and failure/linking cases (mocked), booking visibility/linking rules, authorization boundaries, throttling/anti-enumeration behaviour, and EN/PL page rendering/accessibility checks. Coverage continues to expand for remaining edge cases.
+   - [x] Dependencies and configuration documented (`.env.example`, README, architecture/memory notes), with migrations committed and the full gate green.
 
 ### Should have
 
