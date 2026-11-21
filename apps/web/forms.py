@@ -70,6 +70,27 @@ class GuestAuthenticationForm(AuthenticationForm):
         ),
     }
 
+    def clean(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        password = self.cleaned_data.get("password")
+
+        if username and password:
+            self.user_cache = self.authenticate_user(username=username, password=password)
+            if self.user_cache is None:
+                # Fallback for rare cases where username diverged from email.
+                user = User._default_manager.filter(email__iexact=username, is_staff=False).first()
+                if user is not None and user.get_username() != username:
+                    self.user_cache = self.authenticate_user(username=user.get_username(), password=password)
+            if self.user_cache is None:
+                raise self.get_invalid_login_error()
+            self.confirm_login_allowed(self.user_cache)
+        return self.cleaned_data
+
+    def authenticate_user(self, username: str, password: str):
+        from django.contrib.auth import authenticate
+
+        return authenticate(self.request, username=username, password=password)
+
     def confirm_login_allowed(self, user):
         # Return the same generic failure for inactive/unverified accounts to
         # avoid leaking account existence or activation state.
