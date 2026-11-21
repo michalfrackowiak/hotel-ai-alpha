@@ -171,8 +171,14 @@ def find_or_create_client(
             client.last_name = last_name
             changed = True
         if email and client.email.lower() != email:
-            client.email = email
-            changed = True
+            can_update_email = True
+            if client.account_id:
+                owner_account = verified_guest_account_for_email(email)
+                if owner_account is not None and owner_account.id != client.account_id:
+                    can_update_email = False
+            if can_update_email:
+                client.email = email
+                changed = True
         if phone and client.phone != phone:
             client.phone = phone
             changed = True
