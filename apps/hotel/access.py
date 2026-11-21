@@ -94,6 +94,17 @@ def contact_matches(booking: Booking, contact: str) -> bool:
             .first()
         )
     if (
+        account is None
+        and booking.client_id
+        and (booking.client.email or "").strip()
+    ):
+        # Unlinked booking: if client email is associated with a verified guest
+        # account, accept that account's associated emails for lookup coherence.
+        from apps.hotel.guest_access import verified_guest_account_for_email
+
+        account = verified_guest_account_for_email(booking.client.email)
+
+    if (
         account is not None
         and getattr(account, "is_email_verified", False)
         and getattr(getattr(account, "user", None), "is_active", False)

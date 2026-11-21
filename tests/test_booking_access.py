@@ -158,3 +158,48 @@ def test_contact_lookup_accepts_verified_account_associated_linked_client_email(
     assert contact_matches(booking, "old-associated@example.com")
     assert find_booking_for_contact(booking.reference, "old-associated@example.com") == booking
     assert find_booking_for_contact(booking.reference, "unrelated@example.com") is None
+
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_account_email_for_unlinked_associated_booking(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import Client, GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="new-account@example.com",
+        email="new-account@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # Booking client is unlinked, but its email is associated with the verified
+    # account through another linked client record.
+    booking.client.account = None
+    booking.client.email = "old-associated@example.com"
+    booking.client.save(update_fields=["account", "email", "updated_at"])
+
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old-associated@example.com",
+        phone="+48 500 000 002",
+        account=account,
+    )
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="other-associated@example.com",
+        phone="+48 500 000 003",
+        account=account,
+    )
+
+    assert contact_matches(booking, "new-account@example.com")
+    assert contact_matches(booking, "old-associated@example.com")
+    assert contact_matches(booking, "other-associated@example.com")
+    assert find_booking_for_contact(booking.reference, "new-account@example.com") == booking
+    assert find_booking_for_contact(booking.reference, "unrelated@example.com") is None
