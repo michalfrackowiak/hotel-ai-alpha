@@ -179,7 +179,12 @@ def session_email(request) -> str:
 def guest_session_matches(request, booking: Booking) -> bool:
     """True when the request is authenticated as the booking's guest owner."""
     user = getattr(request, "user", None)
-    if user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False):
+    if (
+        user
+        and getattr(user, "is_authenticated", False)
+        and getattr(user, "is_active", False)
+        and not getattr(user, "is_staff", False)
+    ):
         account = getattr(user, "guest_account", None)
         if account is not None and getattr(account, "is_email_verified", False):
             if booking.client_id and booking.client.account_id == account.id:
