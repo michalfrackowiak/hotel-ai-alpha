@@ -73,19 +73,30 @@ def verified_guest_account_for_email(email: str) -> GuestAccount | None:
 def link_clients_for_guest_account(account: GuestAccount) -> int:
     """Link email-matching clients to a verified guest account.
 
-    Only clients with no account or already linked to this account are updated,
-    so an existing link to a different account is never overridden.
+    Matches the account's current email and any email already present on
+    clients linked to the account, so preserved historical client emails remain
+    coherently linkable. Only clients with no account or already linked to this
+    account are updated; an existing link to a different account is never overridden.
     """
     email = normalise_email(getattr(account, "email", "") or getattr(account.user, "email", ""))
     if not email or not account.is_email_verified:
         return 0
-    return (
-        Booking.objects.model._meta.apps.get_model("hotel", "Client")
-        .objects.filter(email__iexact=email)
-        .filter(Q(account__isnull=True) | Q(account=account))
-        .exclude(account=account)
-        .update(account=account)
+    client_model = Booking.objects.model._meta.apps.get_model("hotel", "Client")
+    emails = {email}
+    emails.update(
+        normalise_email(e)
+        for e in account.clients.exclude(email="").values_list("email", flat=True)
+        if normalise_email(e)
     )
+    linked = 0
+    for candidate in emails:
+        linked += (
+            client_model.objects.filter(email__iexact=candidate)
+            .filter(Q(account__isnull=True) | Q(account=account))
+            .exclude(account=account)
+            .update(account=account)
+        )
+    return linked
 
 
 def bookings_for_email(email: str) -> QuerySet[Booking]:
