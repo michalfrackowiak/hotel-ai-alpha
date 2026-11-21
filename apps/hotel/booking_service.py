@@ -172,10 +172,15 @@ def find_or_create_client(
             changed = True
         if email and client.email.lower() != email:
             can_update_email = True
+            owner_account = verified_guest_account_for_email(email)
             if client.account_id:
-                owner_account = verified_guest_account_for_email(email)
                 if owner_account is not None and owner_account.id != client.account_id:
                     can_update_email = False
+            elif owner_account is not None and client.email:
+                # Unlinked client with an existing different email: do not overwrite
+                # with an email owned by another verified account, to avoid
+                # cross-account linkage/takeover via phone-match booking creation.
+                can_update_email = False
             if can_update_email:
                 client.email = email
                 changed = True
