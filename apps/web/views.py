@@ -594,6 +594,12 @@ def guest_profile(request):
                     language = "pl"
                 marketing_consent = bool(form.cleaned_data.get("marketing_consent"))
 
+                # Keep linkage/profile coherent across transitions: ensure any matching
+                # unlinked clients for a verified account are linked before propagation.
+                if account.is_email_verified:
+                    link_clients_for_guest_account(account)
+                    linked_clients = list(account.clients.all().order_by("-updated_at", "-pk"))
+
                 for client_obj in linked_clients:
                     update_fields = []
                     if client_obj.first_name != user.first_name and user.first_name:
