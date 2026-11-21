@@ -596,3 +596,56 @@ def test_reference_contact_lookup_still_works_with_preserved_client_email_after_
     detail = web_client.get(lookup["Location"], HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+@pytest.mark.django_db
+def test_magic_link_can_be_requested_for_preserved_client_email_after_verified_email_change(
+    web_client, room_type, rooms, stay_dates
+):
+    """A preserved historical client email can still request a magic-link fallback
+    and access account-linked bookings after a verified email change."""
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
+    assert booking.client.email == "anna@example.com"
+
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+
+    user.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+    assert booking.client.email == "anna@example.com"
+
+    response = web_client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert "sign-in link is on its way" in response.content.decode()
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["anna@example.com"]
+
+    path = re.search(r"/my-bookings/login/[^\s]+", mail.outbox[0].body).group(0)
+    login = web_client.get(path)
+    assert login.status_code == 302
+
+    listing = web_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = web_client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
