@@ -323,8 +323,14 @@ def consume_email_verification_token(raw_token: str | None) -> str | None:
             user.email = target_email
             update_fields.append("email")
             # Guest accounts use email as username for password login; keep in sync.
-            if normalise_email(getattr(user, "username", "")) == current_email or not getattr(user, "username", ""):
-                user.username = target_email
+            current_username = normalise_email(getattr(user, "username", ""))
+            if current_username == current_email or not getattr(user, "username", ""):
+                candidate_username = target_email
+                suffix = 1
+                while user_model.objects.filter(username__iexact=candidate_username).exclude(pk=user.pk).exists():
+                    suffix += 1
+                    candidate_username = f"{target_email}-{suffix}"
+                user.username = candidate_username
                 update_fields.append("username")
 
         account, _created = GuestAccount.objects.get_or_create(user=user)

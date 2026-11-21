@@ -950,3 +950,48 @@ def test_unlinked_booking_with_preserved_account_email_is_visible_to_authenticat
     detail = web_client.get(f"/booking/{unlinked_booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert unlinked_booking.reference in detail.content.decode()
+
+
+@pytest.mark.django_db
+def test_email_verification_change_handles_username_collision(web_client):
+    # Another user occupies the target username but has a different email.
+    User.objects.create_user(
+        username="newname@example.com",
+        email="other@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+
+    user = User.objects.create_user(
+        username="old@example.com",
+        email="old@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    issued = issue_email_verification_token(user, email="newname@example.com")
+    assert issued is not None
+    _record, raw_token = issued
+
+    response = web_client.get(f"/my-bookings/verify-email/{raw_token}/", follow=True, HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.email == "newname@example.com"
+    assert user.username.startswith("newname@example.com")
+    assert user.username != "newname@example.com"
+
+    # Fallback auth by email should still work.
+    login = web_client.post(
+        "/my-bookings/password-login/",
+        {"username": "newname@example.com", "password": "correct horse battery"},
+        follow=True,
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert login.status_code == 200
+    assert login.wsgi_request.user.is_authenticated
