@@ -296,3 +296,61 @@ def test_future_booking_after_verification_is_visible_to_authenticated_guest(cli
     detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+@pytest.mark.django_db
+def test_phone_only_client_is_linked_when_later_booking_provides_verified_email(
+    client, room_type, rooms, stay_dates
+):
+    """A phone-only client/booking becomes account-linked when a later booking provides
+    the same phone and a verified account email."""
+    from datetime import timedelta
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    check_in, check_out = stay_dates
+    phone_only = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="",
+        phone="+48 501 222 333",
+        adults=1,
+    )
+    phone_only.client.refresh_from_db()
+    assert phone_only.client.account_id is None
+    assert phone_only.client.email == ""
+
+    # Later booking with same phone provides the verified account email.
+    later = create_booking(
+        room_type=room_type,
+        check_in=check_in + timedelta(days=30),
+        check_out=check_out + timedelta(days=30),
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        phone="+48 501 222 333",
+        adults=1,
+    )
+    phone_only.client.refresh_from_db()
+    later.client.refresh_from_db()
+    assert later.client.pk == phone_only.client.pk
+    assert phone_only.client.account_id == account.id
+    assert phone_only.client.email == "anna@example.com"
+
+    assert client.login(username="anna@example.com", password="correct horse battery")
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    content = listing.content.decode()
+    assert phone_only.reference in content
+    assert later.reference in content
