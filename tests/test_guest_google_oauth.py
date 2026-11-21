@@ -320,3 +320,70 @@ def test_google_callback_is_rate_limited_per_ip(client, settings, monkeypatch):
     assert second.status_code == 400
     assert "could not be completed" in second.content.decode().lower()
     assert called["count"] == 0
+
+@pytest.mark.django_db
+def test_google_callback_logs_in_existing_verified_guest_and_keeps_bookings_accessible(
+    client, settings, monkeypatch, room_type, rooms, stay_dates
+):
+    settings.GOOGLE_OAUTH_CLIENT_ID = "client-id"
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = "client-secret"
+    settings.HOTEL["public_url"] = "http://testserver"
+    session = client.session
+    session["google_oauth_state"] = "good-state"
+    session.save()
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Kowalska",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    fake = _FakeHttpxClient(
+        token_payload={"access_token": "access-token"},
+        userinfo_payload={
+            "email": "anna@example.com",
+            "email_verified": True,
+            "given_name": "Anna",
+            "family_name": "Kowalska",
+        },
+    )
+    monkeypatch.setattr("apps.web.views.httpx.Client", lambda timeout=10.0: fake)
+
+    response = client.get("/my-bookings/google/callback/?state=good-state&code=good-code")
+
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/")
+    user.refresh_from_db()
+    account.refresh_from_db()
+    assert user.is_active is True
+    assert user.is_staff is False
+    assert account.is_email_verified is True
+    assert User.objects.filter(email="anna@example.com").count() == 1
+
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
