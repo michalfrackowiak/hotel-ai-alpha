@@ -160,6 +160,33 @@ def test_booking_lookup_accepts_phone_number(client):
 
 
 @pytest.mark.django_db
+def test_booking_lookup_is_rate_limited_per_ip(client, settings):
+    from django.core.cache import cache
+    from django.core.management import call_command
+
+    cache.clear()
+    settings.GUEST_BOOKING_LOOKUP_WINDOW_SECONDS = 300
+    settings.GUEST_BOOKING_LOOKUP_MAX_ATTEMPTS_PER_IP = 2
+
+    call_command("seed_demo")
+    from apps.hotel.models import Booking
+
+    booking = Booking.objects.get()
+    params = {"reference": booking.reference, "contact": "wrong@example.com"}
+
+    first = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+    second = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+    third = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
+    content = third.content.decode().lower()
+    assert "too many attempts" in content
+    assert "could not match" not in content
+
+
+@pytest.mark.django_db
 def test_phone_only_booking_can_be_looked_up_and_opened(client, room_type, rooms, stay_dates):
     from apps.hotel.booking_service import create_booking
 

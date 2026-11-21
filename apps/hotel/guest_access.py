@@ -396,3 +396,14 @@ def allow_password_login_attempt(email: str, client_ip: str = "") -> bool:
         if limit > 0 and _increment_throttle("pwd-ip", client_ip, window) > limit:
             return False
     return True
+
+
+def allow_booking_lookup_attempt(client_ip: str = "") -> bool:
+    """Return True when a booking lookup attempt is within the IP rate limit."""
+    window = int(getattr(settings, "GUEST_BOOKING_LOOKUP_WINDOW_SECONDS", 300) or 0)
+    if window <= 0 or not client_ip:
+        return True
+    limit = int(getattr(settings, "GUEST_BOOKING_LOOKUP_MAX_ATTEMPTS_PER_IP", 15) or 0)
+    if limit <= 0:
+        return True
+    return _increment_throttle("booking-lookup-ip", client_ip, window) <= limit
