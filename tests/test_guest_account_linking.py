@@ -759,3 +759,4 @@ def test_bookings_for_email_excludes_bookings_linked_to_different_verified_accou
     anon_request.user = AnonymousUser()
     anon_request.session = {GUEST_SESSION_KEY: "other@example.com"}
     assert guest_session_matches(anon_request, booking) is False
+

@@ -184,7 +184,14 @@ def guest_session_matches(request, booking: Booking) -> bool:
                         return True
         user_email = normalise_email(getattr(user, "email", ""))
         if user_email and user_email == normalise_email(booking.client.email):
-            if not booking.client_id or booking.client.account_id in (None, getattr(getattr(user, "guest_account", None), "id", None)):
+            booking_account_id = booking.client.account_id if booking.client_id else None
+            user_account = getattr(user, "guest_account", None)
+            user_account_id = getattr(user_account, "id", None)
+            if booking_account_id in (None, user_account_id):
+                if booking_account_id is None and user_account_id is not None:
+                    owner = verified_guest_account_for_email(normalise_email(booking.client.email))
+                    if owner is not None and owner.id != user_account_id:
+                        return False
                 return True
     email = session_email(request)
     if email:
