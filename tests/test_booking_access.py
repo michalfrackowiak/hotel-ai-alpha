@@ -203,3 +203,41 @@ def test_contact_lookup_accepts_verified_account_email_for_unlinked_associated_b
     assert contact_matches(booking, "other-associated@example.com")
     assert find_booking_for_contact(booking.reference, "new-account@example.com") == booking
     assert find_booking_for_contact(booking.reference, "unrelated@example.com") is None
+
+
+@pytest.mark.django_db
+def test_contact_lookup_rejects_client_email_owned_by_different_verified_account(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import GuestAccount
+
+    owner_user = get_user_model().objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="pw",
+        is_active=True,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = get_user_model().objects.create_user(
+        username="other@example.com",
+        email="other@example.com",
+        password="pw",
+        is_active=True,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = owner_account
+    booking.client.email = "other@example.com"  # cross-account conflict state
+    booking.client.save(update_fields=["account", "email", "updated_at"])
+
+    # other account owns that email via its user email; lookup must not leak owner booking.
+    assert contact_matches(booking, "other@example.com") is False
+    assert find_booking_for_contact(booking.reference, "other@example.com") is None
+    # Owner account email still works.
+    assert contact_matches(booking, "owner@example.com") is True

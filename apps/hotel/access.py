@@ -82,10 +82,9 @@ def contact_matches(booking: Booking, contact: str) -> bool:
     if not contact:
         return False
 
-    email = (booking.client.email or "").strip().lower()
-    if email and secrets.compare_digest(email, contact):
-        return True
+    from apps.hotel.guest_access import normalise_email, verified_guest_account_for_email
 
+    client_email = normalise_email(getattr(booking.client, "email", ""))
     account = getattr(booking.client, "account", None)
     if account is None and booking.client_id and booking.client.account_id:
         account = (
@@ -93,32 +92,34 @@ def contact_matches(booking: Booking, contact: str) -> bool:
             .filter(pk=booking.client.account_id, email_verified_at__isnull=False)
             .first()
         )
-    if (
-        account is None
-        and booking.client_id
-        and (booking.client.email or "").strip()
-    ):
-        # Unlinked booking: if client email is associated with a verified guest
-        # account, accept that account's associated emails for lookup coherence.
-        from apps.hotel.guest_access import verified_guest_account_for_email
 
-        account = verified_guest_account_for_email(booking.client.email)
-
+    linked_account = None
     if (
         account is not None
         and getattr(account, "is_email_verified", False)
         and getattr(getattr(account, "user", None), "is_active", False)
         and not getattr(getattr(account, "user", None), "is_staff", False)
     ):
-        account_email = (getattr(account, "email", "") or "").strip().lower()
+        linked_account = account
+    elif booking.client_id and client_email:
+        # Unlinked booking: if client email is associated with a verified guest
+        # account, accept that account's associated emails for lookup coherence.
+        linked_account = verified_guest_account_for_email(client_email)
+
+    if linked_account is not None:
+        account_email = normalise_email(getattr(linked_account.user, "email", ""))
         if account_email and secrets.compare_digest(account_email, contact):
             return True
-        # Accept any email associated with the same verified account (e.g.
-        # preserved historical linked-client email on another client record).
-        from apps.hotel.guest_access import verified_guest_account_for_email
-
+        if client_email and secrets.compare_digest(client_email, contact):
+            # Accept stored client email unless it belongs to a different verified account.
+            client_email_owner = verified_guest_account_for_email(client_email)
+            if client_email_owner is None or client_email_owner.pk == linked_account.pk:
+                return True
         contact_account = verified_guest_account_for_email(contact)
-        if contact_account is not None and contact_account.pk == account.pk:
+        if contact_account is not None and contact_account.pk == linked_account.pk:
+            return True
+    else:
+        if client_email and secrets.compare_digest(client_email, contact):
             return True
 
     phone = _normalise_phone(booking.client.phone or "")
