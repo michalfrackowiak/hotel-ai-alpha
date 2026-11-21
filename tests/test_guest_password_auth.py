@@ -1187,3 +1187,36 @@ def test_register_existing_unverified_unusable_password_when_verify_ip_cooldown_
     assert user.is_active is False
     assert user.check_password("correct horse battery")
     assert GuestAccount.objects.filter(user=user).exists()
+
+@pytest.mark.django_db
+def test_password_reset_email_cooldown_is_neutral_across_ips(client, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.GUEST_LOGIN_COOLDOWN_SECONDS = 300
+    settings.GUEST_LOGIN_IP_COOLDOWN_SECONDS = 60
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+
+    first = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    second = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+
+    assert first.status_code == 302
+    assert second.status_code == 302
+    assert first["Location"].endswith("/my-bookings/password-reset/done/")
+    assert second["Location"].endswith("/my-bookings/password-reset/done/")
+    assert len(mail.outbox) == 1
