@@ -102,12 +102,16 @@ class GuestPasswordResetForm(PasswordResetForm):
     email = forms.EmailField(label=_("Email"), max_length=254, widget=forms.EmailInput(attrs={"autocomplete": "email"}))
 
     def get_users(self, email):
-        """Only allow password reset for non-staff guest users."""
+        """Allow password reset for non-staff guest users, including inactive ones.
+
+        Inactive non-staff guests may need password reset to recover access;
+        reset confirmation activates/verifies them as appropriate.
+        """
         email_field_name = User.get_email_field_name()
-        active_users = User._default_manager.filter(
-            **{f"{email_field_name}__iexact": email, "is_active": True, "is_staff": False}
+        users = User._default_manager.filter(
+            **{f"{email_field_name}__iexact": email, "is_staff": False}
         )
-        return (user for user in active_users if user.has_usable_password())
+        return (user for user in users if user.has_usable_password())
 
 
 class GuestSetPasswordForm(SetPasswordForm):

@@ -325,7 +325,20 @@ def test_password_reset_request_for_active_guest_sends_email(client):
 
 
 @pytest.mark.django_db
-def test_password_reset_request_for_unknown_or_inactive_is_neutral(client):
+def test_password_reset_request_for_unknown_email_is_neutral(client):
+    mail.outbox.clear()
+    response = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "nobody@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/password-reset/done/")
+    assert mail.outbox == []
+
+
+@pytest.mark.django_db
+def test_password_reset_request_for_inactive_non_staff_guest_is_neutral_and_sends_email(client):
     User.objects.create_user(
         username="inactive@example.com",
         email="inactive@example.com",
@@ -335,15 +348,15 @@ def test_password_reset_request_for_unknown_or_inactive_is_neutral(client):
     )
     mail.outbox.clear()
 
-    for email in ("nobody@example.com", "inactive@example.com"):
-        response = client.post(
-            "/my-bookings/password-reset/",
-            {"email": email},
-            HTTP_ACCEPT_LANGUAGE="en",
-        )
-        assert response.status_code == 302
-        assert response["Location"].endswith("/my-bookings/password-reset/done/")
-    assert mail.outbox == []
+    response = client.post(
+        "/my-bookings/password-reset/",
+        {"email": "inactive@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/password-reset/done/")
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["inactive@example.com"]
 
 
 @pytest.mark.django_db
