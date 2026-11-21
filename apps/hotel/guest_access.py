@@ -109,8 +109,13 @@ def bookings_for_email(email: str) -> QuerySet[Booking]:
             linked_emails.add(account_email)
         email_query = Q()
         for linked_email in linked_emails:
+            owner = verified_guest_account_for_email(linked_email)
+            if owner is not None and owner.id != account.id:
+                continue
             email_query |= Q(client__email__iexact=linked_email)
-        query = Q(client__account=account) | (email_query & (Q(client__account__isnull=True) | Q(client__account=account)))
+        query = Q(client__account=account) | (
+            email_query & (Q(client__account__isnull=True) | Q(client__account=account))
+        )
     else:
         # No verified account owns this email; only expose bookings whose client
         # is not linked to a different verified guest account.
