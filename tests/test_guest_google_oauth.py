@@ -457,3 +457,73 @@ def test_google_callback_rejects_preserved_historical_client_email_linked_to_oth
     # No guest session should be established.
     assert client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
     assert booking.reference not in client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en").content.decode()
+
+@pytest.mark.django_db
+def test_google_callback_rejects_conflicting_email_when_unverified_user_exists(
+    settings, monkeypatch, room_type, rooms, stay_dates
+):
+    settings.GOOGLE_OAUTH_CLIENT_ID = "client-id"
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = "client-secret"
+    settings.HOTEL["public_url"] = "http://testserver"
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        adults=2,
+    )
+
+    owner = User.objects.create_user(
+        username="old-owner@example.com",
+        email="old@example.com",
+        password="pw",
+        is_active=True,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+    link_clients_for_guest_account(owner_account)
+    _rec, raw = issue_email_verification_token(owner, email="new@example.com")
+    assert consume_email_verification_token(raw) == "new@example.com"
+    owner.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert owner.email == "new@example.com"
+    assert booking.client.account_id == owner_account.id
+
+    unverified = User.objects.create_user(
+        username="old@example.com",
+        email="old@example.com",
+        password="pw2",
+        is_active=False,
+    )
+    unverified_account, _ = GuestAccount.objects.get_or_create(user=unverified)
+
+    client = Client()
+    session = client.session
+    session["google_oauth_state"] = "good-state"
+    session.save()
+
+    fake = _FakeHttpxClient(
+        token_payload={"access_token": "access-token"},
+        userinfo_payload={
+            "email": "old@example.com",
+            "email_verified": True,
+            "given_name": "Attacker",
+            "family_name": "User",
+        },
+    )
+    monkeypatch.setattr("apps.web.views.httpx.Client", lambda timeout=10.0: fake)
+
+    response = client.get("/my-bookings/google/callback/?state=good-state&code=good-code", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 400
+
+    unverified.refresh_from_db()
+    unverified_account.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert unverified.is_active is False
+    assert unverified_account.is_email_verified is False
+    assert booking.client.account_id == owner_account.id
