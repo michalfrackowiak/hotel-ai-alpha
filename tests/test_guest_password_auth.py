@@ -1018,3 +1018,59 @@ def test_register_ip_throttle_is_neutral_for_existing_verified_account(client, s
     user.refresh_from_db()
     assert user.is_active is True
     assert user.check_password("correct horse battery")
+
+
+@pytest.mark.django_db
+def test_register_ip_throttle_is_neutral_for_existing_staff_account(client, settings):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    staff = User.objects.create_user(
+        username="staff@example.com",
+        email="staff@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+    cache.set(_throttle_key("register", "10.0.0.1"), 1, timeout=60)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "staff@example.com",
+            "first_name": "Staff",
+            "last_name": "User",
+            "password1": "another strong passphrase",
+            "password2": "another strong passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert mail.outbox == []
+    staff.refresh_from_db()
+    assert staff.is_staff is True
+    assert staff.is_active is True
+    assert staff.check_password("correct horse battery")
+
+
+@pytest.mark.django_db
+def test_password_login_throttled_for_nonexistent_account_returns_generic_error(client, settings):
+    settings.GUEST_PASSWORD_LOGIN_WINDOW_SECONDS = 900
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = 2
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP = 100
+
+    url = "/my-bookings/password-login/"
+    payload = {"username": "nobody@example.com", "password": "wrong-password"}
+    first = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+    second = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+    third = client.post(url, payload, HTTP_ACCEPT_LANGUAGE="en")
+
+    assert first.status_code == 400
+    assert second.status_code == 400
+    assert third.status_code == 400
+    assert not client.session.get("_auth_user_id")
+    assert "please enter a correct" in third.content.decode().lower()
