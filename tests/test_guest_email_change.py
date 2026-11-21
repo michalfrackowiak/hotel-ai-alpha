@@ -552,3 +552,47 @@ def test_email_change_cooldown_preserves_pending_token_for_previous_target(web_c
     user.refresh_from_db()
     assert user.email == "first-new@example.com"
     assert User.objects.filter(username="first-new@example.com", pk=user.pk).exists()
+
+@pytest.mark.django_db
+def test_reference_contact_lookup_still_works_with_preserved_client_email_after_email_change(
+    web_client, room_type, rooms, stay_dates
+):
+    """Preserved historical client contact keeps the reference+contact fallback working."""
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == account.id
+    assert booking.client.email == "anna@example.com"
+
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+
+    user.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+    assert booking.client.email == "anna@example.com"
+
+    lookup = web_client.get(
+        "/booking/",
+        {"reference": booking.reference, "contact": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert lookup.status_code == 302
+    assert lookup["Location"].startswith(f"/booking/{booking.reference}/")
+    assert "token=" in lookup["Location"]
+
+    # Following the signed manage link opens the booking without re-entering contact.
+    detail = web_client.get(lookup["Location"], HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
