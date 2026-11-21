@@ -16,7 +16,7 @@ from django.conf import settings
 from django.core import signing
 from django.urls import reverse
 
-from .models import Booking
+from .models import Booking, GuestAccount
 
 BOOKING_ACCESS_SALT = "hotel.booking.access"
 _SIGNER = signing.TimestampSigner(salt=BOOKING_ACCESS_SALT)
@@ -86,6 +86,23 @@ def contact_matches(booking: Booking, contact: str) -> bool:
     if email and secrets.compare_digest(email, contact):
         return True
 
+    account = getattr(booking.client, "account", None)
+    if account is None and booking.client_id and booking.client.account_id:
+        account = (
+            GuestAccount.objects.select_related("user")
+            .filter(pk=booking.client.account_id, email_verified_at__isnull=False)
+            .first()
+        )
+    if (
+        account is not None
+        and getattr(account, "is_email_verified", False)
+        and getattr(getattr(account, "user", None), "is_active", False)
+        and not getattr(getattr(account, "user", None), "is_staff", False)
+    ):
+        account_email = (getattr(account, "email", "") or "").strip().lower()
+        if account_email and secrets.compare_digest(account_email, contact):
+            return True
+
     phone = _normalise_phone(booking.client.phone or "")
     supplied_phone = _normalise_phone(contact)
     if phone and supplied_phone and len(supplied_phone) >= 6:
@@ -95,7 +112,7 @@ def contact_matches(booking: Booking, contact: str) -> bool:
 
 def find_booking_for_contact(reference: str, contact: str) -> Booking | None:
     booking = (
-        Booking.objects.select_related("room", "room__room_type", "client")
+        Booking.objects.select_related("room", "room__room_type", "client", "client__account__user")
         .filter(reference=(reference or "").strip().upper())
         .first()
     )
