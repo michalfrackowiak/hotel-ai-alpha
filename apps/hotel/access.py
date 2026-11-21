@@ -102,6 +102,13 @@ def contact_matches(booking: Booking, contact: str) -> bool:
         account_email = (getattr(account, "email", "") or "").strip().lower()
         if account_email and secrets.compare_digest(account_email, contact):
             return True
+        # Accept any email associated with the same verified account (e.g.
+        # preserved historical linked-client email on another client record).
+        from apps.hotel.guest_access import verified_guest_account_for_email
+
+        contact_account = verified_guest_account_for_email(contact)
+        if contact_account is not None and contact_account.pk == account.pk:
+            return True
 
     phone = _normalise_phone(booking.client.phone or "")
     supplied_phone = _normalise_phone(contact)
