@@ -56,6 +56,7 @@ from apps.hotel.guest_access import (
     reserve_login_request,
     reserve_password_reset_request,
     session_email,
+    verified_guest_account_for_email,
 )
 from apps.hotel.models import (
     Booking,
@@ -441,6 +442,15 @@ def guest_register(request):
     if form.is_valid():
         email = form.cleaned_data["email"]
         existing = User.objects.filter(email__iexact=email).first()
+        owner_account = verified_guest_account_for_email(email)
+        if owner_account is not None and (existing is None or owner_account.user_id != existing.pk):
+            # Neutral: email is already associated with a different verified guest account
+            # (including preserved historical client emails on linked bookings).
+            return render(
+                request,
+                "web/guest_verify_email.html",
+                {"verification_sent": True, "email": email},
+            )
         if existing is None:
             user = User.objects.create_user(
                 username=email,
@@ -573,6 +583,9 @@ def guest_profile(request):
             if email_change_form.is_valid():
                 new_email = email_change_form.cleaned_data["new_email"]
                 target_taken = User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists()
+                owner_account = verified_guest_account_for_email(new_email)
+                if owner_account is not None and owner_account.user_id != user.pk:
+                    target_taken = True
                 # Best-effort anti-spam: issue/send only when eligible and cooldown allows.
                 # Response remains neutral to avoid revealing whether the target email is
                 # unavailable or delivery was throttled.
