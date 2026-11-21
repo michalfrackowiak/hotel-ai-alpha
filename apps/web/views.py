@@ -1053,6 +1053,18 @@ def guest_google_callback(request):
             status=400,
         )
 
+    owner_account = verified_guest_account_for_email(email)
+    if owner_account is not None and (existing is None or owner_account.user_id != existing.pk):
+        return render(
+            request,
+            "web/guest_login.html",
+            _guest_login_context(
+                request,
+                google_error=_("Google sign-in could not be completed. Please try again."),
+            ),
+            status=400,
+        )
+
     now = timezone.now()
     if existing is None:
         base_username = email
