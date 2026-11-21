@@ -71,7 +71,10 @@ def link_clients_for_guest_account(account: GuestAccount) -> int:
     coherently linkable. Only clients with no account or already linked to this
     account are updated; an existing link to a different account is never overridden.
     """
-    email = normalise_email(getattr(account, "email", "") or getattr(account.user, "email", ""))
+    user = getattr(account, "user", None)
+    if user is None or not getattr(user, "is_active", False) or getattr(user, "is_staff", False):
+        return 0
+    email = normalise_email(getattr(account, "email", "") or getattr(user, "email", ""))
     if not email or not account.is_email_verified:
         return 0
     client_model = Booking.objects.model._meta.apps.get_model("hotel", "Client")
