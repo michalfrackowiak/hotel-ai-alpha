@@ -83,6 +83,14 @@ def link_clients_for_guest_account(account: GuestAccount) -> int:
     )
     linked = 0
     for candidate in emails:
+        owner = verified_guest_account_for_email(candidate)
+        if owner is not None and owner.id != account.id:
+            # Strong ownership: the email is the other verified account's own
+            # user email. Skip to avoid cross-account linkage/takeover.
+            if normalise_email(getattr(owner.user, "email", "")) == candidate:
+                continue
+            # Weak/ambiguous linked-client-only ownership: do not skip; keep
+            # existing behavior but never override a different-account link.
         linked += (
             client_model.objects.filter(email__iexact=candidate)
             .filter(Q(account__isnull=True) | Q(account=account))
