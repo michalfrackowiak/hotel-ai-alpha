@@ -816,3 +816,51 @@ def test_bookings_for_email_skips_unlinked_email_owned_by_different_verified_acc
 
     refs = {b.reference for b in bookings_for_email("owner2@example.com")}
     assert booking.reference not in refs
+
+@pytest.mark.django_db
+def test_link_clients_for_guest_account_skips_email_owned_by_different_verified_account():
+    from apps.hotel.guest_access import link_clients_for_guest_account
+
+    owner_user = User.objects.create_user(
+        username="owner3@example.com",
+        email="owner3@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = User.objects.create_user(
+        username="shared3@example.com",
+        email="shared3@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # Conflict-state: owner_account has a linked client carrying an email owned by other_account.
+    GuestClient.objects.create(
+        first_name="Owner",
+        last_name="Linked",
+        email="shared3@example.com",
+        phone="+48555113001",
+        account=owner_account,
+    )
+    unlinked = GuestClient.objects.create(
+        first_name="Unlinked",
+        last_name="Client",
+        email="shared3@example.com",
+        phone="+48555113002",
+        account=None,
+    )
+
+    linked = link_clients_for_guest_account(owner_account)
+
+    unlinked.refresh_from_db()
+    assert linked == 0
+    assert unlinked.account_id is None
