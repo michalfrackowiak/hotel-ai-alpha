@@ -34,7 +34,7 @@ urlpatterns = [
     ),
     path(
         "my-bookings/password-reset/<uidb64>/<token>/",
-        auth_views.PasswordResetConfirmView.as_view(
+        views.GuestPasswordResetConfirmView.as_view(
             template_name="web/guest_password_reset_confirm.html",
             form_class=GuestSetPasswordForm,
             success_url=reverse_lazy("web:guest-password-reset-complete"),
