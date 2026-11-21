@@ -686,3 +686,66 @@ def test_bookings_for_email_includes_account_current_email_when_queried_by_assoc
     assert email_has_bookings("old@example.com") is True
     refs = {b.reference for b in bookings_for_email("old@example.com")}
     assert booking.reference in refs
+
+
+@pytest.mark.django_db
+def test_bookings_for_email_excludes_bookings_linked_to_different_verified_account(
+    room_type, rooms, stay_dates
+):
+    from django.test import RequestFactory
+
+    from apps.hotel.guest_access import bookings_for_email, guest_session_matches
+
+    owner_user = User.objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = User.objects.create_user(
+        username="other@example.com",
+        email="other@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Owner",
+        last_name="User",
+        email="owner@example.com",
+        phone="+48555111003",
+        adults=1,
+    )
+    booking.client.account = owner_account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    # Another verified account with same email in a linked client must not see owner's booking.
+    GuestClient.objects.create(
+        first_name="Other",
+        last_name="User",
+        email="owner@example.com",
+        phone="+48555111004",
+        account=other_account,
+    )
+
+    refs = {b.reference for b in bookings_for_email("other@example.com")}
+    assert booking.reference not in refs
+
+    rf = RequestFactory()
+    request = rf.get("/")
+    request.user = other_user
+    request.session = {}
+    assert guest_session_matches(request, booking) is False
