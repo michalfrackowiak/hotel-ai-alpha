@@ -542,3 +542,57 @@ def test_email_has_bookings_and_magic_link_issuance_for_account_associated_unlin
     assert issued is not None
     _record, raw_token = issued
     assert raw_token
+
+
+@pytest.mark.django_db
+def test_find_or_create_client_does_not_overwrite_email_for_different_verified_account(
+    room_type, rooms, stay_dates
+):
+    from apps.hotel.models import Client
+
+    owner_user = User.objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = User.objects.create_user(
+        username="other@example.com",
+        email="other@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    client_record = Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="owner-old@example.com",
+        phone="+48555111222",
+        account=owner_account,
+    )
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="other@example.com",
+        phone="+48555111222",
+        adults=1,
+    )
+
+    client_record.refresh_from_db()
+    assert booking.client_id == client_record.id
+    assert client_record.account_id == owner_account.id
+    assert client_record.email == "owner-old@example.com"

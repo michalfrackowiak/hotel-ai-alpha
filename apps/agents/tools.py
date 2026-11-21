@@ -390,7 +390,17 @@ class ToolExecutor:
     def _tool_send_confirmation_email(self, reference: str, email: str = "") -> dict:
         booking = get_booking(reference)
         if email:
-            booking.client.email = email.strip().lower()
+            email = email.strip().lower()
+            if booking.client.account_id:
+                from apps.hotel.guest_access import verified_guest_account_for_email
+
+                owner_account = verified_guest_account_for_email(email)
+                if owner_account is not None and owner_account.id != booking.client.account_id:
+                    return error_payload(
+                        "contact_conflict",
+                        "This email address cannot be used for this booking.",
+                    )
+            booking.client.email = email
             booking.client.save(update_fields=["email", "updated_at"])
         booking.refresh_from_db()
         if not (booking.client.email or "").strip():
