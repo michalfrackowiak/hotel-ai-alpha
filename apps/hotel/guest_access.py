@@ -96,6 +96,8 @@ def bookings_for_email(email: str) -> QuerySet[Booking]:
     account = verified_guest_account_for_email(email)
     if account is not None:
         query |= Q(client__account=account)
+        for linked_email in account.clients.exclude(email="").values_list("email", flat=True).distinct():
+            query |= Q(client__email__iexact=linked_email)
     return (
         Booking.objects.filter(query)
         .select_related("client", "room", "room__room_type", "rate_plan")
@@ -149,13 +151,16 @@ def guest_session_matches(request, booking: Booking) -> bool:
     user = getattr(request, "user", None)
     if user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False):
         account = getattr(user, "guest_account", None)
-        if (
-            account is not None
-            and getattr(account, "is_email_verified", False)
-            and booking.client_id
-            and booking.client.account_id == account.id
-        ):
-            return True
+        if account is not None and getattr(account, "is_email_verified", False):
+            if booking.client_id and booking.client.account_id == account.id:
+                return True
+            # Booking may be unlinked but its client email is associated with
+            # this verified account (e.g. preserved historical client email).
+            client_email = normalise_email(getattr(booking.client, "email", "")) if booking.client_id else ""
+            if client_email:
+                owner = verified_guest_account_for_email(client_email)
+                if owner is not None and owner.id == account.id:
+                    return True
         user_email = normalise_email(getattr(user, "email", ""))
         if user_email and user_email == normalise_email(booking.client.email):
             return True
@@ -166,8 +171,14 @@ def guest_session_matches(request, booking: Booking) -> bool:
     # bookings linked to that account (without relying on client email match).
     if email:
         account = verified_guest_account_for_email(email)
-        if account is not None and booking.client_id and booking.client.account_id == account.id:
-            return True
+        if account is not None and booking.client_id:
+            if booking.client.account_id == account.id:
+                return True
+            client_email = normalise_email(getattr(booking.client, "email", ""))
+            if client_email:
+                owner = verified_guest_account_for_email(client_email)
+                if owner is not None and owner.id == account.id:
+                    return True
     return False
 
 
