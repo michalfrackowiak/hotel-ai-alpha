@@ -297,6 +297,11 @@ def _bookings_for_authenticated_guest(user) -> QuerySet[Booking]:
     account = getattr(user, "guest_account", None)
     if account is not None and getattr(account, "is_email_verified", False):
         query |= Q(client__account=account)
+        # Include unlinked bookings whose client email is associated with this
+        # verified account (e.g. preserved historical client email on another
+        # linked client record).
+        for linked_email in account.clients.exclude(email="").values_list("email", flat=True).distinct():
+            query |= Q(client__email__iexact=linked_email)
     if not query:
         return Booking.objects.none()
     return (

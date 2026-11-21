@@ -884,3 +884,69 @@ def test_consume_email_verification_rejects_preserved_historical_client_email_li
     assert attacker.is_active is False
     assert attacker_account.is_email_verified is False
     assert booking.client.account_id == owner_account.id
+
+@pytest.mark.django_db
+def test_unlinked_booking_with_preserved_account_email_is_visible_to_authenticated_guest(
+    web_client, room_type, rooms, stay_dates
+):
+    """An unlinked booking whose client email is associated with a verified account
+    (through another linked client) is visible/manageable to that authenticated guest."""
+    from datetime import timedelta
+
+    from apps.hotel.models import Booking, Client
+
+    check_in, check_out = stay_dates
+    # Linked booking/client with preserved historical email.
+    linked_booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=1,
+    )
+
+    user, account = _create_verified_guest()
+    link_clients_for_guest_account(account)
+    _record, raw = issue_email_verification_token(user, email="new-anna@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+
+    user.refresh_from_db()
+    linked_booking.client.refresh_from_db()
+    assert user.email == "new-anna@example.com"
+    assert linked_booking.client.account_id == account.id
+    assert linked_booking.client.email == "anna@example.com"
+
+    # Data-integrity edge case: another client record has the same preserved email
+    # but is not linked to the account. Its booking should still be accessible to
+    # the verified account owner because the email is associated with the account.
+    unlinked_client = Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        phone="+48555666777",
+    )
+    room = rooms[1]
+    unlinked_booking = Booking.objects.create(
+        client=unlinked_client,
+        room=room,
+        check_in=check_in + timedelta(days=30),
+        check_out=check_out + timedelta(days=30),
+        adults=1,
+        children=0,
+        status=Booking.Status.CONFIRMED,
+        source=Booking.Source.WEB,
+    )
+
+    assert web_client.login(username="new-anna@example.com", password="correct horse battery")
+
+    listing = web_client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    content = listing.content.decode()
+    assert linked_booking.reference in content
+    assert unlinked_booking.reference in content
+
+    detail = web_client.get(f"/booking/{unlinked_booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert unlinked_booking.reference in detail.content.decode()
