@@ -484,8 +484,13 @@ def guest_register(request):
                 {"verification_sent": True, "email": email},
             )
         if existing is None:
+            username = email
+            suffix = 1
+            while User.objects.filter(username__iexact=username).exists():
+                suffix += 1
+                username = f"{email}-{suffix}"
             user = User.objects.create_user(
-                username=email,
+                username=username,
                 email=email,
                 password=form.cleaned_data["password1"],
                 first_name=form.cleaned_data.get("first_name", ""),
