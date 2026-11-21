@@ -484,6 +484,43 @@ def test_register_existing_unverified_account_when_verification_throttled_is_neu
 
 
 @pytest.mark.django_db
+def test_register_existing_unverified_account_wrong_password_is_neutral_and_keeps_password(client, settings):
+    settings.BOOKING_EMAILS_ENABLED = True
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "NewName",
+            "last_name": "NewLast",
+            "password1": "a different strong passphrase",
+            "password2": "a different strong passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.6",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert User.objects.filter(email="anna@example.com").count() == 1
+    assert len(mail.outbox) == 1
+    user.refresh_from_db()
+    assert user.is_active is False
+    # Wrong submitted password must not replace the existing account password.
+    assert user.check_password("correct horse battery")
+    assert not user.check_password("a different strong passphrase")
+
+
+@pytest.mark.django_db
 def test_staff_user_cannot_access_guest_password_change(client):
     staff = User.objects.create_user(
         username="staff@example.com",
