@@ -180,6 +180,8 @@ def find_or_create_client(
                 # Unlinked client with an existing different email: do not overwrite
                 # with an email owned by another verified account, to avoid
                 # cross-account linkage/takeover via phone-match booking creation.
+                # Phone-only clients (no email) may be linked to the email's verified
+                # account, consistent with verified-email booking linkage.
                 can_update_email = False
             if can_update_email:
                 client.email = email
@@ -194,8 +196,9 @@ def find_or_create_client(
             client.save()
 
     # Link to a verified guest account when possible, without overriding an
-    # existing link to a different account.
-    link_email = (client.email or email or "").strip().lower()
+    # existing link to a different account. Use the stored client email only;
+    # do not link based on a supplied email that was rejected for safety.
+    link_email = (client.email or "").strip().lower()
     if link_email:
         account = verified_guest_account_for_email(link_email)
         if account is not None and client.account_id not in (None, account.id):
