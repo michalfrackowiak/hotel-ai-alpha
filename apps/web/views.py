@@ -561,6 +561,23 @@ class GuestPasswordResetView(auth_views.PasswordResetView):
         return redirect(self.get_success_url())
 
 
+class GuestPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
+    """Password reset confirm that also marks guest email verified and links clients."""
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        user = getattr(form, "user", None) or getattr(self, "user", None)
+        if user is None or getattr(user, "is_staff", False) or not getattr(user, "is_active", False):
+            return response
+
+        account, _created = GuestAccount.objects.get_or_create(user=user)
+        if account.email_verified_at is None:
+            account.email_verified_at = timezone.now()
+            account.save(update_fields=["email_verified_at", "updated_at"])
+        link_clients_for_guest_account(account)
+        return response
+
+
 def guest_password_change(request):
     user = request.user
     if not user.is_authenticated or user.is_staff:
