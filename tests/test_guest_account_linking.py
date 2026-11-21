@@ -406,3 +406,81 @@ def test_phone_only_booking_linked_to_verified_account_is_visible_and_manageable
     )
     assert lookup.status_code == 302
     assert "token=" in lookup["Location"]
+
+@pytest.mark.django_db
+def test_link_clients_for_guest_account_links_unlinked_clients_with_preserved_account_associated_email(
+    client, room_type, rooms, stay_dates
+):
+    """Unlinked clients whose email is already associated with the verified account
+    through another linked client are linked, without overriding different-account links."""
+    from datetime import timedelta
+
+    from apps.hotel.models import Booking, Client
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    check_in, check_out = stay_dates
+    linked_booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        adults=1,
+    )
+    linked_booking.client.account = account
+    linked_booking.client.save(update_fields=["account", "updated_at"])
+
+    unlinked_client = Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        phone="+48555666777",
+    )
+    unlinked_booking = Booking.objects.create(
+        client=unlinked_client,
+        room=rooms[1],
+        check_in=check_in + timedelta(days=30),
+        check_out=check_out + timedelta(days=30),
+        adults=1,
+        children=0,
+        status=Booking.Status.CONFIRMED,
+        source=Booking.Source.WEB,
+    )
+
+    other_user = User.objects.create_user(
+        username="other@example.com",
+        email="other@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+    different_account_client = Client.objects.create(
+        first_name="Other",
+        last_name="Person",
+        email="old@example.com",
+        phone="+48111222333",
+        account=other_account,
+    )
+
+    linked = link_clients_for_guest_account(account)
+
+    assert linked >= 1
+    unlinked_client.refresh_from_db()
+    different_account_client.refresh_from_db()
+    assert unlinked_client.account_id == account.id
+    assert different_account_client.account_id == other_account.id
+    assert unlinked_booking.client_id == unlinked_client.id
