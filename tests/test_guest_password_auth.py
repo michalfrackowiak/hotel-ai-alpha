@@ -86,6 +86,35 @@ def test_register_creates_inactive_guest_and_sends_verification(client, settings
 
 
 @pytest.mark.django_db
+def test_register_handles_username_collision(client, settings):
+    settings.BOOKING_EMAILS_ENABLED = True
+    User.objects.create_user(
+        username="anna@example.com",
+        email="other-anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+    )
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "email": "anna@example.com",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response.status_code == 200
+    user = User.objects.get(email="anna@example.com")
+    assert user.username.startswith("anna@example.com")
+    assert user.username != "anna@example.com"
+    assert user.is_active is False
+
+
+@pytest.mark.django_db
 def test_register_rejects_invalid_password_and_does_not_create_user(client):
     response = client.post(
         "/my-bookings/register/",
