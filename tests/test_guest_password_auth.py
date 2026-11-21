@@ -1220,3 +1220,44 @@ def test_password_reset_email_cooldown_is_neutral_across_ips(client, settings):
     assert first["Location"].endswith("/my-bookings/password-reset/done/")
     assert second["Location"].endswith("/my-bookings/password-reset/done/")
     assert len(mail.outbox) == 1
+
+@pytest.mark.django_db
+def test_register_existing_unverified_unusable_password_when_verify_email_cooldown_blocks_issuance_is_neutral(
+    client, settings
+):
+    from apps.hotel.guest_access import _throttle_key
+
+    settings.BOOKING_EMAILS_ENABLED = True
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        is_active=False,
+        is_staff=False,
+    )
+    user.set_unusable_password()
+    user.save(update_fields=["password"])
+    GuestAccount.objects.get_or_create(user=user)
+    cache.set(_throttle_key("verify-email", str(user.pk)), 1, timeout=300)
+    mail.outbox.clear()
+
+    response = client.post(
+        "/my-bookings/register/",
+        {
+            "email": "anna@example.com",
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.10",
+    )
+
+    assert response.status_code == 200
+    assert "verification email is on its way" in response.content.decode().lower()
+    assert User.objects.filter(email="anna@example.com").count() == 1
+    assert mail.outbox == []
+    user.refresh_from_db()
+    assert user.is_active is False
+    assert user.check_password("correct horse battery")
+    assert GuestAccount.objects.filter(user=user).exists()
