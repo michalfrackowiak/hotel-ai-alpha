@@ -274,6 +274,7 @@ TRANSLATIONS: dict[str, str] = {
     "Show rooms": "Pokaż pokoje",
     "Skip to content": "Przejdź do treści",
     "Something went wrong. Please try again.": "Coś poszło nie tak. Spróbuj ponownie.",
+    "Too many attempts. Please try again later.": "Zbyt wiele prób. Spróbuj ponownie później.",
     "Speak replies": "Czytaj odpowiedzi",
     "Speak. We'll take care of the rest.": "Mów. Resztą zajmiemy się my.",
     "Special requests": "Specjalne życzenia",

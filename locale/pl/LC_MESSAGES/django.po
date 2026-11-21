@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Resort Neptun 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 21:12+0100\n"
+"POT-Creation-Date: 2026-11-21 10:16+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -760,6 +760,9 @@ msgstr "Google Calendar"
 
 msgid "Google did not provide a verified email address."
 msgstr "Google nie przekazało zweryfikowanego adresu e-mail."
+
+msgid "Google sign-in could not be completed. Please try again."
+msgstr ""
 
 msgid "Google sign-in could not be verified. Please try again."
 msgstr "Nie udało się zweryfikować logowania Google. Spróbuj ponownie."
@@ -1683,9 +1686,6 @@ msgid ""
 "try again."
 msgstr "Brak rezerwacji o numerze <strong>%(ref)s</strong>. Sprawdź numer i spróbuj ponownie."
 
-msgid "This account cannot be used for guest sign-in."
-msgstr "Tego konta nie można użyć do logowania gościa."
-
 msgid "This booking can no longer be cancelled."
 msgstr "Tej rezerwacji nie można już anulować."
 
@@ -1713,9 +1713,6 @@ msgstr "Ten zakres dat zawiera zamkniętą noc (%(date)s)."
 #, python-format
 msgid "This date range requires a minimum stay of %(nights)s nights."
 msgstr "Ten zakres dat wymaga minimalnego pobytu wynoszącego %(nights)s nocy."
-
-msgid "This email address cannot be used."
-msgstr "Tego adresu e-mail nie można użyć."
 
 msgid "This is a temporary hold. Cancelling it is free."
 msgstr "To tymczasowa rezerwacja wstępna. Anulowanie jest bezpłatne."
@@ -1762,6 +1759,9 @@ msgstr "Ten pokój jest zablokowany do %(time)s. Potwierdź w recepcji, aby go z
 #, python-format
 msgid "This room type sleeps up to %(capacity)s guests."
 msgstr "Ten typ pokoju mieści do %(capacity)s gości."
+
+msgid "Too many attempts. Please try again later."
+msgstr "Zbyt wiele prób. Spróbuj ponownie później."
 
 msgid "Tool"
 msgstr "Narzędzie"
