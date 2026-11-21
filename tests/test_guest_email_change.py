@@ -508,3 +508,47 @@ def test_email_change_request_is_neutral_when_verify_email_cooldown_blocks_issua
     assert GuestEmailVerificationToken.objects.filter(user=user, email="new-anna@example.com").count() == 0
     user.refresh_from_db()
     assert user.email == "anna@example.com"
+
+@pytest.mark.django_db
+def test_email_change_cooldown_preserves_pending_token_for_previous_target(web_client, settings):
+    """If verification issuance is blocked after a successful request, the pending
+    token for the previously requested target remains usable (no token rotation)."""
+    settings.BOOKING_EMAILS_ENABLED = True
+    user, _account = _create_verified_guest()
+    web_client.force_login(user)
+
+    first = web_client.post(
+        "/my-bookings/profile/",
+        {"form": "email_change", "new_email": "first-new@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.20",
+    )
+    assert first.status_code == 200
+    assert "verification link" in first.content.decode().lower()
+    assert len(mail.outbox) == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="first-new@example.com").count() == 1
+
+    second = web_client.post(
+        "/my-bookings/profile/",
+        {"form": "email_change", "new_email": "second-new@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.21",
+    )
+    assert second.status_code == 200
+    assert "verification link" in second.content.decode().lower()
+    # Cooldown blocks issuance/sending; no token rotation to the second target.
+    assert len(mail.outbox) == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user).count() == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="first-new@example.com").count() == 1
+    assert GuestEmailVerificationToken.objects.filter(user=user, email="second-new@example.com").count() == 0
+
+    user.refresh_from_db()
+    assert user.email == "anna@example.com"
+
+    match = re.search(r"(/my-bookings/verify-email/[^/]+/)", mail.outbox[0].body)
+    assert match, mail.outbox[0].body
+    verify = web_client.get(match.group(1), HTTP_ACCEPT_LANGUAGE="en")
+    assert verify.status_code == 200
+    user.refresh_from_db()
+    assert user.email == "first-new@example.com"
+    assert User.objects.filter(username="first-new@example.com", pk=user.pk).exists()
