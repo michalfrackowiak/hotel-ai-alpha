@@ -17,7 +17,7 @@ def test_home_page_renders(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Resort Neptun Jastrzębia Góra" in content
+    assert "Hotel Aurora" in content
     assert "Check availability" in content
 
 

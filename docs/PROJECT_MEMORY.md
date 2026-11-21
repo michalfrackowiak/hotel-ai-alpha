@@ -2,20 +2,20 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 21 November 2026 - **Version:** v0.10.0 (released) - **Tests:** 391 passing (local gate)
+**Last updated:** 21 November 2026 - **Version:** v0.10.1 (released) - **Tests:** 391 passing (local gate)
 
 ## Current state
 
 - Phases 0–11 are complete. The app books a room end-to-end by chat and voice in Polish and English, emails or texts a confirmation and keeps per-room calendars in sync.
 - The conversation follows a seven-step reception script shared by chat and voice: welcome/language, arrival date, departure date or duration, guest count, availability and room selection, confirmation prompt, then a choice of email or SMS delivery. Polish is the default; the engine switches to English when the guest asks.
-- The demo hotel is branded **Resort Neptun Jastrzębia Góra**; the assistant is still called **Aurora**.
+- The demo hotel is branded **Hotel Aurora**; the assistant is also called **Aurora**.
 - Confirmation SMS is delivered through a pluggable provider layer: the offline `console` provider by default, or Twilio when `SMS_PROVIDER=twilio` and the credentials are set. Each send attempt is recorded as a `SmsDelivery` row; the booking stores the current SMS delivery state/attempt/retry metadata. Failed or unsent confirmations are retried with exponential backoff from the scheduler (`send_booking_sms`, `SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`), and `/ops/` shows SMS delivery health, retries and problem deliveries. Provider delivery-receipt webhooks (`POST /api/v1/sms/webhooks/<provider>/`, gated by `SMS_WEBHOOK_SECRET` / `X-Sms-Webhook-Secret` when configured) update the booking and matching/latest delivery, and inbound guest replies are stored as `InboundSmsMessage` records (linked to a booking by normalized phone when possible). Read-only SMS delivery history and inbound replies are shown in `/ops/` and the admin.
 - Non-booking enquiries and explicit requests for a receptionist call `transfer_to_human`, which records a handover request in the conversation state.
 - Guests can change or cancel a reservation through the signed link, with a policy fee preview and an audit trail.
 - Payments and deposits are tracked manually/admin-first (no direct card processing): bookings record payment state/amounts/method/reference/notes, hotel-level and per-rate-plan deposit policies determine deposit/amount-due-now, guest views/confirmations/API expose payment+deposit summaries, and staff can record payment changes via admin, `manage.py record_payment`, or the staff-only `POST /api/v1/bookings/<reference>/payments/` API (append-only payment audit events, `hotel.0017`–`0019`).
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.10.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. v0.10.0 is released from `main` (PRs #16–#106 on `develop`, 391 tests passing, CI green). Core: guest identity/linkage, email/password auth with verification/reset/change, Google OAuth sign-in/linking, profile/settings with `Client` sync, unified `/my-bookings/` with preserved signed/reference+contact/magic-link fallbacks, plus targeted throttling/anti-enumeration/authorization/linkage/coherence hardening.
+- Git is initialised with `main` and `develop`; releases through `v0.10.1` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. v0.10.1 is a patch release: Hotel Aurora branding refresh, Hilton-inspired blue frontend/admin styling, and an improved voice concierge orb/animation, with WCAG AA token/accessibility checks kept green. v0.10.0 delivered guest identity/linkage, email/password auth with verification/reset/change, Google OAuth sign-in/linking, profile/settings with `Client` sync, unified `/my-bookings/` with preserved signed/reference+contact/magic-link fallbacks, plus targeted throttling/anti-enumeration/authorization/linkage/coherence hardening.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
@@ -300,6 +300,6 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.10.0 is released (tag `v0.10.0` on `main`, merged back to `develop`). Core guest self-service is shipped: email/password registration/login/logout, email verification/reset/change, Google sign-in/linking, profile/settings with `Client` sync, unified authenticated `/my-bookings/` with preserved signed/reference+contact/magic-link fallbacks, and targeted authorization/throttling/anti-enumeration/linkage/coherence hardening (PRs #16–#106).
+v0.10.1 is released (patch: Hotel Aurora branding refresh, Hilton-inspired blue frontend/admin styling, improved voice orb/animation). v0.10.0 delivered core guest self-service (email/password + Google auth, verification/reset/change, profile/settings, unified authenticated `/my-bookings/`, preserved signed/reference+contact/magic-link fallbacks, and hardening).
 
 Next milestone planning is in [docs/ROADMAP.md](ROADMAP.md): **v0.11.0 (proposed)** focuses on platform hardening and commercial readiness (payments/billing evolution, account security hardening, API/integrations/identity, reliability/observability, and product/UX depth). Pick the first v0.11.0 slice deliberately; do not start implementation without confirming scope. Keep the full gate green per slice.

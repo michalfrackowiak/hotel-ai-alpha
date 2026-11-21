@@ -382,7 +382,7 @@ Errors: `400` with `validation_error`, `invalid_payment_action`, `amount_require
   "session_key": "4f2c9b1d8e7a4c6b9f0a2d3e5c7b8a1f",
   "channel": "chat",
   "language": "pl",
-  "greeting": "Dzień dobry, tu Resort Neptun Jastrzębia Góra. ...",
+  "greeting": "Dzień dobry, tu Hotel Aurora. ...",
   "provider": { "name": "Demo policy (offline)", "type": "demo", "model": "demo-policy-v1" }
 }
 ```

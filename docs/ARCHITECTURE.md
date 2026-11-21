@@ -1,6 +1,6 @@
 # Architecture
 
-Resort Neptun Jastrzębia Góra is a Django 5.2 application with a provider-agnostic AI conversation layer. The same domain services and tools are used by the website, the REST API, the chat concierge and the voice concierge.
+Hotel Aurora is a Django 5.2 application with a provider-agnostic AI conversation layer. The same domain services and tools are used by the website, the REST API, the chat concierge and the voice concierge.
 
 ## System context
 
