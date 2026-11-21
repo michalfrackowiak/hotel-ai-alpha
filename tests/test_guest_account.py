@@ -227,3 +227,28 @@ def test_login_requests_are_rate_limited_per_email(client, anna):
     assert second.status_code == 200
     assert "sign-in link is on its way" in second.content.decode()
     assert len(mail.outbox) == 1
+
+@pytest.mark.django_db
+def test_magic_link_email_cooldown_is_neutral_across_ips(client, anna, settings):
+    settings.GUEST_LOGIN_COOLDOWN_SECONDS = 300
+    settings.GUEST_LOGIN_IP_COOLDOWN_SECONDS = 60
+
+    first = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    second = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert "sign-in link is on its way" in first.content.decode()
+    assert "sign-in link is on its way" in second.content.decode()
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["anna@example.com"]
