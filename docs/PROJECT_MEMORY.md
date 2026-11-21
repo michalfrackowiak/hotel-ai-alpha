@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 20 November 2026 - **Version:** v0.9.0 - **Tests:** 240 passing
+**Last updated:** 21 November 2026 - **Version:** v0.10.0 (released) - **Tests:** 391 passing (local gate)
 
 ## Current state
 
@@ -15,11 +15,11 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - Payments and deposits are tracked manually/admin-first (no direct card processing): bookings record payment state/amounts/method/reference/notes, hotel-level and per-rate-plan deposit policies determine deposit/amount-due-now, guest views/confirmations/API expose payment+deposit summaries, and staff can record payment changes via admin, `manage.py record_payment`, or the staff-only `POST /api/v1/bookings/<reference>/payments/` API (append-only payment audit events, `hotel.0017`–`0019`).
 - Reception has a staff operations dashboard at `/ops/` and a month-grid rate calendar in the admin.
 - Local database `data/db.sqlite3` is migrated and seeded. The local superuser is `admin` / `AuroraAdmin!2026` (demo only, `.env` is gitignored).
-- Git is initialised with `main` and `develop`; releases through `v0.9.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`.
+- Git is initialised with `main` and `develop`; releases through `v0.10.0` are tagged and pushed to `github.com/michalfrackowiak/hotel-ai-alpha`. v0.10.0 is released from `main` (PRs #16–#106 on `develop`, 391 tests passing, CI green). Core: guest identity/linkage, email/password auth with verification/reset/change, Google OAuth sign-in/linking, profile/settings with `Client` sync, unified `/my-bookings/` with preserved signed/reference+contact/magic-link fallbacks, plus targeted throttling/anti-enumeration/authorization/linkage/coherence hardening.
 - The default AI provider is the offline `demo` policy. No external API key is required to run or demo the app.
 - The demo calendar connection uses the `fake` provider, so confirmation and cancellation exercise the real sync path without Google credentials.
 - Booking links are signed and token-gated. The web lookup requires reference + email/phone; the API returns `manage_token` and `manage_url` on creation.
-- Guests have a passwordless account at `/my-bookings/`: a single-use magic link (stored hashed, 30-minute expiry) signs them in and lists every booking tied to that email. A signed-in guest can open their bookings without a token.
+- Guests can access `/my-bookings/` via password/Google guest accounts or a transitional single-use magic link (stored hashed, 30-minute expiry). Authenticated verified guests see reservations linked to their account/email (with status, dates, room/rate and payment/deposit summary) and can manage profile/settings including verified email changes; signed booking links and reference+email/phone lookup remain supported fallbacks.
 - Guests can book directly at `/book/` without the chat: the page quotes through `search_availability`, lists the standard rate plus every applicable named `RatePlan`, creates the booking through `create_booking(source=web)` and confirms it immediately through `confirm_booking`.
 - Availability results on the home page and the room cards link straight to `/book/` with the room type, dates and guest count prefilled.
 - Confirmation email delivery is retried with exponential backoff. Each attempt updates `confirmation_email_attempts`, `confirmation_email_last_attempt_at` and `confirmation_email_next_retry_at`; the scheduler runs `send_booking_emails`, which only picks up bookings whose backoff window has passed and that still have attempts left.
@@ -300,4 +300,6 @@ Update this table when the release gate is re-run.
 
 ## Next move
 
-v0.9.0 is released and tagged (`v0.9.0`) on `main`; `develop` is synced with `main`. The next milestone has not been scoped yet. Plan and document it in [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PROJECT_MEMORY.md](docs/PROJECT_MEMORY.md) before starting implementation on `develop`.
+v0.10.0 is released (tag `v0.10.0` on `main`, merged back to `develop`). Core guest self-service is shipped: email/password registration/login/logout, email verification/reset/change, Google sign-in/linking, profile/settings with `Client` sync, unified authenticated `/my-bookings/` with preserved signed/reference+contact/magic-link fallbacks, and targeted authorization/throttling/anti-enumeration/linkage/coherence hardening (PRs #16–#106).
+
+Next milestone planning is in [docs/ROADMAP.md](ROADMAP.md): **v0.11.0 (proposed)** focuses on platform hardening and commercial readiness (payments/billing evolution, account security hardening, API/integrations/identity, reliability/observability, and product/UX depth). Pick the first v0.11.0 slice deliberately; do not start implementation without confirming scope. Keep the full gate green per slice.

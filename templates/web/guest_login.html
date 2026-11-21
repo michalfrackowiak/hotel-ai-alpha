@@ -1,7 +1,7 @@
 {% extends "web/base.html" %}
 {% load i18n %}
 
-{% block title %}{% trans "My bookings" %} · {{ hotel.name }}{% endblock %}
+{% block title %}{% trans "My bookings" %} – {{ hotel.name }}{% endblock %}
 
 {% block content %}
 <section class="shell lookup-shell">
@@ -9,6 +9,9 @@
     <p class="eyebrow">{% trans "Guest account" %}</p>
     <h1>{% trans "My bookings" %}</h1>
 
+    {% if google_error %}
+      <p class="notice notice--warning" role="alert">{{ google_error }}</p>
+    {% endif %}
     {% if link_invalid %}
       <p class="notice notice--warning" role="alert">
         {% trans "That sign-in link is invalid, already used or expired. Request a fresh one below." %}
@@ -31,9 +34,87 @@
       <label class="field">
         <span>{% trans "Email address" %}</span>
         <input type="email" name="email" value="{{ email|default:'' }}" placeholder="anna@example.com"
-               autocomplete="email" spellcheck="false" maxlength="120" required autofocus>
+               autocomplete="email" spellcheck="false" maxlength="120">
       </label>
       <button class="btn btn--primary btn--block" type="submit">{% trans "Send sign-in link" %}</button>
+    </form>
+
+    {% if google_oauth_enabled %}
+      <hr class="lookup-divider">
+
+      <h2>{% trans "Sign in with Google" %}</h2>
+      <p class="lookup-card__lede">{% trans "Use your Google account for fast and secure access to your bookings." %}</p>
+      <p>
+        <a class="btn btn--primary btn--block" href="{% url 'web:guest-google-login' %}">{% trans "Continue with Google" %}</a>
+      </p>
+    {% endif %}
+
+    <hr class="lookup-divider">
+
+    <h2>{% trans "Sign in with password" %}</h2>
+    <p class="lookup-card__lede">{% trans "If you have a guest account, sign in to see all bookings linked to your email." %}</p>
+    {% if password_login_failed and login_form and login_form.non_field_errors %}
+      <p class="notice notice--warning" role="alert">{{ login_form.non_field_errors|join:", " }}</p>
+    {% endif %}
+    <form class="lookup-form" method="post" action="{% url 'web:guest-password-login' %}">
+      {% csrf_token %}
+      <label class="field" for="id_login_username">
+        <span>{% trans "Email address" %}</span>
+        <input id="id_login_username" type="email" name="username"
+               value="{% if login_form %}{{ login_form.username.value|default:'' }}{% endif %}"
+               autocomplete="email" spellcheck="false" maxlength="254">
+      </label>
+      {% if login_form and login_form.username.errors %}<p class="field-error">{{ login_form.username.errors|join:", " }}</p>{% endif %}
+      <label class="field" for="id_login_password">
+        <span>{% trans "Password" %}</span>
+        <input id="id_login_password" type="password" name="password" autocomplete="current-password">
+      </label>
+      {% if login_form and login_form.password.errors %}<p class="field-error">{{ login_form.password.errors|join:", " }}</p>{% endif %}
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Sign in" %}</button>
+    </form>
+    <p><a class="link-button" href="{% url 'web:guest-password-reset' %}">{% trans "Forgot your password?" %}</a></p>
+
+    <hr class="lookup-divider">
+
+    <h2>{% trans "Create an account" %}</h2>
+    <p class="lookup-card__lede">{% trans "Register with your email and a password to access your bookings anytime." %}</p>
+    {% if registration_failed and register_form and register_form.non_field_errors %}
+      <p class="notice notice--warning" role="alert">{{ register_form.non_field_errors|join:", " }}</p>
+    {% endif %}
+    <form class="lookup-form" method="post" action="{% url 'web:guest-register' %}">
+      {% csrf_token %}
+      <label class="field" for="id_reg_email">
+        <span>{% trans "Email address" %}</span>
+        <input id="id_reg_email" type="email" name="email"
+               value="{% if register_form %}{{ register_form.email.value|default:'' }}{% endif %}"
+               autocomplete="email" spellcheck="false" maxlength="254">
+      </label>
+      {% if register_form and register_form.email.errors %}<p class="field-error">{{ register_form.email.errors|join:", " }}</p>{% endif %}
+      <label class="field" for="id_reg_first_name">
+        <span>{% trans "First name" %}</span>
+        <input id="id_reg_first_name" type="text" name="first_name"
+               value="{% if register_form %}{{ register_form.first_name.value|default:'' }}{% endif %}"
+               autocomplete="given-name" maxlength="80">
+      </label>
+      {% if register_form and register_form.first_name.errors %}<p class="field-error">{{ register_form.first_name.errors|join:", " }}</p>{% endif %}
+      <label class="field" for="id_reg_last_name">
+        <span>{% trans "Last name" %}</span>
+        <input id="id_reg_last_name" type="text" name="last_name"
+               value="{% if register_form %}{{ register_form.last_name.value|default:'' }}{% endif %}"
+               autocomplete="family-name" maxlength="80">
+      </label>
+      {% if register_form and register_form.last_name.errors %}<p class="field-error">{{ register_form.last_name.errors|join:", " }}</p>{% endif %}
+      <label class="field" for="id_reg_password1">
+        <span>{% trans "Password" %}</span>
+        <input id="id_reg_password1" type="password" name="password1" autocomplete="new-password">
+      </label>
+      {% if register_form and register_form.password1.errors %}<p class="field-error">{{ register_form.password1.errors|join:", " }}</p>{% endif %}
+      <label class="field" for="id_reg_password2">
+        <span>{% trans "Confirm password" %}</span>
+        <input id="id_reg_password2" type="password" name="password2" autocomplete="new-password">
+      </label>
+      {% if register_form and register_form.password2.errors %}<p class="field-error">{{ register_form.password2.errors|join:", " }}</p>{% endif %}
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Create account" %}</button>
     </form>
 
     <div class="lookup-card__help">

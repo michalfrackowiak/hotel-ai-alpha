@@ -1,0 +1,368 @@
+"""Guest account profile/settings page."""
+
+from __future__ import annotations
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.test import Client
+from django.utils import timezone
+
+from apps.hotel.models import Client as HotelClient
+from apps.hotel.models import GuestAccount
+
+User = get_user_model()
+
+
+@pytest.fixture
+def client() -> Client:
+    return Client()
+
+
+@pytest.mark.django_db
+def test_guest_profile_requires_authenticated_non_staff(client):
+    response = client.get("/my-bookings/profile/")
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/")
+
+    staff = User.objects.create_user(
+        username="staff@example.com",
+        email="staff@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+    client.force_login(staff)
+    response = client.get("/my-bookings/profile/")
+    assert response.status_code == 302
+    assert response["Location"].endswith("/my-bookings/")
+
+
+@pytest.mark.django_db
+def test_authenticated_guest_can_view_and_update_profile(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    linked_client = HotelClient.objects.create(
+        account=account,
+        first_name="Anna",
+        last_name="Old",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+    client.force_login(user)
+
+    response = client.get("/my-bookings/profile/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Account settings" in content
+    assert "anna@example.com" in content
+    assert "Verified" in content
+    assert "Anna" in content
+    assert "Preferred language" in content
+    assert "Marketing consent" in content
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert "saved" in response.content.decode().lower()
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+
+    linked_client.refresh_from_db()
+    assert linked_client.first_name == "Aneta"
+    assert linked_client.last_name == "Kowalska"
+    assert linked_client.phone == "+48999888777"
+    assert linked_client.language == "en"
+    assert linked_client.marketing_consent is True
+
+    # My bookings should offer account settings for authenticated guests
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert "Account settings" in listing.content.decode()
+
+
+@pytest.mark.django_db
+def test_guest_profile_persists_preferences_when_no_linked_clients(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="",
+        last_name="",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    assert not account.clients.exists()
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "phone": "+48123123123",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    assert "saved" in response.content.decode().lower()
+
+    user.refresh_from_db()
+    assert user.first_name == "Anna"
+    assert user.last_name == "Kowalska"
+
+    linked = account.clients.get()
+    assert linked.email == "anna@example.com"
+    assert linked.first_name == "Anna"
+    assert linked.last_name == "Kowalska"
+    assert linked.phone == "+48123123123"
+    assert linked.language == "en"
+    assert linked.marketing_consent is True
+
+    page = client.get("/my-bookings/profile/", HTTP_ACCEPT_LANGUAGE="en")
+    content = page.content.decode()
+    assert "Anna" in content
+    assert "Kowalska" in content
+    assert "+48123123123" in content
+
+@pytest.mark.django_db
+def test_guest_profile_update_propagates_to_all_linked_clients(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    first_client = HotelClient.objects.create(
+        account=account,
+        first_name="Anna",
+        last_name="Old",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+    second_client = HotelClient.objects.create(
+        account=account,
+        first_name="A",
+        last_name="Previous",
+        email="anna+old@example.com",
+        phone="+48222000000",
+        language="pl",
+        marketing_consent=False,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+
+    first_client.refresh_from_db()
+    second_client.refresh_from_db()
+    for linked_client in (first_client, second_client):
+        assert linked_client.first_name == "Aneta"
+        assert linked_client.last_name == "Kowalska"
+        assert linked_client.phone == "+48999888777"
+        assert linked_client.language == "en"
+        assert linked_client.marketing_consent is True
+
+@pytest.mark.django_db
+def test_guest_profile_save_links_matching_unlinked_clients_and_propagates(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    existing = HotelClient.objects.create(
+        account=None,
+        first_name="Booking",
+        last_name="Name",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+
+    existing.refresh_from_db()
+    assert existing.account_id == account.id
+    assert existing.first_name == "Aneta"
+    assert existing.last_name == "Kowalska"
+    assert existing.phone == "+48999888777"
+    assert existing.language == "en"
+    assert existing.marketing_consent is True
+    assert HotelClient.objects.filter(email__iexact="anna@example.com").count() == 1
+    assert account.clients.count() == 1
+
+
+@pytest.mark.django_db
+def test_guest_profile_save_does_not_create_client_conflicting_with_other_verified_account(client):
+    owner_user = User.objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="correct horse battery",
+        first_name="Owner",
+        last_name="User",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    HotelClient.objects.create(
+        account=owner_account,
+        first_name="Other",
+        last_name="Owner",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+
+    client.force_login(user)
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+    assert account.clients.count() == 0
+    assert HotelClient.objects.filter(email__iexact="anna@example.com", account=owner_account).count() == 1
+    assert HotelClient.objects.filter(email__iexact="anna@example.com").count() == 1
+
+
+@pytest.mark.django_db
+def test_guest_profile_does_not_link_fallback_client_for_unverified_account(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="",
+        last_name="",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    assert account.email_verified_at is None
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Anna",
+            "last_name": "Kowalska",
+            "phone": "+48123123123",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    created = HotelClient.objects.get(email="anna@example.com")
+    assert created.account_id is None
+    assert created.first_name == "Anna"
+    assert created.language == "en"
+
+    # Once verified, normal linkage can attach the client.
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    from apps.hotel.guest_access import link_clients_for_guest_account
+
+    linked = link_clients_for_guest_account(account)
+    assert linked == 1
+    created.refresh_from_db()
+    assert created.account_id == account.id

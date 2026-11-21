@@ -1,0 +1,92 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Account settings" %} – {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card">
+    <p class="eyebrow">{% trans "Guest account" %}</p>
+    <h1>{% trans "Account settings" %}</h1>
+    <p class="lookup-card__lede">{% trans "Manage your guest account details." %}</p>
+
+    {% if saved %}
+      <p class="notice notice--success" role="status">{% trans "Your account details have been saved." %}</p>
+    {% endif %}
+    {% if email_change_sent %}
+      <p class="notice notice--success" role="status">
+        {% blocktrans with email=email_change_target %}If this email address can be used, we sent a verification link to {{ email }}. Open that link to confirm the change.{% endblocktrans %}
+      </p>
+    {% endif %}
+
+    <div class="notice notice--muted" role="status">
+      <p><strong>{% trans "Email address" %}:</strong> {{ guest_email|default:"-" }}</p>
+      <p>
+        <strong>{% trans "Email verification" %}:</strong>
+        {% if guest_account.is_email_verified %}
+          {% trans "Verified" %}
+        {% else %}
+          {% trans "Not verified" %}
+        {% endif %}
+      </p>
+    </div>
+
+    <h2>{% trans "Change email address" %}</h2>
+    <p class="lookup-card__lede">{% trans "Enter a new email address. We will send a verification link before the change takes effect." %}</p>
+    <form class="lookup-form" method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="form" value="email_change">
+      {{ email_change_form.non_field_errors }}
+      <label class="field" for="{{ email_change_form.new_email.id_for_label }}">
+        <span>{% trans "New email address" %}</span>
+        {{ email_change_form.new_email }}
+      </label>
+      {% if email_change_form.new_email.errors %}<p class="field-error">{{ email_change_form.new_email.errors|join:", " }}</p>{% endif %}
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Send verification link" %}</button>
+    </form>
+
+    <h2>{% trans "Profile details" %}</h2>
+    <form class="lookup-form" method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <label class="field" for="{{ form.first_name.id_for_label }}">
+        <span>{% trans "First name" %}</span>
+        {{ form.first_name }}
+      </label>
+      {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|join:", " }}</p>{% endif %}
+
+      <label class="field" for="{{ form.last_name.id_for_label }}">
+        <span>{% trans "Last name" %}</span>
+        {{ form.last_name }}
+      </label>
+      {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|join:", " }}</p>{% endif %}
+
+      <label class="field" for="{{ form.phone.id_for_label }}">
+        <span>{% trans "Phone" %}</span>
+        {{ form.phone }}
+      </label>
+      {% if form.phone.errors %}<p class="field-error">{{ form.phone.errors|join:", " }}</p>{% endif %}
+
+      <label class="field" for="{{ form.language.id_for_label }}">
+        <span>{% trans "Preferred language" %}</span>
+        {{ form.language }}
+      </label>
+      {% if form.language.errors %}<p class="field-error">{{ form.language.errors|join:", " }}</p>{% endif %}
+
+      <label class="field field--checkbox" for="{{ form.marketing_consent.id_for_label }}">
+        {{ form.marketing_consent }}
+        <span>{% trans "Marketing consent" %}</span>
+      </label>
+      {% if form.marketing_consent.errors %}<p class="field-error">{{ form.marketing_consent.errors|join:", " }}</p>{% endif %}
+
+      <input type="hidden" name="form" value="profile">
+      <button class="btn btn--primary btn--block" type="submit">{% trans "Save changes" %}</button>
+    </form>
+
+    <p>
+      <a class="link-button" href="{% url 'web:guest-password-change' %}">{% trans "Change password" %}</a>
+    </p>
+    <p><a class="link-button" href="{% url 'web:guest-bookings' %}">{% trans "Back to My bookings" %}</a></p>
+  </div>
+</section>
+{% endblock %}

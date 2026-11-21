@@ -273,7 +273,9 @@ Store `manage_token`/`manage_url` with the booking. The token is signed, scoped 
 
 A missing, forged, expired or revoked token returns `403` with `booking_access_denied`. The web lookup at `/booking/` issues a fresh signed link when the guest supplies the reference plus the email address or phone number used for the booking.
 
-The web guest account at `/my-bookings/` does not add an API credential. A guest requests a single-use magic link by email; following it sets a session, and the web booking page issues that booking's normal signed token so the existing API calls keep working unchanged.
+The web guest account at `/my-bookings/` does not add an API credential. It is a web-only guest area where a guest can sign in with email/password, continue with Google (when configured), or request a transitional single-use magic link by email. Registration and email changes require email verification; password reset and password change are available through the web flow. Requests that could reveal account existence (magic-link/reset/registration and selected verification paths) return neutral responses, and guest auth endpoints are throttled/rate-limited.
+
+After a successful guest sign-in, the web booking detail page issues that booking's normal signed token when the booking is accessible to the guest session (verified account-linked booking, matching verified account email, or matching magic-link session email as applicable). The existing token-gated booking API calls keep working unchanged; the guest account itself does not expose separate booking API credentials. Signed booking links and reference + email/phone lookup remain supported fallbacks.
 
 ### `GET /api/v1/bookings/<REFERENCE>/`
 

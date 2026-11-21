@@ -160,6 +160,66 @@ def test_booking_lookup_accepts_phone_number(client):
 
 
 @pytest.mark.django_db
+def test_booking_lookup_is_rate_limited_per_ip(client, settings):
+    from django.core.cache import cache
+    from django.core.management import call_command
+
+    cache.clear()
+    settings.GUEST_BOOKING_LOOKUP_WINDOW_SECONDS = 300
+    settings.GUEST_BOOKING_LOOKUP_MAX_ATTEMPTS_PER_IP = 2
+
+    call_command("seed_demo")
+    from apps.hotel.models import Booking
+
+    booking = Booking.objects.get()
+    params = {"reference": booking.reference, "contact": "wrong@example.com"}
+
+    first = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+    second = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+    third = client.get("/booking/", params, HTTP_ACCEPT_LANGUAGE="en")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
+    content = third.content.decode().lower()
+    assert "too many attempts" in content
+    assert "could not match" not in content
+
+
+@pytest.mark.django_db
+def test_phone_only_booking_can_be_looked_up_and_opened(client, room_type, rooms, stay_dates):
+    from apps.hotel.booking_service import create_booking
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Marek",
+        last_name="Nowak",
+        email="",
+        phone="+48 501 222 333",
+        adults=1,
+    )
+
+    lookup = client.get(
+        "/booking/",
+        {"reference": booking.reference, "contact": "+48 501 222 333"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert lookup.status_code == 302
+    assert f"/booking/{booking.reference}/" in lookup["Location"]
+    assert "token=" in lookup["Location"]
+
+    detail = client.get(lookup["Location"], HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    content = detail.content.decode()
+    assert booking.reference in content
+    assert "+48 501 222 333" in content or "Marek" in content
+    assert 'data-access-token="' in content
+
+
+@pytest.mark.django_db
 def test_healthz(client):
     response = client.get("/healthz")
 

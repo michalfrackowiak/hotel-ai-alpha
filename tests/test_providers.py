@@ -120,3 +120,121 @@ def test_demo_extracts_relative_start_with_duration():
     slots = provider._extract_slots("", "from tomorrow for 5 days")
     assert slots["check_in"] == today + timedelta(days=1)
     assert slots["check_out"] == today + timedelta(days=6)
+
+
+def test_demo_extracts_word_number_duration_phrases():
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    slots = provider._extract_slots("", "from tomorrow for three nights")
+    assert slots["check_in"] == today + timedelta(days=1)
+    assert slots["check_out"] == today + timedelta(days=4)
+
+    slots = provider._extract_slots("", "check in tomorrow for a couple of nights")
+    assert slots["check_in"] == today + timedelta(days=1)
+    assert slots["check_out"] == today + timedelta(days=3)
+
+    slots = provider._extract_slots("", "staying for a few nights starting tomorrow")
+    assert slots["check_in"] == today + timedelta(days=1)
+    assert slots["check_out"] == today + timedelta(days=4)
+
+    slots = provider._extract_slots("", "tomorrow for a three-night stay")
+    assert slots["check_in"] == today + timedelta(days=1)
+    assert slots["check_out"] == today + timedelta(days=4)
+
+
+def test_demo_extracts_word_number_nights_as_departure_answer():
+    from django.utils import timezone
+
+    from apps.providers.base import ChatMessage
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+    check_in = today + timedelta(days=10)
+    messages = [
+        ChatMessage(role="assistant", content="Please give me your departure date or tell me how many nights you plan to stay."),
+    ]
+
+    slots = provider._extract_slots(
+        f"arrival {check_in.isoformat()}",
+        "three nights",
+        messages,
+    )
+    assert slots["check_in"] == check_in
+    assert slots["check_out"] == check_in + timedelta(days=3)
+
+    slots = provider._extract_slots(
+        f"arrival {check_in.isoformat()}",
+        "na trzy noce",
+        [
+            ChatMessage(
+                role="assistant",
+                content="Podaj datę wyjazdu lub informację, na ile nocy planujesz pobyt.",
+            )
+        ],
+    )
+    assert slots["check_in"] == check_in
+    assert slots["check_out"] == check_in + timedelta(days=3)
+
+
+def test_demo_extracts_yearless_date_ranges():
+    from datetime import date
+
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    def nov(day: int):
+        candidate = date(today.year, 11, day)
+        return candidate if candidate >= today else date(today.year + 1, 11, day)
+
+    slots = provider._extract_slots("", "20-22 November")
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+    slots = provider._extract_slots("", "20 do 22 listopada")
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+    slots = provider._extract_slots("", "from 20.11 to 22.11 for 2 guests")
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+    slots = provider._extract_slots("", "20/11 - 22/11")
+    assert slots["check_in"] == nov(20)
+    assert slots["check_out"] == nov(22)
+
+
+def test_demo_extracts_word_number_relative_dates():
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    slots = provider._extract_slots("", "in two days for three nights")
+    assert slots["check_in"] == today + timedelta(days=2)
+    assert slots["check_out"] == today + timedelta(days=5)
+
+    slots = provider._extract_slots("", "za trzy dni na dwie noce")
+    assert slots["check_in"] == today + timedelta(days=3)
+    assert slots["check_out"] == today + timedelta(days=5)
+
+
+def test_demo_extracts_tonight_and_weekday():
+    from django.utils import timezone
+
+    provider = DemoProvider(ProviderConfig(model="demo-policy-v1"))
+    today = timezone.localdate()
+
+    slots = provider._extract_slots("", "tonight for two nights")
+    assert slots["check_in"] == today
+    assert slots["check_out"] == today + timedelta(days=2)
+
+    slots = provider._extract_slots("", "next Friday for 2 nights")
+    assert slots["check_in"] is not None
+    assert slots["check_in"] > today
+    assert slots["check_in"].weekday() == 4
+    assert slots["check_out"] == slots["check_in"] + timedelta(days=2)

@@ -16,6 +16,10 @@
       <p class="notice notice--warning" role="alert">
         {% trans "That link is invalid or has expired. Enter your reference and contact details to get a fresh link." %}
       </p>
+    {% elif throttled %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "Too many attempts. Please try again later." %}
+      </p>
     {% elif lookup_error %}
       <p class="notice notice--warning" role="alert">
         {% trans "We could not match that reference and contact. Check both and try again, or call reception." %}

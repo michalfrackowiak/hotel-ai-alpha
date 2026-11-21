@@ -390,7 +390,22 @@ class ToolExecutor:
     def _tool_send_confirmation_email(self, reference: str, email: str = "") -> dict:
         booking = get_booking(reference)
         if email:
-            booking.client.email = email.strip().lower()
+            email = email.strip().lower()
+            from apps.hotel.guest_access import verified_guest_account_for_email
+
+            owner_account = verified_guest_account_for_email(email)
+            if booking.client.account_id:
+                if owner_account is not None and owner_account.id != booking.client.account_id:
+                    return error_payload(
+                        "contact_conflict",
+                        "This email address cannot be used for this booking.",
+                    )
+            elif owner_account is not None and booking.client.email and booking.client.email.lower() != email:
+                return error_payload(
+                    "contact_conflict",
+                    "This email address cannot be used for this booking.",
+                )
+            booking.client.email = email
             booking.client.save(update_fields=["email", "updated_at"])
         booking.refresh_from_db()
         if not (booking.client.email or "").strip():
@@ -443,12 +458,14 @@ class ToolExecutor:
         from django.utils import timezone as _tz
 
         base = _tz.localdate()
-        if lowered in {"today", "dzisiaj", "dziś", "dzis"}:
+        if lowered in {"today", "dzisiaj", "dziś", "dzis", "tonight"}:
             return base
         if lowered in {"tomorrow", "jutro"}:
             return base + timedelta(days=1)
         if lowered in {"yesterday", "wczoraj"}:
             return base - timedelta(days=1)
+        if lowered in {"day after tomorrow", "pojutrze"}:
+            return base + timedelta(days=2)
         try:
             return date.fromisoformat(lowered)
         except (ValueError, TypeError):
@@ -468,6 +485,19 @@ class ToolExecutor:
             "października": 10, "październik": 10, "listopada": 11, "listopad": 11,
             "grudnia": 12, "grudzień": 12,
         }
+
+        def _without_year(month: int, day: int) -> date | None:
+            try:
+                candidate = date(base.year, month, day)
+            except ValueError:
+                return None
+            if candidate < base:
+                try:
+                    return date(base.year + 1, month, day)
+                except ValueError:
+                    return None
+            return candidate
+
         for pattern, order in (
             (r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(20\d{2})\b", "dmy"),
             (r"\b([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(20\d{2})\b", "mdy"),
@@ -485,6 +515,23 @@ class ToolExecutor:
                     return date(int(year_s), month, int(day_s))
                 except ValueError:
                     pass
+        # Month name without year.
+        for pattern, order in (
+            (r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\b", "dmy"),
+            (r"\b([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b", "mdy"),
+        ):
+            m = re.search(pattern, lowered)
+            if not m:
+                continue
+            if order == "dmy":
+                day_s, month_s = m.group(1), m.group(2)
+            else:
+                month_s, day_s = m.group(1), m.group(2)
+            month = month_names.get(month_s)
+            if month:
+                candidate = _without_year(month, int(day_s))
+                if candidate is not None:
+                    return candidate
         for pattern in (r"\b(\d{1,2})\.(\d{1,2})\.(20\d{2})\b",):
             m = re.search(pattern, lowered)
             if m:
@@ -492,6 +539,25 @@ class ToolExecutor:
                     return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
                 except ValueError:
                     pass
+        m = re.search(r"\b(\d{1,2})/(\d{1,2})/(20\d{2})\b", lowered)
+        if m:
+            # Prefer DD/MM/YYYY, fall back to MM/DD/YYYY.
+            try:
+                return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            except ValueError:
+                try:
+                    return date(int(m.group(3)), int(m.group(1)), int(m.group(2)))
+                except ValueError:
+                    pass
+        # Day/month without year.
+        for pattern in (r"\b(\d{1,2})\.(\d{1,2})\b", r"\b(\d{1,2})/(\d{1,2})\b"):
+            m = re.search(pattern, lowered)
+            if m:
+                day_num, month_num = int(m.group(1)), int(m.group(2))
+                if 1 <= day_num <= 31 and 1 <= month_num <= 12:
+                    candidate = _without_year(month_num, day_num)
+                    if candidate is not None:
+                        return candidate
 
         raise ToolArgumentError(f"{field} must be an ISO date (YYYY-MM-DD).")
 

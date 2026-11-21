@@ -24,7 +24,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Payment and deposit tracking (manual/admin-first)**: bookings track payment status, amount paid/due, method/reference/notes and a configurable deposit policy (hotel-level `DEPOSIT_POLICY`/`DEPOSIT_VALUE`, with optional per-rate-plan overrides). Guests see what is due/paid (including deposit/amount due now) on the booking page and in confirmations; staff can record payment changes via the admin, `record_payment`, or the staff-only booking payments API (append-only payment audit events). No direct card processing or automatic capture.
 - **Signed booking links** so a reference alone cannot read or cancel a reservation; guests can request a fresh link with their reference and email/phone.
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
-- **Guest account** at `/my-bookings/` with a single-use magic link: sign in by email and see every reservation tied to that address.
+- **Guest account** at `/my-bookings/`: email/password registration with email verification, password reset/change, optional Google sign-in, and a transitional single-use magic-link fallback. Signed-in guests can review bookings linked to their verified account/email and manage profile settings; signed booking links and reference+email/phone lookup remain available.
 - **Per-room calendar sync** through a provider interface: a deterministic fake adapter for demos and a Google Calendar adapter for real calendars.
 - **Calendar reconciliation** (`reconcile_calendars`) that reports and repairs events deleted or edited outside the app.
 - **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
@@ -74,7 +74,7 @@ These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` an
 | `/voice/` | Voice concierge |
 | `/booking/` | Look up a reservation by reference and email/phone |
 | `/booking/<REFERENCE>/?token=…` | Reservation detail, confirm/modify/cancel through a signed link |
-| `/my-bookings/` | Passwordless guest account: request a magic link and list every booking for the email |
+| `/my-bookings/` | Guest account: sign in/register (email/password, optional Google, or magic-link fallback), view linked bookings, manage profile/settings |
 | `/my-bookings/login/<TOKEN>/` | Single-use magic-link sign-in (expires after 30 minutes) |
 | `/ops/` | Staff operations dashboard (sign in first) |
 | `/admin/` | Django admin, including the rate calendar |
@@ -189,6 +189,22 @@ Payment handling is **manual/admin-first**: there is no direct card/acquirer int
 
 ---
 
+## Guest account
+
+The web guest account at `/my-bookings/` gives guests a durable way to access their reservations without exposing a separate booking API credential.
+
+- **Sign-in options**: email/password, optional Google sign-in, and a transitional single-use magic-link fallback.
+- **Registration and verification**: new guest registrations are created inactive until the email verification link is confirmed. Email changes also require verification before the account email is switched.
+- **Password flows**: guests can reset a forgotten password and change their password while signed in. Django password validators are enforced.
+- **Profile/settings**: signed-in guests can update name, phone, preferred language and marketing consent; profile data is kept consistent with linked `Client` records where appropriate.
+- **Booking visibility**: authenticated guests see bookings linked to their verified account/email(s), including account-linked bookings after verified email changes. The booking detail page issues the normal signed booking token for accessible bookings so existing confirm/modify/cancel flows continue to work.
+- **Fallbacks preserved**: signed booking management links, reference + email/phone lookup, and magic-link sign-in remain supported. Phone-only bookings remain accessible through signed links and reference+phone lookup.
+- **Security controls**: guest auth flows use neutral anti-enumeration responses, cache-backed throttling/cooldowns, and single-use hashed magic-link/email-verification tokens.
+
+Google sign-in is optional. Configure an OAuth 2.0 Web client and set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`; add `${HOTEL_PUBLIC_URL}/my-bookings/google/callback/` as an authorised redirect URI. Guest throttling/verification settings are documented in `.env.example`.
+
+---
+
 ## Google Calendar
 
 The calendar layer is **one calendar per room**:
@@ -290,7 +306,7 @@ docs/             architecture, API, roadmap, branching, release notes
 
 - SQLite and a single gunicorn container; not a multi-tenant or high-concurrency deployment.
 - No direct card/acquirer payment processing, automatic capture, chargeback handling or accounting/invoice integration. Payments and deposit policy are tracked manually (admin, `record_payment`, or the staff-only payments API) with append-only audit events. (iCal channel manager is available; see `sync_channel_feeds`.)
-- Booking access uses signed links; the guest account is passwordless (single-use magic link), so there is no password to reset or leak.
+- Guest account access supports email/password (with email verification, password reset/change), optional Google sign-in, and a transitional single-use magic-link fallback. Signed booking links and reference+email/phone lookup remain available. Guest auth flows use neutral anti-enumeration responses and cache-backed throttling; session security follows production cookie/TLS settings.
 - Email delivery supports SMTP, SES and Postmark with provider-native bounce/complaint webhooks and scheduler-driven retry/backoff.
 - The browser speech stack depends on vendor support and microphone permissions.
 - Google Calendar sync is one-way (hotel → calendar); reconciliation repairs drift but does not import external bookings.

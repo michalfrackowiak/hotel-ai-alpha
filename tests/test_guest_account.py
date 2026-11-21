@@ -93,13 +93,19 @@ def test_magic_link_signs_in_and_lists_every_booking(client, room_type, rooms, a
     assert response.status_code == 302
     assert response["Location"] == "/my-bookings/"
 
-    listing = client.get("/my-bookings/")
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
     content = listing.content.decode()
     assert listing.status_code == 200
     assert "anna@example.com" in content
     assert anna.reference in content
     assert second.reference in content
     assert client.session[GUEST_SESSION_KEY] == "anna@example.com"
+    # Unified My bookings shows rate/payment summary and a clear path to details.
+    assert "View reservation" in content
+    assert "Standard rate" in content
+    assert "Payment" in content
+    assert "Balance due" in content
+    assert f'/booking/{anna.reference}/' in content
 
 
 @pytest.mark.django_db
@@ -113,6 +119,36 @@ def test_a_magic_link_can_only_be_used_once(client, anna):
     second = Client().get(path, HTTP_ACCEPT_LANGUAGE="en")
     assert second.status_code == 400
     assert "invalid, already used or expired" in second.content.decode()
+
+
+@pytest.mark.django_db
+def test_magic_link_ip_cooldown_does_not_consume_email_cooldown(client, anna):
+    from apps.hotel.guest_access import _throttle_key
+
+    ip_key = _throttle_key("ip", "10.0.0.1")
+    cache.set(ip_key, 1, timeout=60)
+
+    response = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    assert response.status_code == 200
+    assert "sign-in link is on its way" in response.content.decode()
+    assert mail.outbox == []
+
+    # A different IP must not be blocked by an email cooldown that was never
+    # legitimately reserved for this request.
+    response = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["anna@example.com"]
 
 
 @pytest.mark.django_db
@@ -191,3 +227,28 @@ def test_login_requests_are_rate_limited_per_email(client, anna):
     assert second.status_code == 200
     assert "sign-in link is on its way" in second.content.decode()
     assert len(mail.outbox) == 1
+
+@pytest.mark.django_db
+def test_magic_link_email_cooldown_is_neutral_across_ips(client, anna, settings):
+    settings.GUEST_LOGIN_COOLDOWN_SECONDS = 300
+    settings.GUEST_LOGIN_IP_COOLDOWN_SECONDS = 60
+
+    first = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.1",
+    )
+    second = client.post(
+        "/my-bookings/",
+        {"email": "anna@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+        REMOTE_ADDR="10.0.0.2",
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert "sign-in link is on its way" in first.content.decode()
+    assert "sign-in link is on its way" in second.content.decode()
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["anna@example.com"]

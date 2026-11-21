@@ -1,0 +1,40 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Verify email" %} – {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<section class="shell lookup-shell">
+  <div class="lookup-card">
+    <p class="eyebrow">{% trans "Guest account" %}</p>
+    <h1>{% trans "Verify your email" %}</h1>
+
+    {% if link_invalid %}
+      <p class="notice notice--warning" role="alert">
+        {% trans "That verification link is invalid, already used or expired." %}
+      </p>
+      <p class="lookup-card__lede">
+        {% trans "You can create an account again to receive a new verification email." %}
+      </p>
+    {% elif verified %}
+      <p class="notice notice--success" role="status">
+        {% blocktrans with email=email %}Your email address {{ email }} has been verified.{% endblocktrans %}
+      </p>
+      <p class="lookup-card__lede">
+        {% trans "You can now use this email address to sign in and manage your bookings." %}
+      </p>
+    {% else %}
+      <p class="notice notice--success" role="status">
+        {% blocktrans with email=email %}If an account can be created or verified for {{ email }}, a verification email is on its way.{% endblocktrans %}
+      </p>
+      <p class="lookup-card__lede">
+        {% trans "Check your inbox and spam folder, then open the link to activate your account. The link can be used once and expires in 24 hours." %}
+      </p>
+    {% endif %}
+
+    <p>
+      <a class="btn btn--primary" href="{% url 'web:guest-bookings' %}">{% trans "Back to My bookings" %}</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

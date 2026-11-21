@@ -99,3 +99,179 @@ def test_contact_lookup_requires_both_parts(booking):
     assert find_booking_for_contact(booking.reference, "anna@example.com") == booking
     assert find_booking_for_contact(booking.reference, "nope@example.com") is None
     assert find_booking_for_contact("HA-NOPE00", "anna@example.com") is None
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_linked_account_email(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="anna-account@example.com",
+        email="anna-account@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    # Preserved historical client contact still works.
+    assert contact_matches(booking, "anna@example.com")
+    # Current verified account email also works for linked bookings.
+    assert contact_matches(booking, "anna-account@example.com")
+    assert find_booking_for_contact(booking.reference, "anna-account@example.com") == booking
+
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_account_associated_linked_client_email(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import Client, GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="anna-account@example.com",
+        email="anna-account@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old-associated@example.com",
+        phone="+48 500 000 001",
+        account=account,
+    )
+
+    assert contact_matches(booking, "old-associated@example.com")
+    assert find_booking_for_contact(booking.reference, "old-associated@example.com") == booking
+    assert find_booking_for_contact(booking.reference, "unrelated@example.com") is None
+
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_account_email_for_unlinked_associated_booking(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import Client, GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="new-account@example.com",
+        email="new-account@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # Booking client is unlinked, but its email is associated with the verified
+    # account through another linked client record.
+    booking.client.account = None
+    booking.client.email = "old-associated@example.com"
+    booking.client.save(update_fields=["account", "email", "updated_at"])
+
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old-associated@example.com",
+        phone="+48 500 000 002",
+        account=account,
+    )
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="other-associated@example.com",
+        phone="+48 500 000 003",
+        account=account,
+    )
+
+    assert contact_matches(booking, "new-account@example.com")
+    assert contact_matches(booking, "old-associated@example.com")
+    assert contact_matches(booking, "other-associated@example.com")
+    assert find_booking_for_contact(booking.reference, "new-account@example.com") == booking
+    assert find_booking_for_contact(booking.reference, "unrelated@example.com") is None
+
+
+@pytest.mark.django_db
+def test_contact_lookup_rejects_client_email_owned_by_different_verified_account(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import GuestAccount
+
+    owner_user = get_user_model().objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="pw",
+        is_active=True,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = get_user_model().objects.create_user(
+        username="other@example.com",
+        email="other@example.com",
+        password="pw",
+        is_active=True,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = owner_account
+    booking.client.email = "other@example.com"  # cross-account conflict state
+    booking.client.save(update_fields=["account", "email", "updated_at"])
+
+    # other account owns that email via its user email; lookup must not leak owner booking.
+    assert contact_matches(booking, "other@example.com") is False
+    assert find_booking_for_contact(booking.reference, "other@example.com") is None
+    # Owner account email still works.
+    assert contact_matches(booking, "owner@example.com") is True
+
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_linked_account_associated_phone(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import Client, GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="phone-owner@example.com",
+        email="phone-owner@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = account
+    booking.client.email = "old-phone@example.com"
+    booking.client.phone = "+48 500 000 001"
+    booking.client.save(update_fields=["account", "email", "phone", "updated_at"])
+
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="other@example.com",
+        phone="+48 500 000 099",
+        account=account,
+    )
+
+    assert contact_matches(booking, "+48 500 000 099")
+    assert find_booking_for_contact(booking.reference, "+48500000099") == booking

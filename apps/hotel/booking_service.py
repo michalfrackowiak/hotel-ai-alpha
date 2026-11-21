@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _
 
 from .availability import available_rooms, room_is_available
 from .cancellation import cancellation_preview
+from .guest_access import verified_guest_account_for_email
 from .models import Booking, BookingEvent, Client, RatePlan, Room, RoomType
 from .pricing import StayError, quote, validate_stay
 
@@ -170,8 +171,21 @@ def find_or_create_client(
             client.last_name = last_name
             changed = True
         if email and client.email.lower() != email:
-            client.email = email
-            changed = True
+            can_update_email = True
+            owner_account = verified_guest_account_for_email(email)
+            if client.account_id:
+                if owner_account is not None and owner_account.id != client.account_id:
+                    can_update_email = False
+            elif owner_account is not None and client.email:
+                # Unlinked client with an existing different email: do not overwrite
+                # with an email owned by another verified account, to avoid
+                # cross-account linkage/takeover via phone-match booking creation.
+                # Phone-only clients (no email) may be linked to the email's verified
+                # account, consistent with verified-email booking linkage.
+                can_update_email = False
+            if can_update_email:
+                client.email = email
+                changed = True
         if phone and client.phone != phone:
             client.phone = phone
             changed = True
@@ -180,6 +194,18 @@ def find_or_create_client(
             changed = True
         if changed:
             client.save()
+
+    # Link to a verified guest account when possible, without overriding an
+    # existing link to a different account. Use the stored client email only;
+    # do not link based on a supplied email that was rejected for safety.
+    link_email = (client.email or "").strip().lower()
+    if link_email:
+        account = verified_guest_account_for_email(link_email)
+        if account is not None and client.account_id not in (None, account.id):
+            account = None
+        if account is not None and client.account_id != account.id:
+            client.account = account
+            client.save(update_fields=["account", "updated_at"])
 
     try:
         client.full_clean()
