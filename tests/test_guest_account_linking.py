@@ -760,3 +760,59 @@ def test_bookings_for_email_excludes_bookings_linked_to_different_verified_accou
     anon_request.session = {GUEST_SESSION_KEY: "other@example.com"}
     assert guest_session_matches(anon_request, booking) is False
 
+
+@pytest.mark.django_db
+def test_bookings_for_email_skips_unlinked_email_owned_by_different_verified_account(
+    room_type, rooms, stay_dates
+):
+    from apps.hotel.guest_access import bookings_for_email
+
+    owner_user = User.objects.create_user(
+        username="owner2@example.com",
+        email="owner2@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    other_user = User.objects.create_user(
+        username="shared2@example.com",
+        email="shared2@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    other_account, _ = GuestAccount.objects.get_or_create(user=other_user)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # owner_account has shared2@example.com as a linked-client email (conflict state),
+    # but the verified owner of shared2@example.com is other_account (user email).
+    GuestClient.objects.create(
+        first_name="Owner",
+        last_name="Linked",
+        email="shared2@example.com",
+        phone="+48555112001",
+        account=owner_account,
+    )
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Other",
+        last_name="User",
+        email="shared2@example.com",
+        phone="+48555112002",
+        adults=1,
+    )
+    # Unlinked booking; its client email is owned by other_account.
+    booking.client.account = None
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    refs = {b.reference for b in bookings_for_email("owner2@example.com")}
+    assert booking.reference not in refs
