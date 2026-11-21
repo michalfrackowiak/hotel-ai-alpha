@@ -297,37 +297,16 @@ def _current_guest_email(request) -> str:
 
 
 def _bookings_for_authenticated_guest(user) -> QuerySet[Booking]:
-    """Bookings visible to an authenticated non-staff guest account."""
+    """Bookings visible to an authenticated non-staff guest account.
+
+    Delegates to the canonical ``bookings_for_email`` rules so authenticated and
+    magic-link listing stay coherent (including verified-account linkage,
+    associated emails, and cross-account guards).
+    """
     email = normalise_email(getattr(user, "email", ""))
-    account = getattr(user, "guest_account", None)
-    if account is not None and getattr(account, "is_email_verified", False):
-        linked_emails = {email} if email else set()
-        linked_emails.update(
-            normalise_email(e)
-            for e in account.clients.exclude(email="").values_list("email", flat=True)
-            if normalise_email(e)
-        )
-        email_query = Q()
-        for linked_email in linked_emails:
-            owner = verified_guest_account_for_email(linked_email)
-            if owner is not None and owner.id != account.id:
-                continue
-            email_query |= Q(client__email__iexact=linked_email)
-        query = Q(client__account=account) | (
-            email_query & (Q(client__account__isnull=True) | Q(client__account=account))
-        )
-    elif email:
-        # No verified account: only expose bookings whose client is not linked
-        # to a different verified guest account.
-        query = Q(client__email__iexact=email, client__account__isnull=True)
-    else:
+    if not email:
         return Booking.objects.none()
-    return (
-        Booking.objects.filter(query)
-        .select_related("client", "room", "room__room_type", "rate_plan")
-        .distinct()
-        .order_by("-check_in", "-pk")
-    )
+    return bookings_for_email(email)
 
 
 def guest_bookings(request):
