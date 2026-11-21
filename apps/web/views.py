@@ -542,11 +542,19 @@ def guest_password_change(request):
     if not user.is_authenticated or user.is_staff:
         return redirect("web:guest-bookings")
     if request.method == "POST":
+        attempt_allowed = allow_password_login_attempt(
+            normalise_email(getattr(user, "email", "")),
+            request.META.get("REMOTE_ADDR", ""),
+        )
         form = GuestPasswordChangeForm(user, request.POST)
-        if form.is_valid():
+        if attempt_allowed and form.is_valid():
             form.save()
             update_session_auth_hash(request, form.user)
             return redirect("web:guest-password-change-done")
+        if not attempt_allowed:
+            form._errors = ErrorDict()
+            form.cleaned_data = {}
+            form.add_error(None, _("Too many attempts. Please try again later."))
     else:
         form = GuestPasswordChangeForm(user)
     return render(request, "web/guest_password_change.html", {"form": form})

@@ -354,6 +354,52 @@ def test_password_change_requires_auth_and_updates_password(client):
     listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
     assert listing.status_code == 200
 
+
+@pytest.mark.django_db
+def test_password_change_is_rate_limited_and_does_not_update_password(client, settings):
+    cache.clear()
+    settings.GUEST_PASSWORD_LOGIN_WINDOW_SECONDS = 900
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = 1
+    settings.GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP = 100
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    GuestAccount.objects.get_or_create(user=user)
+    client.force_login(user)
+
+    first = client.post(
+        "/my-bookings/password-change/",
+        {
+            "old_password": "wrong-old-password",
+            "new_password1": "even better passphrase",
+            "new_password2": "even better passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert first.status_code == 200
+    user.refresh_from_db()
+    assert user.check_password("correct horse battery")
+
+    throttled = client.post(
+        "/my-bookings/password-change/",
+        {
+            "old_password": "correct horse battery",
+            "new_password1": "even better passphrase",
+            "new_password2": "even better passphrase",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert throttled.status_code == 200
+    content = throttled.content.decode().lower()
+    assert "too many attempts" in content
+    user.refresh_from_db()
+    assert user.check_password("correct horse battery")
+
 @pytest.mark.django_db
 def test_verify_email_token_cannot_be_reused(client):
     user = User.objects.create_user(
