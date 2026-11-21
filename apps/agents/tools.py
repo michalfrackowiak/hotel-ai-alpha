@@ -391,15 +391,20 @@ class ToolExecutor:
         booking = get_booking(reference)
         if email:
             email = email.strip().lower()
-            if booking.client.account_id:
-                from apps.hotel.guest_access import verified_guest_account_for_email
+            from apps.hotel.guest_access import verified_guest_account_for_email
 
-                owner_account = verified_guest_account_for_email(email)
+            owner_account = verified_guest_account_for_email(email)
+            if booking.client.account_id:
                 if owner_account is not None and owner_account.id != booking.client.account_id:
                     return error_payload(
                         "contact_conflict",
                         "This email address cannot be used for this booking.",
                     )
+            elif owner_account is not None and booking.client.email and booking.client.email.lower() != email:
+                return error_payload(
+                    "contact_conflict",
+                    "This email address cannot be used for this booking.",
+                )
             booking.client.email = email
             booking.client.save(update_fields=["email", "updated_at"])
         booking.refresh_from_db()

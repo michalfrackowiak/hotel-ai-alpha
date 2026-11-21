@@ -341,3 +341,41 @@ def test_send_confirmation_email_rejects_email_owned_by_different_verified_accou
     assert result["error"]["code"] == "contact_conflict"
     booking.client.refresh_from_db()
     assert booking.client.email == "owner@example.com"
+
+
+@pytest.mark.django_db
+def test_send_confirmation_email_rejects_unlinked_client_email_owned_by_verified_account(room_type, rooms):
+    from django.contrib.auth import get_user_model
+
+    from apps.agents.tools import ToolExecutor
+    from apps.hotel.booking_service import create_booking
+    from apps.hotel.models import GuestAccount
+
+    check_in, check_out = _dates()
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="legacy@example.com",
+        adults=2,
+    )
+
+    user_model = get_user_model()
+    other = user_model.objects.create_user(username="other@example.com", email="other@example.com", password="pw")
+    other_account, _ = GuestAccount.objects.get_or_create(user=other)
+    other_account.email_verified_at = timezone.now()
+    other_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    conversation = start_conversation(language="en", channel=Conversation.Channel.CHAT)
+    result = ToolExecutor(conversation).execute(
+        "send_confirmation_email",
+        {"reference": booking.reference, "email": "other@example.com"},
+    )
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == "contact_conflict"
+    booking.client.refresh_from_db()
+    assert booking.client.email == "legacy@example.com"
+    assert booking.client.account_id is None
