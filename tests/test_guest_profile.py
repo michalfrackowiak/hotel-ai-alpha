@@ -262,3 +262,63 @@ def test_guest_profile_save_links_matching_unlinked_clients_and_propagates(clien
     assert existing.marketing_consent is True
     assert HotelClient.objects.filter(email__iexact="anna@example.com").count() == 1
     assert account.clients.count() == 1
+
+
+@pytest.mark.django_db
+def test_guest_profile_save_does_not_create_client_conflicting_with_other_verified_account(client):
+    owner_user = User.objects.create_user(
+        username="owner@example.com",
+        email="owner@example.com",
+        password="correct horse battery",
+        first_name="Owner",
+        last_name="User",
+        is_active=True,
+        is_staff=False,
+    )
+    owner_account, _ = GuestAccount.objects.get_or_create(user=owner_user)
+    owner_account.email_verified_at = timezone.now()
+    owner_account.save(update_fields=["email_verified_at", "updated_at"])
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    HotelClient.objects.create(
+        account=owner_account,
+        first_name="Other",
+        last_name="Owner",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+
+    client.force_login(user)
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+    assert account.clients.count() == 0
+    assert HotelClient.objects.filter(email__iexact="anna@example.com", account=owner_account).count() == 1
+    assert HotelClient.objects.filter(email__iexact="anna@example.com").count() == 1
