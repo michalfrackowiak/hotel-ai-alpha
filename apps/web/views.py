@@ -722,7 +722,7 @@ def guest_profile(request):
                         if not conflict:
                             linked_clients = [
                                 HotelClient.objects.create(
-                                    account=account,
+                                    account=account if account.is_email_verified else None,
                                     first_name=(user.first_name or "").strip() or (contact_email.split("@")[0] or "Guest"),
                                     last_name=(user.last_name or "").strip(),
                                     email=contact_email,
