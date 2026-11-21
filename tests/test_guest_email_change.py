@@ -695,3 +695,150 @@ def test_reference_contact_lookup_still_works_with_preserved_client_phone_after_
     detail = web_client.get(lookup["Location"], HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+@pytest.mark.django_db
+def test_register_with_preserved_historical_client_email_linked_to_other_verified_account_is_neutral(
+    web_client, settings, room_type, rooms, stay_dates
+):
+    """Registration must not claim a preserved client email linked to another verified account."""
+    settings.BOOKING_EMAILS_ENABLED = True
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        adults=2,
+    )
+
+    owner, owner_account = _create_verified_guest(email="old@example.com")
+    link_clients_for_guest_account(owner_account)
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == owner_account.id
+
+    # Owner changes to a new verified email; old client email remains preserved on the linked client.
+    _record, raw = issue_email_verification_token(owner, email="new@example.com")
+    response = web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+    owner.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert owner.email == "new@example.com"
+    assert booking.client.email == "old@example.com"
+    assert booking.client.account_id == owner_account.id
+
+    mail.outbox.clear()
+    register = web_client.post(
+        "/my-bookings/register/",
+        {
+            "email": "old@example.com",
+            "first_name": "Attacker",
+            "last_name": "User",
+            "password1": "correct horse battery",
+            "password2": "correct horse battery",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert register.status_code == 200
+    assert "verification" in register.content.decode().lower()
+    assert User.objects.filter(email__iexact="old@example.com").count() == 0
+    assert mail.outbox == []
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == owner_account.id
+
+
+@pytest.mark.django_db
+def test_email_change_to_preserved_historical_client_email_linked_to_other_verified_account_is_neutral(
+    web_client, settings, room_type, rooms, stay_dates
+):
+    """Email-change requests must not target a preserved client email owned by another verified account."""
+    settings.BOOKING_EMAILS_ENABLED = True
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        adults=2,
+    )
+
+    owner, owner_account = _create_verified_guest(email="old@example.com")
+    link_clients_for_guest_account(owner_account)
+    _record, raw = issue_email_verification_token(owner, email="new@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+    owner.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert owner.email == "new@example.com"
+    assert booking.client.email == "old@example.com"
+
+    requester, _requester_account = _create_verified_guest(
+        email="requester@example.com", password="correct horse battery"
+    )
+    web_client.force_login(requester)
+    mail.outbox.clear()
+
+    response = web_client.post(
+        "/my-bookings/profile/",
+        {"form": "email_change", "new_email": "old@example.com"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    content = response.content.decode().lower()
+    assert "verification" in content
+    assert mail.outbox == []
+    assert not GuestEmailVerificationToken.objects.filter(
+        user=requester, email__iexact="old@example.com", used_at__isnull=True
+    ).exists()
+    requester.refresh_from_db()
+    assert requester.email == "requester@example.com"
+    booking.client.refresh_from_db()
+    assert booking.client.account_id == owner_account.id
+
+
+@pytest.mark.django_db
+def test_consume_email_verification_rejects_preserved_historical_client_email_linked_to_other_verified_account(
+    web_client, room_type, rooms, stay_dates
+):
+    """Verification consumption backstop: do not verify an email owned by another verified account."""
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="old@example.com",
+        adults=2,
+    )
+
+    owner, owner_account = _create_verified_guest(email="old@example.com")
+    link_clients_for_guest_account(owner_account)
+    _record, raw = issue_email_verification_token(owner, email="new@example.com")
+    assert web_client.get(f"/my-bookings/verify-email/{raw}/", HTTP_ACCEPT_LANGUAGE="en").status_code == 200
+    owner.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert owner.email == "new@example.com"
+    assert booking.client.email == "old@example.com"
+
+    attacker = User.objects.create_user(
+        username="old@example.com",
+        email="old@example.com",
+        password="correct horse battery",
+        first_name="Attacker",
+        is_active=False,
+        is_staff=False,
+    )
+    attacker_account, _ = GuestAccount.objects.get_or_create(user=attacker)
+    _record2, raw2 = issue_email_verification_token(attacker, email="old@example.com")
+    response = web_client.get(f"/my-bookings/verify-email/{raw2}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 400
+
+    attacker.refresh_from_db()
+    attacker_account.refresh_from_db()
+    booking.client.refresh_from_db()
+    assert attacker.is_active is False
+    assert attacker_account.is_email_verified is False
+    assert booking.client.account_id == owner_account.id

@@ -232,6 +232,9 @@ def consume_email_verification_token(raw_token: str | None) -> str | None:
         # Prevent account takeover: another user must not already own this email.
         if user_model.objects.filter(email__iexact=target_email).exclude(pk=user.pk).exists():
             return None
+        owner_account = verified_guest_account_for_email(target_email)
+        if owner_account is not None and owner_account.user_id != user.pk:
+            return None
 
         now = timezone.now()
         record.used_at = now
