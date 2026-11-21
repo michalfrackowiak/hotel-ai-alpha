@@ -662,17 +662,27 @@ def guest_profile(request):
                 if not linked_clients:
                     contact_email = normalise_email(getattr(user, "email", ""))
                     if contact_email:
-                        linked_clients = [
-                            HotelClient.objects.create(
-                                account=account,
-                                first_name=(user.first_name or "").strip() or (contact_email.split("@")[0] or "Guest"),
-                                last_name=(user.last_name or "").strip(),
-                                email=contact_email,
-                                phone=phone,
-                                language=language,
-                                marketing_consent=marketing_consent,
+                        owner_account = verified_guest_account_for_email(contact_email)
+                        conflict = owner_account is not None and owner_account.user_id != user.pk
+                        if not conflict:
+                            conflict = (
+                                HotelClient.objects.filter(email__iexact=contact_email)
+                                .exclude(account__isnull=True)
+                                .exclude(account=account)
+                                .exists()
                             )
-                        ]
+                        if not conflict:
+                            linked_clients = [
+                                HotelClient.objects.create(
+                                    account=account,
+                                    first_name=(user.first_name or "").strip() or (contact_email.split("@")[0] or "Guest"),
+                                    last_name=(user.last_name or "").strip(),
+                                    email=contact_email,
+                                    phone=phone,
+                                    language=language,
+                                    marketing_consent=marketing_consent,
+                                )
+                            ]
                 saved = True
 
     return render(
