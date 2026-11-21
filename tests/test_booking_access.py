@@ -99,3 +99,29 @@ def test_contact_lookup_requires_both_parts(booking):
     assert find_booking_for_contact(booking.reference, "anna@example.com") == booking
     assert find_booking_for_contact(booking.reference, "nope@example.com") is None
     assert find_booking_for_contact("HA-NOPE00", "anna@example.com") is None
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_linked_account_email(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="anna-account@example.com",
+        email="anna-account@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    # Preserved historical client contact still works.
+    assert contact_matches(booking, "anna@example.com")
+    # Current verified account email also works for linked bookings.
+    assert contact_matches(booking, "anna-account@example.com")
+    assert find_booking_for_contact(booking.reference, "anna-account@example.com") == booking
