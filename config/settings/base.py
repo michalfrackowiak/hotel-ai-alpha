@@ -266,6 +266,10 @@ GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_EMAIL = int(
 GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP = int(
     os.getenv("GUEST_PASSWORD_LOGIN_MAX_ATTEMPTS_PER_IP", "20")
 )
+GUEST_BOOKING_LOOKUP_WINDOW_SECONDS = int(os.getenv("GUEST_BOOKING_LOOKUP_WINDOW_SECONDS", "300"))
+GUEST_BOOKING_LOOKUP_MAX_ATTEMPTS_PER_IP = int(
+    os.getenv("GUEST_BOOKING_LOOKUP_MAX_ATTEMPTS_PER_IP", "15")
+)
 
 # Encryption material for provider API keys at rest. When unset, a key is
 # derived from DJANGO_SECRET_KEY; set a dedicated value in production.

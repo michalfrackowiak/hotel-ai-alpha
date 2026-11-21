@@ -42,6 +42,7 @@ from apps.hotel.cancellation import cancellation_preview
 from apps.hotel.deposit import deposit_summary
 from apps.hotel.guest_access import (
     GUEST_SESSION_KEY,
+    allow_booking_lookup_attempt,
     allow_password_login_attempt,
     bookings_for_email,
     can_issue_email_verification,
@@ -261,6 +262,13 @@ def booking_lookup(request):
     contact = (request.GET.get("contact") or "").strip()
 
     if reference and contact:
+        if not allow_booking_lookup_attempt(request.META.get("REMOTE_ADDR", "")):
+            return render(
+                request,
+                "web/booking_lookup.html",
+                {"reference": reference, "contact": contact, "lookup_error": True, "throttled": True},
+                status=429,
+            )
         booking = find_booking_for_contact(reference, contact)
         if booking is not None:
             return redirect(booking_manage_path(booking))
