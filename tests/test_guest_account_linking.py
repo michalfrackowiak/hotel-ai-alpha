@@ -817,6 +817,85 @@ def test_bookings_for_email_skips_unlinked_email_owned_by_different_verified_acc
     refs = {b.reference for b in bookings_for_email("owner2@example.com")}
     assert booking.reference not in refs
 
+
+@pytest.mark.django_db
+def test_password_login_links_unlinked_clients_for_verified_account(client, room_type, rooms, stay_dates):
+    from django.core.cache import cache
+
+    cache.clear()
+    user = User.objects.create_user(
+        username="loginlink@example.com",
+        email="loginlink@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    unlinked = GuestClient.objects.create(
+        first_name="Login",
+        last_name="Link",
+        email="loginlink@example.com",
+        phone="+48555114001",
+        account=None,
+    )
+
+    response = client.post(
+        "/my-bookings/password-login/",
+        {"username": "loginlink@example.com", "password": "correct horse battery"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 302
+
+    unlinked.refresh_from_db()
+    assert unlinked.account_id == account.id
+
+
+@pytest.mark.django_db
+def test_magic_link_login_links_unlinked_clients_for_verified_account(client, room_type, rooms, stay_dates):
+    from apps.hotel.guest_access import issue_login_token
+
+    user = User.objects.create_user(
+        username="magiclink@example.com",
+        email="magiclink@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    unlinked = GuestClient.objects.create(
+        first_name="Magic",
+        last_name="Link",
+        email="magiclink@example.com",
+        phone="+48555114002",
+        account=None,
+    )
+
+    check_in, check_out = stay_dates
+    create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Magic",
+        last_name="Link",
+        email="magiclink@example.com",
+        adults=1,
+    )
+
+    issued = issue_login_token("magiclink@example.com")
+    assert issued is not None
+    _record, raw = issued
+    response = client.get(f"/my-bookings/login/{raw}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 302
+
+    unlinked.refresh_from_db()
+    assert unlinked.account_id == account.id
+
 @pytest.mark.django_db
 def test_link_clients_for_guest_account_skips_email_owned_by_different_verified_account():
     from apps.hotel.guest_access import link_clients_for_guest_account
