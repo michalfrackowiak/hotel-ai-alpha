@@ -210,3 +210,55 @@ def test_guest_profile_update_propagates_to_all_linked_clients(client):
         assert linked_client.phone == "+48999888777"
         assert linked_client.language == "en"
         assert linked_client.marketing_consent is True
+
+@pytest.mark.django_db
+def test_guest_profile_save_links_matching_unlinked_clients_and_propagates(client):
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        first_name="Anna",
+        last_name="Old",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    existing = HotelClient.objects.create(
+        account=None,
+        first_name="Booking",
+        last_name="Name",
+        email="anna@example.com",
+        phone="+48111000000",
+        language="pl",
+        marketing_consent=False,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        "/my-bookings/profile/",
+        {
+            "first_name": "Aneta",
+            "last_name": "Kowalska",
+            "phone": "+48999888777",
+            "language": "en",
+            "marketing_consent": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.first_name == "Aneta"
+    assert user.last_name == "Kowalska"
+
+    existing.refresh_from_db()
+    assert existing.account_id == account.id
+    assert existing.first_name == "Aneta"
+    assert existing.last_name == "Kowalska"
+    assert existing.phone == "+48999888777"
+    assert existing.language == "en"
+    assert existing.marketing_consent is True
+    assert HotelClient.objects.filter(email__iexact="anna@example.com").count() == 1
+    assert account.clients.count() == 1
