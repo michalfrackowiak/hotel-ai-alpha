@@ -484,3 +484,61 @@ def test_link_clients_for_guest_account_links_unlinked_clients_with_preserved_ac
     assert unlinked_client.account_id == account.id
     assert different_account_client.account_id == other_account.id
     assert unlinked_booking.client_id == unlinked_client.id
+
+
+@pytest.mark.django_db
+def test_email_has_bookings_and_magic_link_issuance_for_account_associated_unlinked_booking(
+    room_type, rooms, stay_dates
+):
+    from datetime import timedelta
+
+    from apps.hotel.guest_access import email_has_bookings, issue_login_token
+    from apps.hotel.models import Booking, Client
+
+    account_email = "account@example.com"
+    associated_email = "old-client@example.com"
+    user = User.objects.create_user(
+        username=account_email,
+        email=account_email,
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    # Linked client carries an associated email different from account email.
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email=associated_email,
+        phone="+48555666777",
+        account=account,
+    )
+
+    # Booking exists under that associated email, but client is unlinked and
+    # no booking is directly on the account email/account.
+    check_in, check_out = stay_dates
+    unlinked_client = Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email=associated_email,
+        phone="+48555666777",
+    )
+    Booking.objects.create(
+        client=unlinked_client,
+        room=rooms[0],
+        check_in=check_in + timedelta(days=45),
+        check_out=check_out + timedelta(days=45),
+        adults=1,
+        children=0,
+        status=Booking.Status.CONFIRMED,
+        source=Booking.Source.WEB,
+    )
+
+    assert email_has_bookings(account_email) is True
+    issued = issue_login_token(account_email)
+    assert issued is not None
+    _record, raw_token = issued
+    assert raw_token
