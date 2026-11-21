@@ -1,4 +1,4 @@
-# Resort Neptun Jastrzębia Góra · AI Reception Alpha
+# Hotel Aurora · AI Reception Alpha
 
 An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **Polish and English**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, sends a bilingual confirmation by email or SMS and mirrors it into a per-room Google Calendar.
 

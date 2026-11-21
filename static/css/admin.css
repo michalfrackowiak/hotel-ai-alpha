@@ -1,0 +1,269 @@
+/* Hilton-inspired blue theme for Django admin. */
+
+:root,
+[data-theme="light"] {
+  --primary: #104C97;
+  --secondary: #002D72;
+  --accent: #B4975A;
+  --primary-fg: #ffffff;
+
+  --body-fg: #182230;
+  --body-bg: #f4f7fb;
+  --body-quiet-color: #5a697c;
+  --body-medium-color: #4a5a70;
+  --body-loud-color: #182230;
+
+  --header-color: #edf3fa;
+  --header-branding-color: #ffffff;
+  --header-bg: #002D72;
+  --header-link-color: #edf3fa;
+
+  --breadcrumbs-fg: #d6e8ff;
+  --breadcrumbs-link-fg: #ffffff;
+  --breadcrumbs-bg: #104C97;
+
+  --link-fg: #104C97;
+  --link-hover-color: #002D72;
+  --link-selected-fg: #1A66C4;
+
+  --hairline-color: #dde4ee;
+  --border-color: #c8d6e5;
+
+  --error-fg: #C0392B;
+  --message-success-bg: #E6F4EC;
+  --message-warning-bg: #FFF4CE;
+  --message-error-bg: #FDECEA;
+
+  --darkened-bg: #e8eef5;
+  --selected-bg: #ddeaf8;
+  --selected-row: #edf3fa;
+
+  --button-fg: #ffffff;
+  --button-bg: #104C97;
+  --button-hover-bg: #002D72;
+  --default-button-bg: #104C97;
+  --default-button-hover-bg: #002D72;
+  --close-button-bg: #5a697c;
+  --close-button-hover-bg: #4a5a70;
+  --delete-button-bg: #C0392B;
+  --delete-button-hover-bg: #a93226;
+
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #104C97;
+  --object-tools-hover-bg: #002D72;
+
+  --font-family-primary: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-family-secondary: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+[data-theme="dark"] {
+  --primary: #4C8FD9;
+  --secondary: #104C97;
+  --accent: #D9C48A;
+  --primary-fg: #ffffff;
+
+  --body-fg: #edf3fa;
+  --body-bg: #0f1a28;
+  --body-quiet-color: #b7c7d8;
+  --body-medium-color: #d6e3ef;
+  --body-loud-color: #ffffff;
+
+  --header-color: #edf3fa;
+  --header-branding-color: #ffffff;
+  --header-bg: #002D72;
+  --header-link-color: #d6e8ff;
+
+  --breadcrumbs-fg: #d6e8ff;
+  --breadcrumbs-link-fg: #ffffff;
+  --breadcrumbs-bg: #0b3d7a;
+
+  --link-fg: #8fc0ff;
+  --link-hover-color: #d6e8ff;
+  --link-selected-fg: #8fc0ff;
+
+  --hairline-color: #24384f;
+  --border-color: #35506f;
+
+  --error-fg: #ff8a80;
+  --message-success-bg: #163326;
+  --message-warning-bg: #3a3115;
+  --message-error-bg: #3a1d1b;
+
+  --darkened-bg: #162437;
+  --selected-bg: #1f3550;
+  --selected-row: #1a2d44;
+
+  --button-fg: #ffffff;
+  --button-bg: #104C97;
+  --button-hover-bg: #1A66C4;
+  --default-button-bg: #1A66C4;
+  --default-button-hover-bg: #2F7FDB;
+  --close-button-bg: #4a5a70;
+  --close-button-hover-bg: #5a697c;
+  --delete-button-bg: #b03a2e;
+  --delete-button-hover-bg: #C0392B;
+
+  --object-tools-fg: #ffffff;
+  --object-tools-bg: #104C97;
+  --object-tools-hover-bg: #1A66C4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #4C8FD9;
+    --secondary: #104C97;
+    --accent: #D9C48A;
+    --primary-fg: #ffffff;
+
+    --body-fg: #edf3fa;
+    --body-bg: #0f1a28;
+    --body-quiet-color: #b7c7d8;
+    --body-medium-color: #d6e3ef;
+    --body-loud-color: #ffffff;
+
+    --header-color: #edf3fa;
+    --header-branding-color: #ffffff;
+    --header-bg: #002D72;
+    --header-link-color: #d6e8ff;
+
+    --breadcrumbs-fg: #d6e8ff;
+    --breadcrumbs-link-fg: #ffffff;
+    --breadcrumbs-bg: #0b3d7a;
+
+    --link-fg: #8fc0ff;
+    --link-hover-color: #d6e8ff;
+    --link-selected-fg: #8fc0ff;
+
+    --hairline-color: #24384f;
+    --border-color: #35506f;
+
+    --error-fg: #ff8a80;
+    --message-success-bg: #163326;
+    --message-warning-bg: #3a3115;
+    --message-error-bg: #3a1d1b;
+
+    --darkened-bg: #162437;
+    --selected-bg: #1f3550;
+    --selected-row: #1a2d44;
+
+    --button-fg: #ffffff;
+    --button-bg: #104C97;
+    --button-hover-bg: #1A66C4;
+    --default-button-bg: #1A66C4;
+    --default-button-hover-bg: #2F7FDB;
+    --close-button-bg: #4a5a70;
+    --close-button-hover-bg: #5a697c;
+    --delete-button-bg: #b03a2e;
+    --delete-button-hover-bg: #C0392B;
+
+    --object-tools-fg: #ffffff;
+    --object-tools-bg: #104C97;
+    --object-tools-hover-bg: #1A66C4;
+  }
+}
+
+#header {
+  background: linear-gradient(135deg, #002D72, #104C97);
+  box-shadow: 0 2px 8px rgba(0, 45, 114, 0.2);
+}
+
+#branding h1,
+#branding h1 a:link,
+#branding h1 a:visited,
+#site-name a:link,
+#site-name a:visited {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+#user-tools {
+  font-size: 0.8125rem;
+}
+
+#user-tools a:focus,
+#user-tools a:hover {
+  color: #D9C48A;
+  text-decoration: underline;
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+  background: #104C97;
+  color: #ffffff;
+}
+
+div.breadcrumbs {
+  background: #104C97;
+}
+
+a:link,
+a:visited {
+  color: var(--link-fg);
+}
+
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+  border-radius: 6px;
+}
+
+.button.default,
+input[type="submit"].default,
+.submit-row input.default {
+  background: var(--default-button-bg);
+}
+
+.button.default:hover,
+input[type="submit"].default:hover,
+.submit-row input.default:hover {
+  background: var(--default-button-hover-bg);
+}
+
+.object-tools a:link,
+.object-tools a:visited {
+  background: var(--object-tools-bg);
+  border-radius: 6px;
+}
+
+.object-tools a:focus,
+.object-tools a:hover {
+  background: var(--object-tools-hover-bg);
+}
+
+#changelist-filter h2 {
+  background: #104C97;
+}
+
+.selector-chosen h2 {
+  background: #104C97 !important;
+}
+
+.paginator a:link,
+.paginator a:visited {
+  background: #ffffff;
+  color: #104C97;
+  border: 1px solid #c8d6e5;
+}
+
+.paginator a:hover {
+  background: #edf3fa;
+  color: #002D72;
+}
+
+.paginator .this-page {
+  background: #104C97;
+  border-color: #104C97;
+  color: #ffffff;
+}
+
+.login #header {
+  background: linear-gradient(135deg, #002D72, #104C97);
+}
+
+.login .submit-row input {
+  width: 100%;
+}

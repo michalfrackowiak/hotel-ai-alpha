@@ -1,4 +1,4 @@
-"""Polish translations for the Resort Neptun UI and admin.
+"""Polish translations for the Hotel Aurora UI and admin.
 
 Keep the keys identical to the extracted msgids. Run
 ``scripts/update_translations.py`` after editing this file.

@@ -410,6 +410,26 @@ Theme: **guest accounts and trusted self-service**. Guests can create a durable 
 
 ---
 
+## Milestone v0.10.1 - ✅ Complete (released 2026-11-21)
+
+Theme: **branding and UI polish**. Patch release refreshing Hotel Aurora branding and the guest/staff UI with a Hilton-inspired blue design system.
+
+### Delivered
+
+- [x] **Hotel Aurora branding refresh** - updated product/hotel naming, defaults, contact examples, manifest, docs, scripts, and Polish translations from the old Resort Neptun branding.
+- [x] **Hilton-inspired frontend styling** - blue-dominant design tokens (`--forest` navy/blue family, cool neutrals, restrained gold accent), refreshed components, and preserved CSS token names for compatibility.
+- [x] **Django admin styling** - `templates/admin/base_site.html` + `static/css/admin.css` with Hilton-inspired blue header, breadcrumbs, controls, and light/dark theme variable overrides.
+- [x] **Voice concierge polish** - redesigned voice agent box and replaced the old avatar with a modern orb/wave animation (listening/thinking/speaking/pulse states), keeping the existing `voice.js` class contract and `prefers-reduced-motion` support.
+- [x] **Accessibility/quality** - WCAG AA token contrast checks updated for the new palette and inverse focus ring on dark surfaces; full gate green (391 passed, check clean, makemigrations clean, ruff clean).
+
+### Out of scope
+
+- No schema/API/booking behavior changes, no migrations, no new dependencies.
+
+**Exit criteria:** frontend and admin reflect the Hilton-inspired blue Hotel Aurora branding; voice concierge box/animation is improved; accessibility contrast checks and the full gate remain green. **Met in v0.10.1.**
+
+---
+
 ## Milestone v0.11.0 - proposed
 
 Theme: **platform hardening and commercial readiness**. Build on guest accounts and v0.9.0 payment tracking to move the alpha toward a pilot-grade, integrable product.
