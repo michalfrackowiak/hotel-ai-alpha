@@ -749,3 +749,13 @@ def test_bookings_for_email_excludes_bookings_linked_to_different_verified_accou
     request.user = other_user
     request.session = {}
     assert guest_session_matches(request, booking) is False
+
+    # Magic-link session for other verified account must also be denied.
+    from django.contrib.auth.models import AnonymousUser
+
+    from apps.hotel.guest_access import GUEST_SESSION_KEY
+
+    anon_request = rf.get("/")
+    anon_request.user = AnonymousUser()
+    anon_request.session = {GUEST_SESSION_KEY: "other@example.com"}
+    assert guest_session_matches(anon_request, booking) is False

@@ -187,23 +187,37 @@ def guest_session_matches(request, booking: Booking) -> bool:
             if not booking.client_id or booking.client.account_id in (None, getattr(getattr(user, "guest_account", None), "id", None)):
                 return True
     email = session_email(request)
-    if email and email == normalise_email(booking.client.email):
-        return True
-    # A magic-link session for the verified account email can also access
-    # bookings linked to that account (without relying on client email match).
     if email:
-        account = verified_guest_account_for_email(email)
-        if account is not None and booking.client_id:
-            if booking.client.account_id == account.id:
+        booking_email = normalise_email(getattr(booking.client, "email", "")) if booking.client_id else ""
+        booking_account_id = booking.client.account_id if booking.client_id else None
+        session_account = verified_guest_account_for_email(email)
+
+        if booking_account_id is not None:
+            # Booking is linked to a verified account: only that account's
+            # associated emails/sessions may access it.
+            if session_account is not None and session_account.id == booking_account_id:
                 return True
-            if booking.client.account_id not in (None, account.id):
-                pass
-            else:
-                client_email = normalise_email(getattr(booking.client, "email", ""))
-                if client_email:
-                    owner = verified_guest_account_for_email(client_email)
-                    if owner is not None and owner.id == account.id:
-                        return True
+            if session_account is None and email == booking_email:
+                # Session email matches booking client email but resolves to no
+                # verified account; allow only if the booking's stored email is
+                # not associated with a different verified account.
+                owner = verified_guest_account_for_email(booking_email) if booking_email else None
+                if owner is None or owner.id == booking_account_id:
+                    return True
+            return False
+
+        # Booking client unlinked: allow direct email match or verified-account
+        # associated-email match, but never through a different verified account.
+        if email == booking_email:
+            if session_account is None:
+                return True
+            owner = verified_guest_account_for_email(booking_email) if booking_email else None
+            if owner is None or owner.id == session_account.id:
+                return True
+        if session_account is not None and booking_email:
+            owner = verified_guest_account_for_email(booking_email)
+            if owner is not None and owner.id == session_account.id:
+                return True
     return False
 
 
