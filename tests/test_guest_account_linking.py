@@ -940,6 +940,52 @@ def test_magic_link_login_links_unlinked_clients_for_verified_account(client, ro
 
 
 @pytest.mark.django_db
+def test_link_clients_for_guest_account_skips_inactive_or_staff_user():
+    from apps.hotel.guest_access import link_clients_for_guest_account
+
+    inactive_user = User.objects.create_user(
+        username="inactive-link@example.com",
+        email="inactive-link@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    inactive_account, _ = GuestAccount.objects.get_or_create(user=inactive_user)
+    inactive_account.email_verified_at = timezone.now()
+    inactive_account.save(update_fields=["email_verified_at", "updated_at"])
+    GuestClient.objects.create(
+        first_name="Ina",
+        last_name="Ctive",
+        email="inactive-link@example.com",
+        phone="+48555114001",
+        account=None,
+    )
+
+    staff_user = User.objects.create_user(
+        username="staff-link@example.com",
+        email="staff-link@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=True,
+    )
+    staff_account, _ = GuestAccount.objects.get_or_create(user=staff_user)
+    staff_account.email_verified_at = timezone.now()
+    staff_account.save(update_fields=["email_verified_at", "updated_at"])
+    GuestClient.objects.create(
+        first_name="Staff",
+        last_name="User",
+        email="staff-link@example.com",
+        phone="+48555114002",
+        account=None,
+    )
+
+    assert link_clients_for_guest_account(inactive_account) == 0
+    assert link_clients_for_guest_account(staff_account) == 0
+    assert GuestClient.objects.filter(email="inactive-link@example.com", account__isnull=True).exists()
+    assert GuestClient.objects.filter(email="staff-link@example.com", account__isnull=True).exists()
+
+
+@pytest.mark.django_db
 def test_link_clients_for_guest_account_skips_email_owned_by_different_verified_account():
     from apps.hotel.guest_access import link_clients_for_guest_account
 
