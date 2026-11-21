@@ -96,15 +96,25 @@ def bookings_for_email(email: str) -> QuerySet[Booking]:
     email = normalise_email(email)
     if not email:
         return Booking.objects.none()
-    query = Q(client__email__iexact=email)
     account = verified_guest_account_for_email(email)
     if account is not None:
-        query |= Q(client__account=account)
         account_email = normalise_email(getattr(account.user, "email", ""))
+        linked_emails = {
+            normalise_email(e)
+            for e in account.clients.exclude(email="").values_list("email", flat=True)
+            if normalise_email(e)
+        }
+        linked_emails.add(email)
         if account_email:
-            query |= Q(client__email__iexact=account_email)
-        for linked_email in account.clients.exclude(email="").values_list("email", flat=True).distinct():
-            query |= Q(client__email__iexact=linked_email)
+            linked_emails.add(account_email)
+        email_query = Q()
+        for linked_email in linked_emails:
+            email_query |= Q(client__email__iexact=linked_email)
+        query = Q(client__account=account) | (email_query & (Q(client__account__isnull=True) | Q(client__account=account)))
+    else:
+        # No verified account owns this email; only expose bookings whose client
+        # is not linked to a different verified guest account.
+        query = Q(client__email__iexact=email, client__account__isnull=True)
     return (
         Booking.objects.filter(query)
         .select_related("client", "room", "room__room_type", "rate_plan")
@@ -163,14 +173,19 @@ def guest_session_matches(request, booking: Booking) -> bool:
                 return True
             # Booking may be unlinked but its client email is associated with
             # this verified account (e.g. preserved historical client email).
-            client_email = normalise_email(getattr(booking.client, "email", "")) if booking.client_id else ""
-            if client_email:
-                owner = verified_guest_account_for_email(client_email)
-                if owner is not None and owner.id == account.id:
-                    return True
+            # Never grant access through a client linked to a different account.
+            if booking.client_id and booking.client.account_id not in (None, account.id):
+                pass
+            else:
+                client_email = normalise_email(getattr(booking.client, "email", "")) if booking.client_id else ""
+                if client_email:
+                    owner = verified_guest_account_for_email(client_email)
+                    if owner is not None and owner.id == account.id:
+                        return True
         user_email = normalise_email(getattr(user, "email", ""))
         if user_email and user_email == normalise_email(booking.client.email):
-            return True
+            if not booking.client_id or booking.client.account_id in (None, getattr(getattr(user, "guest_account", None), "id", None)):
+                return True
     email = session_email(request)
     if email and email == normalise_email(booking.client.email):
         return True
@@ -181,11 +196,14 @@ def guest_session_matches(request, booking: Booking) -> bool:
         if account is not None and booking.client_id:
             if booking.client.account_id == account.id:
                 return True
-            client_email = normalise_email(getattr(booking.client, "email", ""))
-            if client_email:
-                owner = verified_guest_account_for_email(client_email)
-                if owner is not None and owner.id == account.id:
-                    return True
+            if booking.client.account_id not in (None, account.id):
+                pass
+            else:
+                client_email = normalise_email(getattr(booking.client, "email", ""))
+                if client_email:
+                    owner = verified_guest_account_for_email(client_email)
+                    if owner is not None and owner.id == account.id:
+                        return True
     return False
 
 

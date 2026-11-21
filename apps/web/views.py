@@ -298,19 +298,26 @@ def _current_guest_email(request) -> str:
 
 def _bookings_for_authenticated_guest(user) -> QuerySet[Booking]:
     """Bookings visible to an authenticated non-staff guest account."""
-    query = Q()
     email = normalise_email(getattr(user, "email", ""))
-    if email:
-        query |= Q(client__email__iexact=email)
     account = getattr(user, "guest_account", None)
     if account is not None and getattr(account, "is_email_verified", False):
-        query |= Q(client__account=account)
-        # Include unlinked bookings whose client email is associated with this
-        # verified account (e.g. preserved historical client email on another
-        # linked client record).
-        for linked_email in account.clients.exclude(email="").values_list("email", flat=True).distinct():
-            query |= Q(client__email__iexact=linked_email)
-    if not query:
+        linked_emails = {email} if email else set()
+        linked_emails.update(
+            normalise_email(e)
+            for e in account.clients.exclude(email="").values_list("email", flat=True)
+            if normalise_email(e)
+        )
+        email_query = Q()
+        for linked_email in linked_emails:
+            email_query |= Q(client__email__iexact=linked_email)
+        query = Q(client__account=account) | (
+            email_query & (Q(client__account__isnull=True) | Q(client__account=account))
+        )
+    elif email:
+        # No verified account: only expose bookings whose client is not linked
+        # to a different verified guest account.
+        query = Q(client__email__iexact=email, client__account__isnull=True)
+    else:
         return Booking.objects.none()
     return (
         Booking.objects.filter(query)
