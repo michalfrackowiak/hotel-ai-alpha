@@ -1,4 +1,4 @@
-"""Verified guest account linkage to existing and future bookings/clients."""
+﻿"""Verified guest account linkage to existing and future bookings/clients."""
 
 from __future__ import annotations
 
@@ -9,7 +9,11 @@ from django.test import Client
 from django.utils import timezone
 
 from apps.hotel.booking_service import create_booking
-from apps.hotel.guest_access import consume_email_verification_token, issue_email_verification_token
+from apps.hotel.guest_access import (
+    consume_email_verification_token,
+    issue_email_verification_token,
+    link_clients_for_guest_account,
+)
 from apps.hotel.models import Client as GuestClient
 from apps.hotel.models import GuestAccount
 
@@ -211,3 +215,48 @@ def test_pre_account_booking_becomes_visible_after_register_verify_and_magic_lin
     detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
     assert detail.status_code == 200
     assert booking.reference in detail.content.decode()
+
+
+
+@pytest.mark.django_db
+def test_link_clients_for_guest_account_does_not_override_different_account():
+    """Safety: matching clients already linked to another account must not be stolen."""
+    user_a = User.objects.create_user(
+        username="a@example.com",
+        email="a@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account_a, _ = GuestAccount.objects.get_or_create(user=user_a)
+    account_a.email_verified_at = timezone.now()
+    account_a.save(update_fields=["email_verified_at", "updated_at"])
+
+    shared_client = GuestClient.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="shared@example.com",
+        phone="+48111222333",
+        account=account_a,
+    )
+
+    # Account B is verified but its contact resolves to the same client email in this
+    # data-integrity edge case; linking must not override account A.
+    user_b = User.objects.create_user(
+        username="b@example.com",
+        email="shared@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account_b, _ = GuestAccount.objects.get_or_create(user=user_b)
+    account_b.email_verified_at = timezone.now()
+    account_b.save(update_fields=["email_verified_at", "updated_at"])
+
+    linked = link_clients_for_guest_account(account_b)
+
+    assert linked == 0
+    shared_client.refresh_from_db()
+    assert shared_client.account_id == account_a.id
+
+
