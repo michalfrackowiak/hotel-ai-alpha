@@ -19,6 +19,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+RUN pip install --no-deps ./django-openline/django-openline
 RUN chmod +x /app/docker/entrypoint.sh /app/docker/scheduler.sh
 
 RUN groupadd --system app \

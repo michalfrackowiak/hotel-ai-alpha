@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "rest_framework",
+    "django_openline",
     "apps.hotel",
     "apps.api",
     "apps.agents",
@@ -287,6 +288,24 @@ GOOGLE_OAUTH_SCOPES = ["openid", "email", "profile"]
 
 # Channel-manager iCal imports: fail fast so a slow OTA cannot stall the scheduler.
 CHANNEL_FEED_TIMEOUT_SECONDS = float(os.getenv("CHANNEL_FEED_TIMEOUT_SECONDS", "10"))
+
+# OpenLine self-hosted voice integration (optional). BASE_URL has no /v1 suffix.
+OPENLINE = {
+    "BASE_URL": os.getenv("OPENLINE_URL", "").strip().rstrip("/"),
+    "API_KEY": os.getenv("OPENLINE_API_KEY", "").strip(),
+    "TIMEOUT": int(os.getenv("OPENLINE_TIMEOUT", "15")),
+    "VERIFY_TLS": env_bool("OPENLINE_VERIFY_TLS", True),
+    "WEBHOOK_SECRET": os.getenv("OPENLINE_WEBHOOK_SECRET", "").strip(),
+    "ALLOW_UNSIGNED_WEBHOOKS": env_bool("OPENLINE_ALLOW_UNSIGNED_WEBHOOKS", False),
+    "DEFAULT_DEVICE_ID": os.getenv("OPENLINE_DEFAULT_DEVICE_ID", "").strip() or None,
+    "DEFAULT_STREAM_URL": os.getenv("OPENLINE_DEFAULT_STREAM_URL", "").strip() or None,
+    "DEFAULT_STREAM_FORMAT": os.getenv("OPENLINE_DEFAULT_STREAM_FORMAT", "twilio").strip() or "twilio",
+}
+
+# OpenLine is optional. Silence its "not configured" checks only while none of
+# its settings are supplied, so a partial configuration still surfaces warnings.
+if not any((OPENLINE["BASE_URL"], OPENLINE["API_KEY"], OPENLINE["WEBHOOK_SECRET"])):
+    SILENCED_SYSTEM_CHECKS = ["openline.W003", "openline.W004"]
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

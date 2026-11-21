@@ -16,7 +16,7 @@ filterwarnings = [
 [tool.ruff]
 line-length = 110
 target-version = "py312"
-exclude = ["migrations", ".venv"]
+exclude = ["migrations", ".venv", "django-openline"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "DJ"]

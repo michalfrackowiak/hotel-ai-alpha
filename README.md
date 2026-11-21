@@ -176,6 +176,16 @@ Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `c
 
 To receive delivery receipts and inbound replies, point the provider at `POST /api/v1/sms/webhooks/<provider>/` (for example `twilio`). If `SMS_WEBHOOK_SECRET` is set, the request must include the matching `X-Sms-Webhook-Secret` header. Twilio-shaped callbacks and generic JSON payloads are supported; unknown receipts are acknowledged without breaking the provider.
 
+### OpenLine telephony integration
+
+The optional **`django-openline`** app connects the project to an existing self-hosted [OpenLine](https://github.com/michalfrackowiak/openline) server, which turns an Android phone's SIM into a programmable phone line. It adds a REST client, a signed webhook inbox with de-duplication, `Call`/`WebhookEvent` models, admin pages, and the `openline_check`, `openline_call` and `openline_prune` commands. It does not run OpenLine or host the live audio agent.
+
+- The package is vendored under `django-openline/`, installed by `requirements.txt`/the Dockerfile, and registered as `django_openline`.
+- Configure `OPENLINE_URL`, `OPENLINE_API_KEY` and `OPENLINE_WEBHOOK_SECRET` (plus optional `OPENLINE_DEFAULT_DEVICE_ID` / `OPENLINE_DEFAULT_STREAM_URL`) in `.env`.
+- Point OpenLine's webhook at `${HOTEL_PUBLIC_URL}/integrations/openline/webhook/`.
+- Run `python manage.py migrate` and `python manage.py openline_check`.
+- Place calls with `django_openline.services.place_call()` or react to events with `@on_event(...)` from `django_openline.signals`.
+
 ---
 
 ## Payments and deposit policy
