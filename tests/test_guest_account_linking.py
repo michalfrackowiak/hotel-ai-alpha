@@ -260,3 +260,39 @@ def test_link_clients_for_guest_account_does_not_override_different_account():
     assert shared_client.account_id == account_a.id
 
 
+
+@pytest.mark.django_db
+def test_future_booking_after_verification_is_visible_to_authenticated_guest(client, room_type, rooms, stay_dates):
+    """Bookings created after account verification are linked and visible in My bookings."""
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=2,
+    )
+    assert booking.client.account_id == account.id
+
+    assert client.login(username="anna@example.com", password="correct horse battery")
+
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
