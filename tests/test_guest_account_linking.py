@@ -854,6 +854,48 @@ def test_password_login_links_unlinked_clients_for_verified_account(client, room
 
 
 @pytest.mark.django_db
+def test_inactive_authenticated_guest_is_denied_session_match_and_profile_access(room_type, rooms, stay_dates):
+    from django.test import RequestFactory
+
+    from apps.hotel.guest_access import guest_session_matches
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="anna@example.com",
+        adults=1,
+    )
+
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    rf = RequestFactory()
+    request = rf.get("/booking/")
+    request.user = user
+    request.session = {}
+    assert guest_session_matches(request, booking) is False
+
+    django_client = __import__("django.test", fromlist=["Client"]).Client()
+    django_client.force_login(user)
+    response = django_client.get("/my-bookings/profile/", HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
 def test_magic_link_login_links_unlinked_clients_for_verified_account(client, room_type, rooms, stay_dates):
     from apps.hotel.guest_access import issue_login_token
 
@@ -895,6 +937,7 @@ def test_magic_link_login_links_unlinked_clients_for_verified_account(client, ro
 
     unlinked.refresh_from_db()
     assert unlinked.account_id == account.id
+
 
 @pytest.mark.django_db
 def test_link_clients_for_guest_account_skips_email_owned_by_different_verified_account():

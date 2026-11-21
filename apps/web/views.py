@@ -289,7 +289,7 @@ def booking_lookup(request):
 def _current_guest_email(request) -> str:
     """Return the signed-in guest email from Django auth or the magic-link session."""
     user = getattr(request, "user", None)
-    if user and user.is_authenticated and not user.is_staff:
+    if user and user.is_authenticated and user.is_active and not user.is_staff:
         email = normalise_email(getattr(user, "email", ""))
         if email:
             return email
@@ -334,7 +334,10 @@ def guest_bookings(request):
     """Guest account: sign in (password or magic link) or list bookings."""
     user = getattr(request, "user", None)
     is_authenticated_guest = bool(
-        user and getattr(user, "is_authenticated", False) and not getattr(user, "is_staff", False)
+        user
+        and getattr(user, "is_authenticated", False)
+        and getattr(user, "is_active", False)
+        and not getattr(user, "is_staff", False)
     )
     email = _current_guest_email(request)
     if request.method == "POST":
@@ -381,7 +384,7 @@ def guest_login(request, token: str):
             _guest_login_context(request, link_invalid=True),
             status=400,
         )
-    if request.user.is_authenticated and not request.user.is_staff:
+    if request.user.is_authenticated and request.user.is_active and not request.user.is_staff:
         auth_logout(request)
     request.session[GUEST_SESSION_KEY] = email
     request.session.cycle_key()
@@ -580,7 +583,7 @@ class GuestPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
 
 def guest_password_change(request):
     user = request.user
-    if not user.is_authenticated or user.is_staff:
+    if not user.is_authenticated or not user.is_active or user.is_staff:
         return redirect("web:guest-bookings")
     if request.method == "POST":
         attempt_allowed = allow_password_login_attempt(
@@ -603,14 +606,14 @@ def guest_password_change(request):
 
 def guest_password_change_done(request):
     user = request.user
-    if not user.is_authenticated or user.is_staff:
+    if not user.is_authenticated or not user.is_active or user.is_staff:
         return redirect("web:guest-bookings")
     return render(request, "web/guest_password_change_done.html")
 
 
 def guest_profile(request):
     user = request.user
-    if not user.is_authenticated or user.is_staff:
+    if not user.is_authenticated or not user.is_active or user.is_staff:
         return redirect("web:guest-bookings")
 
     account, _created = GuestAccount.objects.get_or_create(user=user)
@@ -736,7 +739,7 @@ def guest_profile(request):
 @require_POST
 def guest_logout(request):
     request.session.pop(GUEST_SESSION_KEY, None)
-    if request.user.is_authenticated and not request.user.is_staff:
+    if request.user.is_authenticated and getattr(request.user, "is_active", False) and not request.user.is_staff:
         auth_logout(request)
     request.session.cycle_key()
     return redirect("web:guest-bookings")
