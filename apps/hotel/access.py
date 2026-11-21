@@ -122,10 +122,18 @@ def contact_matches(booking: Booking, contact: str) -> bool:
         if client_email and secrets.compare_digest(client_email, contact):
             return True
 
-    phone = _normalise_phone(booking.client.phone or "")
     supplied_phone = _normalise_phone(contact)
-    if phone and supplied_phone and len(supplied_phone) >= 6:
-        return secrets.compare_digest(phone, supplied_phone)
+    if supplied_phone and len(supplied_phone) >= 6:
+        phone = _normalise_phone(booking.client.phone or "")
+        if phone and secrets.compare_digest(phone, supplied_phone):
+            return True
+        if linked_account is not None:
+            for candidate_phone in (
+                linked_account.clients.exclude(phone="").values_list("phone", flat=True)
+            ):
+                normalised_candidate = _normalise_phone(candidate_phone)
+                if normalised_candidate and secrets.compare_digest(normalised_candidate, supplied_phone):
+                    return True
     return False
 
 

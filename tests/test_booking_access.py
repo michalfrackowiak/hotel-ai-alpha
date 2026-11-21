@@ -241,3 +241,37 @@ def test_contact_lookup_rejects_client_email_owned_by_different_verified_account
     assert find_booking_for_contact(booking.reference, "other@example.com") is None
     # Owner account email still works.
     assert contact_matches(booking, "owner@example.com") is True
+
+
+@pytest.mark.django_db
+def test_contact_lookup_accepts_verified_linked_account_associated_phone(booking):
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    from apps.hotel.models import Client, GuestAccount
+
+    user = get_user_model().objects.create_user(
+        username="phone-owner@example.com",
+        email="phone-owner@example.com",
+        password="pw",
+        is_active=True,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    booking.client.account = account
+    booking.client.email = "old-phone@example.com"
+    booking.client.phone = "+48 500 000 001"
+    booking.client.save(update_fields=["account", "email", "phone", "updated_at"])
+
+    Client.objects.create(
+        first_name="Anna",
+        last_name="Kowalska",
+        email="other@example.com",
+        phone="+48 500 000 099",
+        account=account,
+    )
+
+    assert contact_matches(booking, "+48 500 000 099")
+    assert find_booking_for_contact(booking.reference, "+48500000099") == booking
