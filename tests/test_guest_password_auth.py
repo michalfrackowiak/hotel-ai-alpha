@@ -676,6 +676,58 @@ def test_password_reset_confirm_marks_guest_email_verified_and_links_clients(cli
 
 
 @pytest.mark.django_db
+def test_password_reset_confirm_activates_inactive_guest_and_links_clients(client, room_type, rooms, stay_dates):
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    user = User.objects.create_user(
+        username="inactive@example.com",
+        email="inactive@example.com",
+        password="correct horse battery",
+        is_active=False,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    assert account.email_verified_at is None
+
+    unlinked = GuestClient.objects.create(
+        first_name="Ina",
+        last_name="Ctive",
+        email="inactive@example.com",
+        phone="+48555115002",
+        account=None,
+    )
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    url = f"/my-bookings/password-reset/{uid}/{token}/"
+
+    response = client.get(url, follow=True, HTTP_ACCEPT_LANGUAGE="en")
+    assert response.status_code == 200
+
+    post_url = response.request["PATH_INFO"]
+    response = client.post(
+        post_url,
+        {
+            "new_password1": "brand new strong password",
+            "new_password2": "brand new strong password",
+        },
+        follow=True,
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.is_active is True
+    assert user.check_password("brand new strong password")
+
+    account.refresh_from_db()
+    assert account.email_verified_at is not None
+    unlinked.refresh_from_db()
+    assert unlinked.account_id == account.id
+
+
+@pytest.mark.django_db
 def test_staff_cannot_password_login_via_guest_form(client):
     User.objects.create_user(
         username="staff@example.com",

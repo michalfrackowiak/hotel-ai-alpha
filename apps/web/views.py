@@ -570,8 +570,15 @@ class GuestPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     def form_valid(self, form):
         response = super().form_valid(form)
         user = getattr(form, "user", None) or getattr(self, "user", None)
-        if user is None or getattr(user, "is_staff", False) or not getattr(user, "is_active", False):
+        if user is None or getattr(user, "is_staff", False):
             return response
+
+        update_fields: list[str] = []
+        if not getattr(user, "is_active", False):
+            user.is_active = True
+            update_fields.append("is_active")
+        if update_fields:
+            user.save(update_fields=update_fields)
 
         account, _created = GuestAccount.objects.get_or_create(user=user)
         if account.email_verified_at is None:
