@@ -385,6 +385,9 @@ def guest_login(request, token: str):
         auth_logout(request)
     request.session[GUEST_SESSION_KEY] = email
     request.session.cycle_key()
+    account = verified_guest_account_for_email(email)
+    if account is not None:
+        link_clients_for_guest_account(account)
     return redirect("web:guest-bookings")
 
 
@@ -406,6 +409,9 @@ def guest_password_login(request):
             auth_login(request, user)
             request.session.pop(GUEST_SESSION_KEY, None)
             request.session.cycle_key()
+            account = getattr(user, "guest_account", None)
+            if account is not None:
+                link_clients_for_guest_account(account)
             return redirect("web:guest-bookings")
 
     if not attempt_allowed:
