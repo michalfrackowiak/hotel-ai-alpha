@@ -459,6 +459,10 @@ Theme: **platform hardening and commercial readiness**. Build on guest accounts 
    - Post-stay flows (review prompts, receipts), richer modification/change policies, and guest preferences persisted on the account.
    - Continued accessibility, localisation quality and mobile/PWA refinements based on pilot feedback.
 
+6. **Telephony: OpenLine phone voice**
+   - Answer real phone calls through the OpenLine Android app using the vendored `django-openline` app, reusing the same `AgentEngine`, tools and `booking_service` as chat and browser voice.
+   - The dedicated plan — architecture options, data model, phased tasks, acceptance criteria, latency budgets, risks and rollout — lives in [OPENLINE_VOICE_ROADMAP.md](OPENLINE_VOICE_ROADMAP.md). It is sequenced as its own track behind a feature flag, starting with a contract-validation spike.
+
 ### Out of scope (unless explicitly planned later)
 
 - Full PMS replacement or multi-property tenancy.
