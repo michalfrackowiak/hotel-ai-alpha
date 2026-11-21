@@ -354,3 +354,55 @@ def test_phone_only_client_is_linked_when_later_booking_provides_verified_email(
     content = listing.content.decode()
     assert phone_only.reference in content
     assert later.reference in content
+
+@pytest.mark.django_db
+def test_phone_only_booking_linked_to_verified_account_is_visible_and_manageable(
+    client, room_type, rooms, stay_dates
+):
+    """A phone-only booking linked to a verified account is visible in My bookings
+    and accessible via the authenticated guest session."""
+    user = User.objects.create_user(
+        username="anna@example.com",
+        email="anna@example.com",
+        password="correct horse battery",
+        is_active=True,
+        is_staff=False,
+    )
+    account, _ = GuestAccount.objects.get_or_create(user=user)
+    account.email_verified_at = timezone.now()
+    account.save(update_fields=["email_verified_at", "updated_at"])
+
+    check_in, check_out = stay_dates
+    booking = create_booking(
+        room_type=room_type,
+        check_in=check_in,
+        check_out=check_out,
+        first_name="Anna",
+        last_name="Kowalska",
+        email="",
+        phone="+48 501 222 333",
+        adults=1,
+    )
+    # Link the phone-only client to the verified account explicitly.
+    booking.client.account = account
+    booking.client.save(update_fields=["account", "updated_at"])
+
+    assert client.login(username="anna@example.com", password="correct horse battery")
+
+    listing = client.get("/my-bookings/", HTTP_ACCEPT_LANGUAGE="en")
+    assert listing.status_code == 200
+    assert booking.reference in listing.content.decode()
+
+    detail = client.get(f"/booking/{booking.reference}/", HTTP_ACCEPT_LANGUAGE="en")
+    assert detail.status_code == 200
+    assert booking.reference in detail.content.decode()
+
+    # Reference+phone fallback remains available.
+    client.logout()
+    lookup = client.get(
+        "/booking/",
+        {"reference": booking.reference, "contact": "+48 501 222 333"},
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    assert lookup.status_code == 302
+    assert "token=" in lookup["Location"]
