@@ -52,6 +52,7 @@ class BridgeState:
     playback_queue: asyncio.Queue[bytes | None] = field(default_factory=asyncio.Queue)
     marks: dict[str, float] = field(default_factory=dict)
     pending_marks: list[str] = field(default_factory=list)
+    mark_sent_at: float = 0.0
     last_activity_at: float = field(default_factory=time.monotonic)
     call_started_at: float = field(default_factory=time.monotonic)
     turn_count: int = 0
@@ -91,12 +92,12 @@ class OpenLineMediaBridge:
                 state.utterance_task.cancel()
                 try:
                     await state.utterance_task
-                except Exception:
+                except (Exception, asyncio.CancelledError):
                     pass
             playback_sender.cancel()
             try:
                 await playback_sender
-            except Exception:
+            except (Exception, asyncio.CancelledError):
                 pass
             try:
                 await send({"type": "websocket.close", "code": 1000})
@@ -133,8 +134,12 @@ class OpenLineMediaBridge:
             return
         if event == "mark":
             mark_name = ((payload.get("mark") or {}).get("name") or "").strip()
-            if mark_name:
+            if mark_name and mark_name in state.pending_marks:
                 state.pending_marks = [m for m in state.pending_marks if m != mark_name]
+                if not state.pending_marks:
+                    state.bot_speaking = False
+                    state.mark_sent_at = 0.0
+                    state.last_activity_at = time.monotonic()
             return
         if event == "dtmf":
             await self._handle_dtmf(payload, send, state)
@@ -190,7 +195,7 @@ class OpenLineMediaBridge:
     async def _handle_media(self, payload: dict, send, state: BridgeState) -> None:
         if not state.started or state.session is None or state.phone_call is None:
             return
-        state.last_activity_at = time.monotonic()
+        self._expire_stale_marks(state)
         if await self._max_duration_exceeded(state):
             await self._end_call(send, state, reason="max_duration")
             return
@@ -222,12 +227,17 @@ class OpenLineMediaBridge:
             state.caller_speaking = True
             state.speech_started_at = state.speech_started_at or now
             state.last_voice_at = now
+            state.last_activity_at = now
             state.speech_buffer.extend(pcm16k)
             return
 
         if not state.caller_speaking:
-            # Idle silence timeout.
-            if state.session and (now - state.last_activity_at) * 1000 > silence_ms:
+            # Idle silence timeout while waiting for the caller.
+            if (
+                state.session
+                and not state.bot_speaking
+                and (now - state.last_activity_at) * 1000 > silence_ms
+            ):
                 await self._handle_silence_timeout(send, state)
             return
 
@@ -331,6 +341,7 @@ class OpenLineMediaBridge:
         if not digit:
             return
         state.dtmf_last_at = time.monotonic()
+        state.last_activity_at = time.monotonic()
         if digit in {"#", "*"}:
             await self._flush_dtmf(send, state)
             return
@@ -358,9 +369,17 @@ class OpenLineMediaBridge:
         filler_task = asyncio.create_task(self._delayed_filler(send, state, done))
         try:
             reply = await sync_to_async(state.session.handle_text)(text)
+            state.llm_failures = 0
         except Exception:
+            state.llm_failures += 1
             logger.exception("Phone agent turn failed for %s (%s)", state.call_id, source)
             reply = await sync_to_async(state.session.fallback_reply)()
+            if state.llm_failures >= 2:
+                done.set()
+                filler_task.cancel()
+                await self._speak_safe(send, state, self._failure_message(state, "llm"))
+                await self._perform_transfer(send, state)
+                return
         finally:
             done.set()
             filler_task.cancel()
@@ -391,29 +410,40 @@ class OpenLineMediaBridge:
         for chunk in chunks:
             if state.closed or not state.bot_speaking:
                 break
+            mark_name = f"mark-{uuid.uuid4().hex[:12]}"
+            state.pending_marks.append(mark_name)
             try:
                 pcm16 = await sync_to_async(state.session.synthesize_pcm16)(chunk)
                 state.tts_failures = 0
             except Exception:
                 state.tts_failures += 1
                 logger.exception("Phone TTS failed for %s", state.call_id)
+                if mark_name in state.pending_marks:
+                    state.pending_marks.remove(mark_name)
                 if state.tts_failures >= 3:
                     await self._finalize_call(state, status=PhoneCall.Status.FAILED, reason="tts_failed")
                     await self._hangup_provider_call(state)
                     state.closed = True
                     return
                 continue
+            if state.closed or not state.bot_speaking or mark_name not in state.pending_marks:
+                if mark_name in state.pending_marks:
+                    state.pending_marks.remove(mark_name)
+                break
             pcm8k, _ = pcm16_16k_to_8k(pcm16)
             frames = chunk_pcm16(pcm8k, BYTES_PER_8K_FRAME)
             if not frames:
+                if mark_name in state.pending_marks:
+                    state.pending_marks.remove(mark_name)
                 continue
-            mark_name = f"mark-{uuid.uuid4().hex[:12]}"
-            state.pending_marks.append(mark_name)
             for frame in frames:
                 if state.closed or not state.bot_speaking:
                     break
                 await state.playback_queue.put(frame)
-            await state.playback_queue.put(("mark", mark_name))
+            if mark_name in state.pending_marks and state.bot_speaking and not state.closed:
+                await state.playback_queue.put(("mark", mark_name))
+            elif mark_name in state.pending_marks:
+                state.pending_marks.remove(mark_name)
         if not state.pending_marks and state.playback_queue.empty():
             state.bot_speaking = False
 
@@ -454,12 +484,20 @@ class OpenLineMediaBridge:
     async def _playback_loop(self, send, state: BridgeState) -> None:
         try:
             while not state.closed:
-                item = await state.playback_queue.get()
+                try:
+                    item = await asyncio.wait_for(state.playback_queue.get(), timeout=1.0)
+                except TimeoutError:
+                    self._expire_stale_marks(state)
+                    continue
                 if item is None:
                     return
                 if isinstance(item, tuple) and item[0] == "mark":
                     _, mark_name = item
-                    if not state.bot_speaking and mark_name not in state.pending_marks:
+                    if mark_name not in state.pending_marks:
+                        if not state.pending_marks and state.playback_queue.empty():
+                            state.bot_speaking = False
+                        continue
+                    if not state.bot_speaking:
                         continue
                     if state.stream_sid:
                         msg = {
@@ -468,10 +506,8 @@ class OpenLineMediaBridge:
                             "mark": {"name": mark_name},
                         }
                         await send({"type": "websocket.send", "text": json.dumps(msg)})
-                    if mark_name in state.pending_marks:
-                        state.pending_marks.remove(mark_name)
-                    if not state.pending_marks:
-                        state.bot_speaking = False
+                    state.mark_sent_at = time.monotonic()
+                    # Do not clear bot_speaking on send; wait for client mark echo.
                     continue
                 if not state.bot_speaking:
                     continue
@@ -482,6 +518,8 @@ class OpenLineMediaBridge:
                     "media": {"payload": payload},
                 }
                 await send({"type": "websocket.send", "text": json.dumps(message)})
+                if not state.pending_marks and state.playback_queue.empty():
+                    state.bot_speaking = False
                 await asyncio.sleep(0.02)
         except asyncio.CancelledError:
             return
@@ -491,6 +529,7 @@ class OpenLineMediaBridge:
     async def _barge_in(self, send, state: BridgeState) -> None:
         state.bot_speaking = False
         state.pending_marks.clear()
+        state.mark_sent_at = 0.0
         while not state.playback_queue.empty():
             try:
                 state.playback_queue.get_nowait()
@@ -554,7 +593,11 @@ class OpenLineMediaBridge:
         except Exception:
             logger.warning("Could not load AgentSettings for phone admission; rejecting call %s", phone_call.external_id)
             return False
-        if phone_call.status in {PhoneCall.Status.ENDED, PhoneCall.Status.FAILED}:
+        if phone_call.status in {
+            PhoneCall.Status.ENDED,
+            PhoneCall.Status.FAILED,
+            PhoneCall.Status.TRANSFERRED,
+        }:
             return False
 
         max_concurrent = int(getattr(settings, "VOICE_MAX_CONCURRENT_CALLS", 2))
@@ -673,19 +716,33 @@ class OpenLineMediaBridge:
                     text = await sync_to_async(state.session.fallback_reply)()
                 if text:
                     await self._speak(send, state, text)
-                    await self._drain_playback(state, timeout=8.0)
+                    await self._drain_playback(state, timeout=3.0)
             except Exception:
                 logger.exception("Failed to play end-of-call message for %s", state.call_id)
+        self._expire_stale_marks(state, max_age=0.0)
         await self._finalize_call(state, status=PhoneCall.Status.ENDED, reason=reason)
         await self._hangup_provider_call(state)
         state.closed = True
 
-    async def _drain_playback(self, state: BridgeState, timeout: float = 5.0) -> None:
+    def _expire_stale_marks(self, state: BridgeState, max_age: float = 15.0) -> None:
+        if state.pending_marks and state.mark_sent_at:
+            if (time.monotonic() - state.mark_sent_at) > max_age:
+                logger.warning("Expiring stale playback marks for %s", state.call_id)
+                state.pending_marks.clear()
+                state.mark_sent_at = 0.0
+                state.last_activity_at = time.monotonic()
+        if not state.pending_marks and state.bot_speaking and state.playback_queue.empty():
+            state.bot_speaking = False
+            state.mark_sent_at = 0.0
+
+    async def _drain_playback(self, state: BridgeState, timeout: float = 2.0) -> None:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
+            self._expire_stale_marks(state, max_age=2.0)
             if not state.bot_speaking and state.playback_queue.empty() and not state.pending_marks:
                 return
             await asyncio.sleep(0.05)
+        self._expire_stale_marks(state, max_age=0.0)
 
     async def _finalize_call(self, state: BridgeState, *, status: str, reason: str = "") -> None:
         await sync_to_async(self._finalize_call_sync)(state, status, reason)

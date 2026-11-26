@@ -1426,11 +1426,24 @@ def test_bridge_transfer_flow_falls_back(settings, monkeypatch) -> None:
 
         await send_utterance(communicator, "MZTR")
         # after transfer fallback the bridge closes
+        closed = False
         for _ in range(80):
-            msg = await communicator.receive_output(timeout=3)
-            if msg["type"] == "websocket.close":
+            if communicator.future.done():
+                while not communicator.output_queue.empty():
+                    msg = communicator.output_queue.get_nowait()
+                    if msg.get("type") == "websocket.close":
+                        closed = True
                 break
-        await communicator.wait()
+            try:
+                msg = await communicator.receive_output(timeout=3)
+            except (TimeoutError, asyncio.CancelledError):
+                continue
+            if msg["type"] == "websocket.close":
+                closed = True
+                break
+        if not communicator.future.done():
+            await communicator.wait()
+        assert closed
 
     asyncio.run(run())
 
@@ -1933,4 +1946,287 @@ def test_outbound_call_does_not_create_conversation_when_openline_fails(settings
         place_outbound_call(to_number="+48123123123")
     assert exc.value.code == "openline_error"
     assert Conversation.objects.count() == before
+
+
+@pytest.mark.django_db
+def test_call_allowed_rejects_transferred_call(settings) -> None:
+    from asgiref.sync import async_to_sync
+
+    from apps.agents.models import AgentSettings
+    from apps.voice.bridge import OpenLineMediaBridge
+
+    settings.VOICE_PHONE_ENABLED = True
+    agent_settings = AgentSettings.load()
+    agent_settings.is_enabled = True
+    agent_settings.phone_enabled = True
+    agent_settings.save(update_fields=["is_enabled", "phone_enabled"])
+    call = PhoneCall.objects.create(
+        external_id="guard-transferred-1",
+        provider=PhoneCall.Provider.OPENLINE,
+        direction=PhoneCall.Direction.INBOUND,
+        status=PhoneCall.Status.TRANSFERRED,
+    )
+    bridge = OpenLineMediaBridge()
+    assert async_to_sync(bridge._call_allowed)(call) is False
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dtmf_llm_repeated_failure_escalates_to_transfer(settings, monkeypatch) -> None:
+    import asyncio
+
+    from asgiref.testing import ApplicationCommunicator
+
+    from apps.agents.models import AgentSettings
+    from apps.voice.bridge import OpenLineMediaBridge
+
+    settings.VOICE_PHONE_ENABLED = True
+    settings.VOICE_PHONE_SILENCE_TIMEOUT_SECONDS = 60
+    settings.VOICE_PHONE_MAX_SECONDS = 600
+
+    agent_settings = AgentSettings.load()
+    agent_settings.is_enabled = True
+    agent_settings.phone_enabled = True
+    agent_settings.save(update_fields=["is_enabled", "phone_enabled"])
+
+    conversation = Conversation.objects.create(channel=Conversation.Channel.PHONE, language="pl")
+    phone_call = PhoneCall.objects.create(
+        external_id="bridge-dtmf-fail-1",
+        provider=PhoneCall.Provider.OPENLINE,
+        direction=PhoneCall.Direction.INBOUND,
+        status=PhoneCall.Status.RINGING,
+        conversation=conversation,
+    )
+    stream_token = ensure_stream_token(phone_call)
+
+    class FakeSession:
+        def __init__(self, *, phone_call, conversation, settings_obj=None):
+            self.phone_call = phone_call
+            self.conversation = conversation
+            self.settings_obj = settings_obj or AgentSettings.load()
+
+        def initial_greeting(self):
+            return "Witamy."
+
+        def handle_text(self, text):
+            raise RuntimeError("llm down")
+
+        def synthesize_pcm16(self, text):
+            return b"\x00\x00" * 160
+
+        def should_transfer(self):
+            return False
+
+        def transfer_number(self):
+            return ""
+
+        def mark_transferred(self, reason=""):
+            self.phone_call.status = PhoneCall.Status.TRANSFERRED
+            self.phone_call.metadata = {**(self.phone_call.metadata or {}), "transfer_reason": reason}
+            self.phone_call.save(update_fields=["status", "metadata", "updated_at"])
+
+        def fallback_reply(self):
+            return "Przepraszam."
+
+    async def _noop(*args, **kwargs):
+        return None
+
+    async def _no_transfer(self, call_id, number):
+        return False
+
+    monkeypatch.setattr("apps.voice.bridge.PhoneVoiceSession", FakeSession)
+    monkeypatch.setattr(OpenLineMediaBridge, "_hangup_provider_call", _noop)
+    monkeypatch.setattr(OpenLineMediaBridge, "_notify_staff_transfer_fallback", _noop)
+    monkeypatch.setattr(OpenLineMediaBridge, "_try_provider_transfer", _no_transfer)
+
+    async def run():
+        app = OpenLineMediaBridge()
+        communicator = ApplicationCommunicator(app, {"type": "websocket", "path": "/ws/voice/openline/"})
+        await communicator.send_input({"type": "websocket.connect"})
+        await communicator.receive_output(timeout=2)
+        await communicator.send_input(
+            {
+                "type": "websocket.receive",
+                "text": json.dumps(
+                    {
+                        "event": "start",
+                        "start": {
+                            "streamSid": "MZDTMFFAIL",
+                            "callSid": "bridge-dtmf-fail-1",
+                            "customParameters": {"streamToken": stream_token},
+                        },
+                    }
+                ),
+            }
+        )
+        # Drain greeting
+        for _ in range(40):
+            msg = await communicator.receive_output(timeout=2)
+            if msg["type"] == "websocket.send" and msg.get("text"):
+                if json.loads(msg["text"]).get("event") == "mark":
+                    break
+
+        for _ in range(2):
+            await communicator.send_input(
+                {"type": "websocket.receive", "text": json.dumps({"event": "dtmf", "dtmf": {"digit": "1"}})}
+            )
+            await communicator.send_input(
+                {"type": "websocket.receive", "text": json.dumps({"event": "dtmf", "dtmf": {"digit": "#"}})}
+            )
+            await asyncio.sleep(0.2)
+
+        closed = False
+        for _ in range(80):
+            if communicator.future.done():
+                while not communicator.output_queue.empty():
+                    msg = communicator.output_queue.get_nowait()
+                    if msg.get("type") == "websocket.close":
+                        closed = True
+                break
+            try:
+                msg = await communicator.receive_output(timeout=3)
+            except (TimeoutError, asyncio.CancelledError):
+                continue
+            if msg["type"] == "websocket.close":
+                closed = True
+                break
+        assert closed
+        if not communicator.future.done():
+            await communicator.wait()
+
+    asyncio.run(run())
+    phone_call.refresh_from_db()
+    assert phone_call.status == PhoneCall.Status.TRANSFERRED
+
+
+@pytest.mark.django_db
+def test_process_audio_idle_silence_not_reset_by_silent_media(settings) -> None:
+    import asyncio
+    import time
+    from types import SimpleNamespace
+
+    from apps.voice.bridge import BridgeState, OpenLineMediaBridge
+
+    settings.VOICE_PHONE_SILENCE_TIMEOUT_SECONDS = 1
+
+    bridge = OpenLineMediaBridge()
+    state = BridgeState()
+    state.started = True
+    state.session = SimpleNamespace(settings_obj=SimpleNamespace(phone_max_seconds=0))
+    state.last_activity_at = time.monotonic() - 2.0
+
+    called = {"count": 0}
+
+    async def fake_timeout(send, st):
+        called["count"] += 1
+
+    bridge._handle_silence_timeout = fake_timeout  # type: ignore[assignment]
+
+    before = state.last_activity_at
+    asyncio.run(bridge._process_audio(b"\x00\x00" * 160, send=None, state=state))
+    assert called["count"] == 1
+    assert state.last_activity_at == before
+
+
+@pytest.mark.django_db(transaction=True)
+def test_bridge_mark_ack_clears_bot_speaking(settings, monkeypatch) -> None:
+    import asyncio
+
+    from asgiref.testing import ApplicationCommunicator
+
+    from apps.agents.models import AgentSettings
+    from apps.voice.audio import BYTES_PER_16K_FRAME
+    from apps.voice.bridge import OpenLineMediaBridge
+
+    settings.VOICE_PHONE_ENABLED = True
+    settings.VOICE_PHONE_SILENCE_TIMEOUT_SECONDS = 60
+    settings.VOICE_PHONE_MAX_SECONDS = 600
+
+    agent_settings = AgentSettings.load()
+    agent_settings.is_enabled = True
+    agent_settings.phone_enabled = True
+    agent_settings.save(update_fields=["is_enabled", "phone_enabled"])
+
+    conversation = Conversation.objects.create(channel=Conversation.Channel.PHONE, language="pl")
+    phone_call = PhoneCall.objects.create(
+        external_id="bridge-mark-ack-1",
+        provider=PhoneCall.Provider.OPENLINE,
+        direction=PhoneCall.Direction.INBOUND,
+        status=PhoneCall.Status.RINGING,
+        conversation=conversation,
+    )
+    stream_token = ensure_stream_token(phone_call)
+
+    class FakeSession:
+        def __init__(self, *, phone_call, conversation, settings_obj=None):
+            self.phone_call = phone_call
+            self.conversation = conversation
+            self.settings_obj = settings_obj or AgentSettings.load()
+
+        def initial_greeting(self):
+            return "Witamy w hotelu."
+
+        def handle_text(self, text):
+            return "Dobrze."
+
+        def synthesize_pcm16(self, text):
+            return b"\x00\x00" * (BYTES_PER_16K_FRAME // 2)
+
+        def should_transfer(self):
+            return False
+
+        def transfer_number(self):
+            return ""
+
+        def mark_transferred(self, reason=""):
+            return None
+
+        def fallback_reply(self):
+            return "Przepraszam."
+
+    monkeypatch.setattr("apps.voice.bridge.PhoneVoiceSession", FakeSession)
+
+    async def run():
+        app = OpenLineMediaBridge()
+        communicator = ApplicationCommunicator(app, {"type": "websocket", "path": "/ws/voice/openline/"})
+        await communicator.send_input({"type": "websocket.connect"})
+        await communicator.receive_output(timeout=2)
+        await communicator.send_input(
+            {
+                "type": "websocket.receive",
+                "text": json.dumps(
+                    {
+                        "event": "start",
+                        "start": {
+                            "streamSid": "MZMARKACK",
+                            "callSid": "bridge-mark-ack-1",
+                            "customParameters": {"streamToken": stream_token},
+                        },
+                    }
+                ),
+            }
+        )
+
+        mark_name = None
+        for _ in range(30):
+            msg = await communicator.receive_output(timeout=2)
+            if msg["type"] == "websocket.send" and msg.get("text"):
+                payload = json.loads(msg["text"])
+                if payload.get("event") == "mark":
+                    mark_name = payload["mark"]["name"]
+                    break
+        assert mark_name
+
+        # Before ack, bot should still be considered speaking (defensive timeout not yet elapsed).
+        # Send ack and then ensure bridge can proceed cleanly.
+        await communicator.send_input(
+            {
+                "type": "websocket.receive",
+                "text": json.dumps({"event": "mark", "mark": {"name": mark_name}}),
+            }
+        )
+        await asyncio.sleep(0.1)
+        await communicator.send_input({"type": "websocket.disconnect", "code": 1000})
+        await communicator.wait()
+
+    asyncio.run(run())
 
