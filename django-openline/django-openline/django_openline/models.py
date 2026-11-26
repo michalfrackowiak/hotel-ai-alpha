@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import IntegrityError, models, transaction
 
 from .parsing import extract_call_fields
 
@@ -22,7 +22,12 @@ class CallManager(models.Manager):
             if max_length and isinstance(value, str):
                 fields[name] = value[:max_length]
 
-        call, created = self.get_or_create(openline_id=openline_id, defaults=fields)
+        try:
+            with transaction.atomic():
+                call, created = self.get_or_create(openline_id=openline_id, defaults=fields)
+        except IntegrityError:
+            call = self.get(openline_id=openline_id)
+            created = False
         if created:
             return call
         changed = []

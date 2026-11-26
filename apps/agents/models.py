@@ -115,6 +115,20 @@ class AgentSettings(TimeStampedModel):
     voice_tts_provider = models.CharField(_("text-to-speech provider"), max_length=40, default="browser")
     voice_name_en = models.CharField(_("voice name (English)"), max_length=80, blank=True)
     voice_name_pl = models.CharField(_("voice name (Polish)"), max_length=80, blank=True)
+    phone_enabled = models.BooleanField(_("phone enabled"), default=False)
+    phone_greeting_en = models.TextField(_("phone greeting (English)"), blank=True)
+    phone_greeting_pl = models.TextField(_("phone greeting (Polish)"), blank=True)
+    phone_consent_message_en = models.TextField(_("phone AI disclosure (English)"), blank=True)
+    phone_consent_message_pl = models.TextField(_("phone AI disclosure (Polish)"), blank=True)
+    phone_max_seconds = models.PositiveSmallIntegerField(
+        _("max phone call seconds"), default=900, validators=[MinValueValidator(60), MaxValueValidator(3600)]
+    )
+    phone_transfer_number = models.CharField(_("phone transfer number"), max_length=40, blank=True)
+    phone_silence_timeout_seconds = models.PositiveSmallIntegerField(
+        _("phone silence timeout (seconds)"),
+        default=20,
+        validators=[MinValueValidator(5), MaxValueValidator(120)],
+    )
 
     class Meta:
         verbose_name = _("agent settings")
@@ -142,6 +156,13 @@ class AgentSettings(TimeStampedModel):
     def prompt_for(self, language: str) -> str:
         return self.system_prompt_pl if language == "pl" else self.system_prompt_en
 
+    def phone_greeting_for(self, language: str, hotel_name: str) -> str:
+        template = self.phone_greeting_pl if language == "pl" else self.phone_greeting_en
+        return (template or "").format(hotel=hotel_name)
+
+    def phone_consent_for(self, language: str) -> str:
+        return self.phone_consent_message_pl if language == "pl" else self.phone_consent_message_en
+
 
 def _bootstrap_defaults() -> dict:
     from .defaults import build_default_agent_settings
@@ -153,6 +174,7 @@ class Conversation(TimeStampedModel):
     class Channel(models.TextChoices):
         CHAT = "chat", _("Chat")
         VOICE = "voice", _("Voice")
+        PHONE = "phone", _("Phone")
 
     session_key = models.CharField(max_length=64, unique=True, default=new_session_key, editable=False)
     channel = models.CharField(_("channel"), max_length=10, choices=Channel.choices, default=Channel.CHAT)

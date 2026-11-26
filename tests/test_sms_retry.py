@@ -230,6 +230,5 @@ def test_ops_dashboard_shows_sms_retry_queue_and_next_retry(booking, client, mon
     assert "carrier rejected the message" in content
     # failed booking is due in the future, so retry queue count is 0 now but problem row shows next retry
     assert booking.confirmation_sms_next_retry_at is not None
-    assert str(booking.confirmation_sms_next_retry_at.day) in content or str(
-        booking.confirmation_sms_next_retry_at.strftime("%d")
-    ) in content
+    next_retry = timezone.localtime(booking.confirmation_sms_next_retry_at)
+    assert str(next_retry.day) in content or next_retry.strftime("%d") in content

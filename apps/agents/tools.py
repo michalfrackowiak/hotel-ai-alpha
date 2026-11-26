@@ -441,12 +441,23 @@ class ToolExecutor:
         }
 
     def _tool_transfer_to_human(self, reason: str = "") -> dict:
+        reason = (reason or "").strip()
+        transfer_number = ""
+        if self.conversation.channel == Conversation.Channel.PHONE:
+            transfer_number = (getattr(self.settings, "phone_transfer_number", "") or "").strip()
         self.conversation.state["handover_requested"] = {
-            "reason": (reason or "").strip(),
+            "reason": reason,
             "at": timezone.now().isoformat(),
+            "channel": self.conversation.channel,
+            "transfer_number": transfer_number,
         }
         self.conversation.save(update_fields=["state", "updated_at"])
-        return {"ok": True, "handover": True, "reason": (reason or "").strip()}
+        return {
+            "ok": True,
+            "handover": True,
+            "reason": reason,
+            "transfer_number": transfer_number,
+        }
 
     # --------------------------------------------------------------- helpers
     @staticmethod

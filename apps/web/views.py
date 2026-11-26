@@ -82,6 +82,7 @@ from apps.hotel.notifications import (
     send_guest_login_email,
 )
 from apps.hotel.pricing import StayError
+from apps.voice.models import PhoneCall
 
 from .forms import (
     GuestAuthenticationForm,
@@ -900,6 +901,55 @@ def ops_dashboard(request):
         .select_related("room", "room__room_type", "feed")
         .order_by("check_in", "room__number")[:20]
     )
+    phone_calls_today = PhoneCall.objects.filter(created_at__date=today)
+    phone_calls_today_count = phone_calls_today.count()
+    phone_calls_answered_today = phone_calls_today.filter(
+        status__in=[PhoneCall.Status.ANSWERED, PhoneCall.Status.ACTIVE, PhoneCall.Status.ENDED, PhoneCall.Status.TRANSFERRED]
+    ).count()
+    phone_calls_failed_today = phone_calls_today.filter(status=PhoneCall.Status.FAILED).count()
+    phone_answer_rate = (
+        int((phone_calls_answered_today / phone_calls_today_count) * 100)
+        if phone_calls_today_count
+        else 0
+    )
+    durations = [
+        d for d in phone_calls_today.exclude(duration_seconds__isnull=True).values_list("duration_seconds", flat=True)
+        if d is not None
+    ]
+    phone_avg_duration_seconds = int(sum(durations) / len(durations)) if durations else 0
+    today_calls = list(phone_calls_today)
+    phone_estimated_cost_usd = round(
+        sum(float((c.metadata or {}).get("estimated_cost_usd") or 0) for c in today_calls), 4
+    )
+    phone_calls_transferred_today = phone_calls_today.filter(status=PhoneCall.Status.TRANSFERRED).count()
+    phone_drop_rate = (
+        int((phone_calls_failed_today / phone_calls_today_count) * 100)
+        if phone_calls_today_count
+        else 0
+    )
+    total_duration_minutes = sum(durations) / 60 if durations else 0
+    phone_cost_per_minute_usd = (
+        round(phone_estimated_cost_usd / total_duration_minutes, 4) if total_duration_minutes else 0
+    )
+    latency_samples: list[int] = []
+    for c in today_calls:
+        md = c.metadata or {}
+        samples = md.get("turn_latencies_ms")
+        if isinstance(samples, list) and samples:
+            latency_samples.extend(int(v) for v in samples if isinstance(v, (int, float)))
+        else:
+            v = md.get("last_turn_latency_ms")
+            if isinstance(v, (int, float)):
+                latency_samples.append(int(v))
+    latencies = sorted(latency_samples)
+    phone_p50_latency_ms = latencies[len(latencies) // 2] if latencies else 0
+    phone_p95_latency_ms = latencies[max(int(len(latencies) * 0.95) - 1, 0)] if latencies else 0
+    end_reason_counts: dict[str, int] = {}
+    for c in today_calls:
+        reason = str((c.metadata or {}).get("end_reason") or c.status or "unknown")
+        end_reason_counts[reason] = end_reason_counts.get(reason, 0) + 1
+    phone_end_reasons = sorted(end_reason_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:5]
+    recent_phone_calls = PhoneCall.objects.select_related("conversation", "conversation__booking").order_by("-created_at")[:10]
     return render(
         request,
         "web/ops.html",
@@ -941,6 +991,19 @@ def ops_dashboard(request):
             "channel_feed_error_count": channel_feed_errors.count(),
             "channel_conflicts": channel_conflicts,
             "upcoming_blocks": upcoming_blocks,
+            "phone_calls_today_count": phone_calls_today_count,
+            "phone_calls_answered_today": phone_calls_answered_today,
+            "phone_calls_failed_today": phone_calls_failed_today,
+            "phone_calls_transferred_today": phone_calls_transferred_today,
+            "phone_answer_rate": phone_answer_rate,
+            "phone_drop_rate": phone_drop_rate,
+            "phone_avg_duration_seconds": phone_avg_duration_seconds,
+            "phone_estimated_cost_usd": phone_estimated_cost_usd,
+            "phone_cost_per_minute_usd": phone_cost_per_minute_usd,
+            "phone_p50_latency_ms": phone_p50_latency_ms,
+            "phone_p95_latency_ms": phone_p95_latency_ms,
+            "phone_end_reasons": phone_end_reasons,
+            "recent_phone_calls": recent_phone_calls,
         },
     )
 

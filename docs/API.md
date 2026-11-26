@@ -463,6 +463,23 @@ Requires `OPENAI_API_KEY` when the configured STT provider is `openai`.
 
 Returns `audio/mpeg` bytes. Requires `OPENAI_API_KEY` when the configured TTS provider is `openai`.
 
+## Phone calls (staff)
+
+### `POST /api/v1/phone/calls/`
+
+Staff-only. Places an outbound OpenLine call and creates a domain `PhoneCall` + phone `Conversation`.
+
+```json
+{
+  "to_number": "+48123123123",
+  "device_id": "",
+  "reference": "HA-ABC123",
+  "metadata": {}
+}
+```
+
+Returns `201` with `id`, `external_id`, `conversation_id`, `status`, `direction`, `to_number`, `from_number`. Requires `VOICE_PHONE_ENABLED=true`, a configured public WSS stream URL, and OpenLine server credentials.
+
 ## Email delivery webhooks
 
 `POST /api/v1/email/webhooks/<provider>/` accepts bounce, complaint and delivery
@@ -518,6 +535,16 @@ row. A sent attempt is recorded as an `SmsDelivery` row by
 `send_booking_confirmation_sms()`; delivery receipts refine that history. Reply
 history and delivery attempts are visible as read-only records in `/ops/` and
 the admin.
+
+## OpenLine telephony webhooks
+
+`POST /integrations/openline/webhook/` is provided by the vendored `django_openline` app. It verifies OpenLine HMAC signatures (`x-openline-timestamp`, `x-openline-signature`), stores idempotent `WebhookEvent` audit rows, upserts provider `Call` state, and dispatches `webhook_received`/`on_event` handlers.
+
+Hotel Aurora registers phone handlers that map OpenLine call events into domain `PhoneCall` records and phone `Conversation`s. In `webhook_attach` mode, inbound `call.ringing`/`call.new` events can attach the agent media stream by calling OpenLine `POST /v1/calls/{id}/stream` with `VOICE_PUBLIC_WSS_URL` (or the configured public WSS URL).
+
+The media endpoint itself is an ASGI WebSocket, not a REST endpoint:
+
+- `WS /ws/voice/openline/` - accepts OpenLine Twilio-format media streams (`connected`, `start`, `media`, `mark`, `stop`, `clear`). Disabled unless phone voice is enabled; unknown/disabled/over-limit calls are closed.
 
 ## Throttling
 

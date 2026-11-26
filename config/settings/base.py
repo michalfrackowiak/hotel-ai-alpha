@@ -48,6 +48,22 @@ INSTALLED_APPS = [
     "apps.web",
 ]
 
+try:
+    import daphne  # noqa: F401
+
+    INSTALLED_APPS.insert(0, "daphne")
+except Exception:
+    pass
+
+try:
+    import channels  # noqa: F401
+
+    # Insert channels after rest_framework/openline area; position is not critical.
+    if "channels" not in INSTALLED_APPS:
+        INSTALLED_APPS.insert(INSTALLED_APPS.index("rest_framework") + 1, "channels")
+except Exception:
+    pass
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -306,6 +322,37 @@ OPENLINE = {
 # its settings are supplied, so a partial configuration still surfaces warnings.
 if not any((OPENLINE["BASE_URL"], OPENLINE["API_KEY"], OPENLINE["WEBHOOK_SECRET"])):
     SILENCED_SYSTEM_CHECKS = ["openline.W003", "openline.W004"]
+
+# Phone voice integration (OpenLine media bridge). Disabled by default; the
+# feature flag keeps existing chat/browser voice behavior unchanged.
+VOICE_PHONE_ENABLED = env_bool("VOICE_PHONE_ENABLED", False)
+VOICE_PUBLIC_WSS_URL = os.getenv("VOICE_PUBLIC_WSS_URL", "").strip()
+OPENLINE_INCOMING_STREAM_MODE = (
+    os.getenv("OPENLINE_INCOMING_STREAM_MODE", "webhook_attach").strip() or "webhook_attach"
+)
+VOICE_STT_PROVIDER = os.getenv("VOICE_STT_PROVIDER", "openai").strip() or "openai"
+VOICE_TTS_PROVIDER = os.getenv("VOICE_TTS_PROVIDER", "openai").strip() or "openai"
+VOICE_STT_MODEL = os.getenv("VOICE_STT_MODEL", "").strip()
+VOICE_TTS_MODEL = os.getenv("VOICE_TTS_MODEL", "").strip()
+VOICE_TTS_VOICE = os.getenv("VOICE_TTS_VOICE", "").strip()
+VOICE_MAX_CONCURRENT_CALLS = int(os.getenv("VOICE_MAX_CONCURRENT_CALLS", "2"))
+VOICE_MAX_MINUTES_PER_DAY = int(os.getenv("VOICE_MAX_MINUTES_PER_DAY", "120"))
+VOICE_MAX_CALLS_PER_NUMBER_PER_HOUR = int(os.getenv("VOICE_MAX_CALLS_PER_NUMBER_PER_HOUR", "6"))
+VOICE_PHONE_SILENCE_TIMEOUT_SECONDS = int(os.getenv("VOICE_PHONE_SILENCE_TIMEOUT_SECONDS", "20"))
+VOICE_PHONE_MAX_SECONDS = int(os.getenv("VOICE_PHONE_MAX_SECONDS", "900"))
+VOICE_ESTIMATED_COST_PER_MINUTE_USD = float(os.getenv("VOICE_ESTIMATED_COST_PER_MINUTE_USD", "0"))
+VOICE_PHONE_RETENTION_DAYS = int(os.getenv("VOICE_PHONE_RETENTION_DAYS", "30"))
+
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

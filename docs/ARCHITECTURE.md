@@ -34,7 +34,7 @@ The browser talks to the Django app. Chat and voice both create a `Conversation`
 | `apps.api` | DRF serializers, views, URL routing, throttling and the JSON error envelope |
 | `apps.agents` | Provider-agnostic conversation engine, tool definitions/execution, prompts, provider and conversation models |
 | `apps.providers` | LLM connectors (OpenAI, Anthropic, Ollama, demo) behind a shared interface |
-| `apps.voice` | Speech-to-text / text-to-speech provider abstraction and browser client config |
+| `apps.voice` | Browser speech config, STT/TTS providers, OpenLine phone-call domain model/handlers, and the Twilio-format ASGI media bridge |
 | `apps.calendar_sync` | Calendar connections, per-room mappings, event records, fake/Google adapters, sync service |
 | `apps.web` | Public Django templates, the staff operations dashboard and page views |
 
@@ -235,6 +235,16 @@ The system prompt is assembled at request time with runtime context: hotel name,
 
 `GET /api/v1/voice/config/` tells the browser which mode to use, the available languages (`en-US`, `pl-PL`), greeting text and voice names. The voice page reuses the chat session/message endpoints, so business logic is identical across channels.
 
+## Phone voice (OpenLine, v0.11.0 in progress)
+
+Real phone calls are handled as another transport for the same `AgentEngine` and booking tools.
+
+- **Control plane:** the vendored `django_openline` app receives signed webhooks at `/integrations/openline/webhook/`, stores provider `Call`/`WebhookEvent` audit rows, and exposes REST client methods. `apps/voice/telephony.py` maps webhook events idempotently to domain `PhoneCall` records and phone `Conversation`s; `apps/voice/openline_handlers.py` registers `@on_event` handlers and can attach the agent stream in `webhook_attach` mode.
+- **Media plane:** `config/asgi.py` routes `/ws/voice/openline/` to `apps/voice/bridge.py`. The bridge accepts OpenLine's Twilio-format media WebSocket only when the `start` frame includes a valid per-call stream token (from `customParameters.streamToken` or `?token=`). It decodes base64 µ-law 8 kHz frames, performs basic RMS VAD, runs utterance handling in background tasks, transcribes with server STT, runs `AgentEngine.handle_user_message()`, synthesizes TTS, and streams 20 ms µ-law frames back with `mark`/`clear` support for barge-in.
+- **Domain record:** `PhoneCall` (`apps/voice/models.py`) stores provider/external id, direction, status, timestamps, transcript, summary and metadata. It links to `Conversation(Channel.PHONE)`; `django_openline.Call` remains provider audit state.
+- **Safety/ops:** phone is off by default (`VOICE_PHONE_ENABLED` and `AgentSettings.phone_enabled`); attach and bridge admission gate on both. The bridge enforces max duration, silence reprompt/timeout, concurrent-call and daily-minute caps, and best-effort transfer/hangup fallback. Webhook payloads are sanitized before audit storage; `prune_phone_data` redacts old terminal PhoneCall and linked phone Conversation/Message PII. `/ops/` and admin expose read-only phone-call visibility.
+- **Status:** implementation exists on the feature branch with local tests and review hardening; real OpenLine contract/latency/device validation and pilot/legal review are still pending before enabling in production.
+
 ## Calendar sync
 
 The design target is **one Google Calendar per room**.
@@ -274,7 +284,7 @@ Google credentials can come from the connection's `credentials_json` or from `GO
 | `config.settings.prod` | `DEBUG=False`, WhiteNoise compressed manifest storage, optional TLS/HSTS |
 | `config.settings.test` | In-memory SQLite, fast hashing, no throttling, fake calendar, locmem email |
 
-Docker uses `config.settings.prod`. Gunicorn serves the WSGI app; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. The entrypoint runs migrations, creates the database cache table and collects static files. A `scheduler` sidecar runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms` every five minutes. The health endpoint checks the database with `SELECT 1`.
+Docker uses `config.settings.prod`. Daphne serves the ASGI app (`config.asgi:application`) so the web process can handle both HTTP and the OpenLine phone media WebSocket; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. Redis is available in `docker-compose.yml` for phone/media/channel-layer support. The entrypoint runs migrations, creates the database cache table and collects static files. A `scheduler` sidecar runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, and `openline_prune` every five minutes. The health endpoint checks the database with `SELECT 1`.
 
 ### Security posture
 

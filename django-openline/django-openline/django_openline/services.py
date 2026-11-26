@@ -67,3 +67,24 @@ def place_call(
         fields.pop("status", None)
 
     return Call.objects.upsert_from_fields(fields, payload=data if isinstance(data, dict) else None)
+
+
+def attach_stream(call_id, *, url, format=None, parameters=None, client=None):
+    """Attach a live (or ringing) call to an agent WebSocket."""
+    client = client or get_client()
+    return client.attach_stream(
+        call_id,
+        url=url,
+        format=format or openline_settings.DEFAULT_STREAM_FORMAT,
+        parameters=parameters,
+    )
+
+
+def detach_stream(call_id, *, client=None):
+    client = client or get_client()
+    return client.detach_stream(call_id)
+
+
+def get_stream(call_id, *, client=None):
+    client = client or get_client()
+    return client.get_stream(call_id)

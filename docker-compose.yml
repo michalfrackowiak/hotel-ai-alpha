@@ -7,10 +7,14 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     ports:
       - "8000:8000"
     volumes:
       - hotel_data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   scheduler:
@@ -32,5 +36,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: hotel-ai-alpha-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   hotel_data:
+  redis_data:

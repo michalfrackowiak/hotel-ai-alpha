@@ -4,7 +4,7 @@ import json
 import logging
 import uuid
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.module_loading import import_string
 
@@ -45,6 +45,49 @@ def _event_key(payload, raw_body):
     return hashlib.sha256(raw_body).hexdigest()
 
 
+_SENSITIVE_KEYS = {
+    "authorization",
+    "signature",
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "password",
+    "audio",
+    "recording",
+    "recording_url",
+}
+
+
+def _sanitize_payload(value, *, _depth=0):
+    """Best-effort payload sanitization/cap for webhook audit storage."""
+    if _depth > 8:
+        return "[truncated]"
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            key = str(k)
+            if key.lower() in _SENSITIVE_KEYS:
+                if isinstance(v, str):
+                    out[key] = f"[redacted:{len(v)}]"
+                elif isinstance(v, (bytes, bytearray)):
+                    out[key] = f"[redacted:{len(v)}]"
+                elif v is None:
+                    out[key] = None
+                else:
+                    out[key] = "[redacted]"
+            else:
+                out[key] = _sanitize_payload(v, _depth=_depth + 1)
+        return out
+    if isinstance(value, list):
+        if len(value) > 50:
+            return [_sanitize_payload(v, _depth=_depth + 1) for v in value[:50]] + ["[truncated]"]
+        return [_sanitize_payload(v, _depth=_depth + 1) for v in value]
+    if isinstance(value, str) and len(value) > 2048:
+        return value[:2048] + f"...[truncated:{len(value)}]"
+    return value
+
+
 def process_webhook(raw_body):
     """Store a verified delivery, sync its Call, and fire ``webhook_received``.
 
@@ -59,17 +102,23 @@ def process_webhook(raw_body):
         raise ValueError("Request body must be a JSON object.")
 
     event_type = extract_event_type(payload)
+    stored_payload = _sanitize_payload(payload)
     with transaction.atomic():
-        event, created = WebhookEvent.objects.get_or_create(
-            event_key=_event_key(payload, raw_body),
-            defaults={"event_type": event_type[:128], "payload": payload},
-        )
+        try:
+            with transaction.atomic():
+                event, created = WebhookEvent.objects.get_or_create(
+                    event_key=_event_key(payload, raw_body),
+                    defaults={"event_type": event_type[:128], "payload": stored_payload},
+                )
+        except IntegrityError:
+            event = WebhookEvent.objects.get(event_key=_event_key(payload, raw_body))
+            created = False
         if not created:
             return event, False
         fields = extract_call_fields(payload)
         if "openline_id" in fields:
             event.call = Call.objects.upsert_from_fields(
-                fields, payload=payload, event=event_type
+                fields, payload=stored_payload, event=event_type
             )
             event.save(update_fields=["call"])
 

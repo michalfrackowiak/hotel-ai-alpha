@@ -86,6 +86,50 @@
       <span class="ops-card__value">{{ payment_attention_count }}</span>
       <span class="ops-card__label">{% trans "Bookings needing payment" %}</span>
     </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_calls_today_count }}</span>
+      <span class="ops-card__label">{% trans "Phone calls today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_calls_answered_today }}</span>
+      <span class="ops-card__label">{% trans "Answered phone calls today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_calls_failed_today }}</span>
+      <span class="ops-card__label">{% trans "Failed phone calls today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_calls_transferred_today }}</span>
+      <span class="ops-card__label">{% trans "Transferred phone calls today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_answer_rate }}%</span>
+      <span class="ops-card__label">{% trans "Phone answer rate today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_drop_rate }}%</span>
+      <span class="ops-card__label">{% trans "Phone drop rate today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_avg_duration_seconds }}s</span>
+      <span class="ops-card__label">{% trans "Average phone duration today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">${{ phone_estimated_cost_usd }}</span>
+      <span class="ops-card__label">{% trans "Estimated phone cost today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">${{ phone_cost_per_minute_usd }}</span>
+      <span class="ops-card__label">{% trans "Estimated phone cost/min today" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_p50_latency_ms }}ms</span>
+      <span class="ops-card__label">{% trans "Phone turn p50 latency" %}</span>
+    </div>
+    <div class="ops-card">
+      <span class="ops-card__value">{{ phone_p95_latency_ms }}ms</span>
+      <span class="ops-card__label">{% trans "Phone turn p95 latency" %}</span>
+    </div>
   </div>
 
   <section class="ops-section">
@@ -215,6 +259,37 @@
       </table>
     {% else %}
       <p class="ops-empty">{% trans "No booking events yet." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="ops-section">
+    <h2>{% trans "Recent phone calls" %}</h2>
+    {% if phone_end_reasons %}
+      <p class="ops-empty" style="margin-bottom:0.75rem;">
+        {% trans "Today's end reasons:" %}
+        {% for reason, count in phone_end_reasons %}{{ reason }} ({{ count }}){% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+    {% if recent_phone_calls %}
+      <table class="ops-table">
+        <thead><tr><th>{% trans "When" %}</th><th>{% trans "External ID" %}</th><th>{% trans "Direction" %}</th><th>{% trans "Status" %}</th><th>{% trans "From" %}</th><th>{% trans "Booking" %}</th><th>{% trans "Duration" %}</th><th>{% trans "Summary" %}</th></tr></thead>
+        <tbody>
+          {% for call in recent_phone_calls %}
+            <tr>
+              <td>{{ call.created_at|date:"d M H:i" }}</td>
+              <td>{{ call.external_id|truncatechars:24 }}</td>
+              <td>{{ call.get_direction_display }}</td>
+              <td>{{ call.get_status_display }}</td>
+              <td>{{ call.from_number|default:"—" }}</td>
+              <td>{% if call.conversation and call.conversation.booking %}{{ call.conversation.booking.reference }}{% else %}—{% endif %}</td>
+              <td>{% if call.duration_seconds != None %}{{ call.duration_seconds }}s{% else %}—{% endif %}</td>
+              <td>{{ call.summary|default:"—"|truncatechars:80 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="ops-empty">{% trans "No phone calls yet." %}</p>
     {% endif %}
   </section>
 

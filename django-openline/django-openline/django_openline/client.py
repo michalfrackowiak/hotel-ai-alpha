@@ -30,6 +30,9 @@ DEFAULT_ENDPOINTS: Dict[str, tuple] = {
     "call_events": ("GET", "/v1/calls/{call_id}/events"),
     "transcript": ("GET", "/v1/calls/{call_id}/transcript"),
     "list_devices": ("GET", "/v1/devices"),
+    "attach_stream": ("POST", "/v1/calls/{call_id}/stream"),
+    "detach_stream": ("DELETE", "/v1/calls/{call_id}/stream"),
+    "get_stream": ("GET", "/v1/calls/{call_id}/stream"),
 }
 
 _DTMF_RE = re.compile(r"^[0-9A-Da-d*#]+$")
@@ -176,6 +179,25 @@ class OpenLineClient:
 
     def transcript(self, call_id: str) -> Any:
         return self.request("transcript", path_params={"call_id": call_id})
+
+    def attach_stream(
+        self,
+        call_id: str,
+        *,
+        url: str,
+        format: str = "twilio",
+        parameters: Optional[Mapping[str, Any]] = None,
+    ) -> Any:
+        body: Dict[str, Any] = {"url": url, "format": format}
+        if parameters:
+            body["parameters"] = dict(parameters)
+        return self.request("attach_stream", path_params={"call_id": call_id}, json_body=body)
+
+    def detach_stream(self, call_id: str) -> Any:
+        return self.request("detach_stream", path_params={"call_id": call_id})
+
+    def get_stream(self, call_id: str) -> Any:
+        return self.request("get_stream", path_params={"call_id": call_id})
 
     # -- devices -----------------------------------------------------------
 
