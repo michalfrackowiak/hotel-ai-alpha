@@ -15,11 +15,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
+COPY django-openline/django-openline ./django-openline/django-openline
 RUN pip install -r requirements.txt
 
 COPY . .
 
-RUN pip install --no-deps ./django-openline/django-openline
 RUN chmod +x /app/docker/entrypoint.sh /app/docker/scheduler.sh
 
 RUN groupadd --system app \
