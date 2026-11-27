@@ -284,7 +284,7 @@ Google credentials can come from the connection's `credentials_json` or from `GO
 | `config.settings.prod` | `DEBUG=False`, WhiteNoise compressed manifest storage, optional TLS/HSTS |
 | `config.settings.test` | In-memory SQLite, fast hashing, no throttling, fake calendar, locmem email |
 
-Docker uses `config.settings.prod`. Daphne serves the ASGI app (`config.asgi:application`) so the web process can handle both HTTP and the OpenLine phone media WebSocket; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. Redis is available in `docker-compose.yml` for phone/media/channel-layer support. The entrypoint runs migrations, creates the database cache table and collects static files. A `scheduler` sidecar runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, and `openline_prune` every five minutes. The health endpoint checks the database with `SELECT 1`.
+Docker uses `config.settings.prod`. Daphne serves the ASGI app (`config.asgi:application`) so the web process can handle both HTTP and the OpenLine phone media WebSocket; WhiteNoise serves hashed static files. SQLite is stored in the `hotel_data` volume. Redis is available in `docker-compose.yml` for phone/media/channel-layer support. The entrypoint runs migrations, creates the database cache table and collects static files. A `scheduler` sidecar runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, `openline_prune`, and `prune_phone_data --apply` every five minutes (`VOICE_PHONE_RETENTION_DAYS`, default 30, controls phone PII redaction age). The health endpoint checks the database with `SELECT 1`.
 
 ### Security posture
 

@@ -31,9 +31,9 @@ class Handler(BaseHTTPRequestHandler):
         })
         if self.path.startswith("/v1/calls/missing"):
             status, payload = 404, b'{"error":"call not found"}'
-        elif self.path == "/v1/calls/boom/hangup":
+        elif self.path.startswith("/v1/calls/boom/"):
             status, payload = 500, b"<html>oops</html>"
-        elif self.path == "/v1/calls/empty/hangup":
+        elif self.path.startswith("/v1/calls/empty/"):
             status, payload = 204, b""
         elif self.path == "/v1/calls" and self.command == "POST":
             status, payload = 201, b'{"id":"call_123","status":"queued"}'
@@ -45,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    do_GET = do_POST = _handle
+    do_GET = do_POST = do_DELETE = _handle
 
 
 class ClientTests(unittest.TestCase):
@@ -148,6 +148,72 @@ class ClientTests(unittest.TestCase):
         client = OpenLineClient("http://127.0.0.1:1", "k", timeout=2)
         with self.assertRaises(OpenLineConnectionError):
             client.list_devices()
+
+    def test_attach_stream_request_shape(self):
+        out = self.client.attach_stream(
+            "call-123",
+            url="wss://agent.example.com/ws",
+            format="twilio",
+            parameters={"streamToken": "tok_abc"},
+        )
+        self.assertEqual(out, {"ok": True})
+        req = Handler.seen[0]
+        self.assertEqual((req["method"], req["path"]), ("POST", "/v1/calls/call-123/stream"))
+        self.assertEqual(req["auth"], "Bearer key-abc")
+        self.assertEqual(req["ctype"], "application/json")
+        self.assertTrue(req["ua"].startswith("django-openline/"))
+        self.assertEqual(req["body"], {
+            "url": "wss://agent.example.com/ws",
+            "format": "twilio",
+            "parameters": {"streamToken": "tok_abc"},
+        })
+
+    def test_attach_stream_defaults_and_omits_parameters(self):
+        self.client.attach_stream("c1", url="wss://agent.example.com/ws")
+        self.assertEqual(Handler.seen[0]["body"], {
+            "url": "wss://agent.example.com/ws",
+            "format": "twilio",
+        })
+
+    def test_detach_stream_request_shape(self):
+        out = self.client.detach_stream("call-123")
+        self.assertEqual(out, {"ok": True})
+        req = Handler.seen[0]
+        self.assertEqual((req["method"], req["path"], req["body"]), ("DELETE", "/v1/calls/call-123/stream", None))
+        self.assertEqual(req["auth"], "Bearer key-abc")
+
+    def test_get_stream_request_shape(self):
+        out = self.client.get_stream("call-123")
+        self.assertEqual(out, {"ok": True})
+        req = Handler.seen[0]
+        self.assertEqual((req["method"], req["path"], req["body"]), ("GET", "/v1/calls/call-123/stream", None))
+        self.assertEqual(req["auth"], "Bearer key-abc")
+
+    def test_stream_path_params_cannot_escape_the_path(self):
+        self.client.attach_stream("../../admin?x=1", url="wss://agent.example.com/ws")
+        self.client.detach_stream("../../admin?x=1")
+        self.client.get_stream("../../admin?x=1")
+        self.assertEqual(Handler.seen[0]["path"], "/v1/calls/..%2F..%2Fadmin%3Fx%3D1/stream")
+        self.assertEqual(Handler.seen[1]["path"], "/v1/calls/..%2F..%2Fadmin%3Fx%3D1/stream")
+        self.assertEqual(Handler.seen[2]["path"], "/v1/calls/..%2F..%2Fadmin%3Fx%3D1/stream")
+
+    def test_stream_api_error_carries_status_and_message(self):
+        with self.assertRaises(OpenLineAPIError) as ctx:
+            self.client.get_stream("missing")
+        self.assertEqual(ctx.exception.status_code, 404)
+        self.assertEqual(ctx.exception.message, "call not found")
+
+    def test_stream_non_json_error_body_still_raises_api_error(self):
+        with self.assertRaises(OpenLineAPIError) as ctx:
+            self.client.attach_stream("boom", url="wss://agent.example.com/ws")
+        self.assertEqual(ctx.exception.status_code, 500)
+
+        with self.assertRaises(OpenLineAPIError) as ctx:
+            self.client.detach_stream("boom")
+        self.assertEqual(ctx.exception.status_code, 500)
+
+    def test_stream_empty_success_body(self):
+        self.assertEqual(self.client.detach_stream("empty"), {})
 
 
 if __name__ == "__main__":

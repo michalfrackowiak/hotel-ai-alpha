@@ -14,5 +14,6 @@ while true; do
     python manage.py send_booking_sms || echo "send_booking_sms failed; will retry"
     python manage.py sync_channel_feeds --apply || echo "sync_channel_feeds failed; will retry"
     python manage.py openline_prune --days "${OPENLINE_WEBHOOK_RETENTION_DAYS:-30}" || echo "openline_prune failed; will retry"
+    python manage.py prune_phone_data --apply --days "${VOICE_PHONE_RETENTION_DAYS:-30}" || echo "prune_phone_data failed; will retry"
     sleep "$interval"
 done

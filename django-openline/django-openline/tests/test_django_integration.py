@@ -17,7 +17,7 @@ from django.urls import reverse
 
 from django_openline.exceptions import OpenLineError
 from django_openline.models import Call, WebhookEvent
-from django_openline.services import place_call
+from django_openline.services import attach_stream, detach_stream, get_stream, place_call
 from django_openline.signals import on_event, webhook_received
 from django_openline.signing import compute_signature
 
@@ -188,6 +188,39 @@ class ServiceTests(TestCase):
             get_client.return_value.get_call.return_value = {"id": "c1", "status": "ended"}
             call.refresh_from_api()
         self.assertEqual(call.status, "ended")
+
+    def test_attach_stream_delegates_to_client(self):
+        client = mock.Mock()
+        client.attach_stream.return_value = {"ok": True}
+        out = attach_stream("c1", url="wss://agent.example.com/ws", parameters={"k": "v"}, client=client)
+        client.attach_stream.assert_called_once_with(
+            "c1",
+            url="wss://agent.example.com/ws",
+            format="twilio",
+            parameters={"k": "v"},
+        )
+        self.assertEqual(out, {"ok": True})
+
+    def test_attach_stream_uses_default_stream_format_from_settings(self):
+        client = mock.Mock()
+        client.attach_stream.return_value = {"ok": True}
+        with override_settings(OPENLINE={**CONF, "DEFAULT_STREAM_FORMAT": "raw"}):
+            attach_stream("c1", url="wss://agent.example.com/ws", client=client)
+        client.attach_stream.assert_called_once_with(
+            "c1",
+            url="wss://agent.example.com/ws",
+            format="raw",
+            parameters=None,
+        )
+
+    def test_detach_and_get_stream_delegate_to_client(self):
+        client = mock.Mock()
+        client.detach_stream.return_value = {"detached": True}
+        client.get_stream.return_value = {"url": "wss://agent.example.com/ws"}
+        self.assertEqual(detach_stream("c1", client=client), {"detached": True})
+        self.assertEqual(get_stream("c1", client=client), {"url": "wss://agent.example.com/ws"})
+        client.detach_stream.assert_called_once_with("c1")
+        client.get_stream.assert_called_once_with("c1")
 
 
 class PackagingTests(TestCase):

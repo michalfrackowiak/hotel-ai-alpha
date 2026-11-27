@@ -2,7 +2,8 @@
 
 **Status:** planned — v0.11.0 track  
 **Branch:** `feature/v0.11.0-openline-integration`  
-**Last updated:** 2026-11-25 (local audit + feasible hardening/docs updates; Phase 0 real-device validation still pending)
+**Last updated:** 2026-11-27 (vendored OpenLine stream client/service tests added; Phase 0 real-device validation still pending)  
+**Hardening:** commit `426bb00` addressed mark/silence/admission/DTMF-failure review findings in the phone bridge.
 
 This document is the feature roadmap and task plan for answering real phone calls through the vendored `django-openline` app and the existing agent/booking flow. The OpenLine public docs confirm the main contract (signed webhooks, Twilio-format media streams, stream attach on create/answer, incoming stream settings), but Phase 0 still validates the real server, payload shapes, and latency before implementation commits to a runtime.
 
@@ -197,7 +198,7 @@ Each phase ends with the full gate: `pytest`, `manage.py check`, `makemigrations
 
 ### Phase 1 — Telephony control plane (3–4 days)
 
-- [x] Add missing OpenLine client/service methods needed by the plan: `attach_stream`, `detach_stream`, `get_stream` (and settings endpoints only if required by the chosen inbound mode). Vendored-app tests still pending (deferred per current build-first request).
+- [x] Add missing OpenLine client/service methods needed by the plan: `attach_stream`, `detach_stream`, `get_stream` (and settings endpoints only if required by the chosen inbound mode). Vendored stream client/service tests added in `django-openline/django-openline/tests/` (fake local HTTP server covers client method/path/body/auth/param escaping/errors; mocked-client service tests cover delegation/default format).
 - [x] Add `Conversation.Channel.PHONE` and the `PhoneCall` model with migrations. Create `apps/voice/migrations/` package.
 - [x] Implement `apps/voice/telephony.py`: create/update `PhoneCall` and `Conversation` from `django_openline.webhook_received` events, idempotent on `external_id`. Map confirmed OpenLine states/events (`ringing`, `active`, `holding`, `ended`, `rejected`, `failed`, `disconnected`) into the domain lifecycle. Late terminal webhooks do not overwrite `TRANSFERRED`; snapshot extraction includes call id variants; metadata writes avoid no-op churn. (Real payload validation/tests deferred.)
 - [x] Register `@on_event(...)` handlers from `apps/voice/apps.py` `ready()`; keep handlers import-safe and side-effect free at import time.
@@ -243,7 +244,7 @@ Each phase ends with the full gate: `pytest`, `manage.py check`, `makemigrations
 ### Phase 4 — Safety, compliance and operations (3–4 days)
 
 - [x] Add configurable AI disclosure and recording notice in PL/EN; do not record without consent. (Disclosure/greeting fields and defaults added; no audio recording implemented; explicit consent-state flow still minimal.)
-- [x] Add opt-out and do-not-record handling; document retention. (Basic opt-out phrase detection sets `recording_opt_out` metadata and stores `[opt-out]` transcript markers; `prune_phone_data --days N [--apply]` redacts old terminal PhoneCall PII and linked phone Conversation/Message PII (dry-run default, configurable via `VOICE_PHONE_RETENTION_DAYS`, default 30). PROJECT_MEMORY/runbook document behavior; retention period and legal review are still pending before pilot.)
+- [x] Add opt-out and do-not-record handling; document retention. (Basic opt-out phrase detection sets `recording_opt_out` metadata and stores `[opt-out]` transcript markers; `prune_phone_data --days N [--apply]` redacts old terminal PhoneCall PII and linked phone Conversation/Message PII (dry-run default, configurable via `VOICE_PHONE_RETENTION_DAYS`, default 30). The Docker scheduler runs `prune_phone_data --apply --days $VOICE_PHONE_RETENTION_DAYS`. PROJECT_MEMORY/runbook document behavior; retention period and legal review are still pending before pilot.)
 - [x] Redact phone numbers, emails and references from logs; cap `WebhookEvent`/payload retention. (Best-effort PII redaction in key logs, webhook payload sanitization/truncation in vendored storage with sensitive keys redacted regardless of length, and existing `openline_prune` for age-based pruning.)
 - [x] Add per-caller throttling and a concurrent-call cap. (Concurrent-call and per-number hourly cap implemented.)
 - [x] Add daily minute/cost guardrails with an alert before the cap. (Daily minutes cap enforced in bridge; 80% warning logged; cost estimate still deferred.)

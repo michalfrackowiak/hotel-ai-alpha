@@ -100,15 +100,18 @@ What the web container does on boot (`docker/entrypoint.sh`):
 3. collects static files for WhiteNoise;
 4. seeds demo data when `SEED_DEMO_DATA=true` (idempotent);
 5. creates the superuser from `DJANGO_SUPERUSER_*`;
-6. starts gunicorn on port 8000.
+6. starts the web process (Daphne ASGI on port 8000).
 
-A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
+A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, `openline_prune --days $OPENLINE_WEBHOOK_RETENTION_DAYS` (default 30), and `prune_phone_data --apply --days $VOICE_PHONE_RETENTION_DAYS` (default 30). It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
 
 ```cron
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py reconcile_calendars --apply
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_emails
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_sms
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py sync_channel_feeds --apply
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py openline_prune --days 30
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py prune_phone_data --apply --days 30
 ```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
