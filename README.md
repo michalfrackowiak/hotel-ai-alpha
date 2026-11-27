@@ -2,6 +2,8 @@
 
 An alpha of an AI hotel receptionist that takes reservations by **chat, voice or a direct web form**, in **Polish and English**. The assistant talks to guests, checks real availability, quotes VAT-inclusive prices, places a temporary hold, confirms the booking, sends a bilingual confirmation by email or SMS and mirrors it into a per-room Google Calendar.
 
+**Current release: v0.10.1.** The application is built with Django 5.2 and Django REST Framework. Its web pages, REST API, chat and voice interfaces share the same booking and pricing services; the LLM selects from domain tools rather than calculating availability or writing booking state directly. See [Architecture](docs/ARCHITECTURE.md) for the system design.
+
 > **Alpha status.** This is a working demonstration, not a production PMS. Payments and deposits are tracked manually (no direct card processing or automatic capture) and the app is not hardened against hostile internet traffic yet. See [Known limitations](#known-limitations).
 
 ---
@@ -26,6 +28,8 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 - **Booking lookup** at `/booking/` so a guest can find, confirm or cancel a reservation.
 - **Guest account** at `/my-bookings/`: email/password registration with email verification, password reset/change, optional Google sign-in, and a transitional single-use magic-link fallback. Signed-in guests can review bookings linked to their verified account/email and manage profile settings; signed booking links and reference+email/phone lookup remain available.
 - **Per-room calendar sync** through a provider interface: a deterministic fake adapter for demos and a Google Calendar adapter for real calendars.
+- **Channel-manager iCal feeds**: import OTA reservations as per-room blocks and export signed room feeds for external calendars; scheduled imports are supported.
+- **Installable PWA** with a web manifest, install prompt and service worker caching static assets and visited pages.
 - **Calendar reconciliation** (`reconcile_calendars`) that reports and repairs events deleted or edited outside the app.
 - **Provider-agnostic LLM layer**: OpenAI, Anthropic, Ollama/self-hosted, or the bundled offline **Demo policy** that needs no API key. API keys are encrypted at rest.
 - **Django admin** for rooms, pricing rules, clients, bookings, audit events, daily rates, providers, prompts and calendars.
@@ -38,7 +42,7 @@ An alpha of an AI hotel receptionist that takes reservations by **chat, voice or
 
 ## Quick start (local, Windows PowerShell)
 
-Requirements: Python 3.12+ (3.15 was used locally), Git.
+Requirements: Python 3.12 or later, Git.
 
 ```powershell
 python -m venv .venv
@@ -56,13 +60,7 @@ Copy-Item .env.example .env
 
 Open <http://127.0.0.1:8000/>.
 
-The repository's local `.env` (gitignored) already contains a demo superuser:
-
-| Username | Password |
-| --- | --- |
-| `admin` | `AuroraAdmin!2026` |
-
-These credentials are **local demo only**. Change `DJANGO_SUPERUSER_PASSWORD` and `DJANGO_SECRET_KEY` before exposing the app anywhere.
+`bootstrap_superuser` creates the initial staff account from `DJANGO_SUPERUSER_*`. Set a unique local password and a strong `DJANGO_SECRET_KEY` in `.env`; never expose the app with example credentials or development settings.
 
 ### URLs
 
@@ -102,13 +100,14 @@ What the web container does on boot (`docker/entrypoint.sh`):
 5. creates the superuser from `DJANGO_SUPERUSER_*`;
 6. starts gunicorn on port 8000.
 
-A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
+A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms` and `sync_channel_feeds --apply`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
 
 ```cron
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py reconcile_calendars --apply
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_emails
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_sms
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py sync_channel_feeds --apply
 ```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
@@ -273,6 +272,7 @@ The translation scripts exist because GNU gettext is not guaranteed on Windows. 
 | `send_booking_emails` | Retry confirmation emails that are due, honouring exponential backoff (`--force` resends everything) |
 | `send_booking_sms` | Retry confirmation SMS messages that are due, honouring exponential backoff (`--force` resends sent messages) |
 | `sync_calendars` | Sync bookings, retry failures or sync one reference |
+| `sync_channel_feeds` | Import channel-manager iCal feeds; `--apply` writes room blocks |
 | `reconcile_calendars` | Report calendar drift; `--apply` repairs it |
 | `record_payment` | Record a staff payment change (recorded/adjusted/refunded/waived) and append a payment audit event (also available via the staff-only booking payments API) |
 | `rotate_provider_keys` | Re-encrypt provider API keys after an encryption-key rotation |
@@ -321,6 +321,9 @@ docs/             architecture, API, roadmap, branching, release notes
 - [REST API](docs/API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Branching and releases](docs/BRANCHING.md)
+- [Release notes v0.10.1](docs/releases/v0.10.1.md)
+- [Release notes v0.10.0](docs/releases/v0.10.0.md)
+- [Release notes v0.9.0](docs/releases/v0.9.0.md)
 - [Release notes v0.4.0](docs/releases/v0.4.0.md)
 - [Release notes v0.3.0](docs/releases/v0.3.0.md)
 - [Release notes v0.2.0](docs/releases/v0.2.0.md)
