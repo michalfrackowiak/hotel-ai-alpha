@@ -71,6 +71,51 @@ GREETING_PL = (
     "Język polski — pozostań na linii lub napisz wiadomość."
 )
 
+PHONE_GREETING_EN = (
+    "Good day, you've reached {hotel}. I'm Aurora, an AI assistant. "
+    "This call may be handled by AI. For Polish, say Polish. How can I help you with your reservation?"
+)
+PHONE_GREETING_PL = (
+    "Dzień dobry, tu {hotel}. Mówi Aurora, asystentka AI. "
+    "Ta rozmowa może być obsługiwana przez sztuczną inteligencję. For English, say English. "
+    "W czym mogę pomóc przy rezerwacji?"
+)
+
+PHONE_CONSENT_EN = (
+    "This call is handled by an AI assistant. By continuing, you agree to speak with the AI assistant. "
+    "You can ask to speak with a person at any time."
+)
+PHONE_CONSENT_PL = (
+    "Ta rozmowa jest obsługiwana przez asystentkę AI. Kontynuując, zgadzasz się na rozmowę z asystentem AI. "
+    "W każdej chwili możesz poprosić o połączenie z człowiekiem."
+)
+
+PHONE_SYSTEM_PROMPT_EN = """
+PHONE CALL RULES:
+- You are speaking on a live phone call. Keep replies short and natural: one to three sentences.
+- Do not use markdown, bullets, lists, URLs, or formatting.
+- Read dates clearly, for example "the fifth of June twenty twenty six".
+- Read prices clearly, for example "three hundred and twenty euros total for two nights".
+- Spell booking references letter by letter and digit by digit.
+- Confirm important details back to the caller: dates, room type, number of guests, total price, and contact detail.
+- If you need time for a tool, say a short filler like "One moment while I check that."
+- If the caller asks for a person, wants something outside booking, or you cannot complete the request safely, use transfer_to_human.
+- Never ask for payment card details over the phone.
+"""
+
+PHONE_SYSTEM_PROMPT_PL = """
+ZASADY ROZMOWY TELEFONICZNEJ:
+- Rozmawiasz przez telefon na żywo. Odpowiadaj krótko i naturalnie: jedno do trzech zdań.
+- Nie używaj markdownu, punktorów, list, linków ani formatowania.
+- Czytaj daty wyraźnie, na przykład "piątego czerwca dwa tysiące dwudziestego szóstego roku".
+- Czytaj ceny wyraźnie, na przykład "trzysta dwadzieścia euro łącznie za dwie noce".
+- Podawaj numer rezerwacji literując litery i czytając cyfry pojedynczo.
+- Potwierdzaj ważne szczegóły: daty, typ pokoju, liczbę osób, łączną cenę i dane kontaktowe.
+- Jeśli potrzebujesz czasu na narzędzie, powiedz krótko "Chwileczkę, już sprawdzam."
+- Jeśli rozmówca prosi o człowieka, chce omówić sprawę poza rezerwacją albo nie możesz bezpiecznie pomóc, użyj transfer_to_human.
+- Nigdy nie proś o dane karty płatniczej przez telefon.
+"""
+
 FALLBACK_EN = (
     "I'm sorry, I couldn't process that just now. Could you rephrase it, or contact reception "
     "and we'll take care of you?"
@@ -99,4 +144,12 @@ def build_default_agent_settings(provider) -> dict:
         "booking_hold_minutes": 30,
         "voice_stt_provider": "browser",
         "voice_tts_provider": "browser",
+        "phone_enabled": False,
+        "phone_greeting_en": PHONE_GREETING_EN,
+        "phone_greeting_pl": PHONE_GREETING_PL,
+        "phone_consent_message_en": PHONE_CONSENT_EN,
+        "phone_consent_message_pl": PHONE_CONSENT_PL,
+        "phone_max_seconds": 900,
+        "phone_transfer_number": "",
+        "phone_silence_timeout_seconds": 20,
     }

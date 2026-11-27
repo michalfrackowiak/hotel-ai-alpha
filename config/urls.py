@@ -16,6 +16,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("i18n/", include("django.conf.urls.i18n")),
     path("api/v1/", include("apps.api.urls")),
+    path("integrations/openline/webhook/", include("django_openline.urls")),
     path("healthz", web_views.healthz, name="healthz"),
 ]
 

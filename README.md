@@ -100,15 +100,18 @@ What the web container does on boot (`docker/entrypoint.sh`):
 3. collects static files for WhiteNoise;
 4. seeds demo data when `SEED_DEMO_DATA=true` (idempotent);
 5. creates the superuser from `DJANGO_SUPERUSER_*`;
-6. starts gunicorn on port 8000.
+6. starts the web process (Daphne ASGI on port 8000).
 
-A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms`. It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
+A second `scheduler` container waits for the web container to become healthy, then every `HOLD_CLEANUP_INTERVAL_SECONDS` (default 300) runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, `openline_prune --days $OPENLINE_WEBHOOK_RETENTION_DAYS` (default 30), and `prune_phone_data --apply --days $VOICE_PHONE_RETENTION_DAYS` (default 30). It shares the same SQLite volume. On a host without Docker, run the same commands from cron or a systemd timer:
 
 ```cron
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py expire_holds
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py reconcile_calendars --apply
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_emails
 */5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py send_booking_sms
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py sync_channel_feeds --apply
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py openline_prune --days 30
+*/5 * * * * cd /srv/hotel && /srv/hotel/.venv/bin/python manage.py prune_phone_data --apply --days 30
 ```
 
 SQLite lives in the `hotel_data` named volume at `/app/data/db.sqlite3`. The compose file forces `config.settings.prod`; the `.env` file is still used for branding, provider keys and credentials.
@@ -175,6 +178,16 @@ SMS delivery goes through `apps/hotel/sms_providers.py`:
 Set `BOOKING_SMS_ENABLED=false` to turn SMS off entirely. Each booking stores `confirmation_sms_status`, `confirmation_sms_error`, `confirmation_sms_provider_id`, `confirmation_sms_attempts`, `confirmation_sms_last_attempt_at`, `confirmation_sms_next_retry_at` and `confirmation_sms_sent_at`; each attempt is also recorded as an `SmsDelivery` row and provider receipts can refine it to `delivered` or `undelivered`. Failed sends are retried with exponential backoff from the scheduler (`SMS_MAX_ATTEMPTS`, `SMS_RETRY_BASE_SECONDS`, `SMS_RETRY_MAX_SECONDS`), and `/ops/` tracks SMS delivery health, retries and problem deliveries. The admin and `/ops/` show SMS delivery history and inbound replies; the admin offers **Resend confirmation SMS**. SMS failures never roll back a reservation.
 
 To receive delivery receipts and inbound replies, point the provider at `POST /api/v1/sms/webhooks/<provider>/` (for example `twilio`). If `SMS_WEBHOOK_SECRET` is set, the request must include the matching `X-Sms-Webhook-Secret` header. Twilio-shaped callbacks and generic JSON payloads are supported; unknown receipts are acknowledged without breaking the provider.
+
+### OpenLine telephony integration (v0.11.0, feature-flagged)
+
+The vendored **`django-openline`** app connects the project to an existing self-hosted [OpenLine](https://github.com/michalfrackowiak/openline) server, which turns an Android phone's SIM into a programmable phone line. v0.11.0 adds the control plane plus a feature-flagged phone voice bridge: OpenLine webhooks create/update `PhoneCall` domain records, and inbound calls can be attached to the ASGI media endpoint at `/ws/voice/openline/` (Twilio-format audio). The bridge reuses the same `AgentEngine`/booking tools as chat and browser voice; booking writes still go only through `apps/hotel/booking_service.py`.
+
+- **Off by default.** Keep `VOICE_PHONE_ENABLED=false` and `AgentSettings.phone_enabled=false` until Phase 0 real-server validation and pilot hardening are complete.
+- **Control plane:** vendored under `django-openline/`, registered as `django_openline`. Configure `OPENLINE_URL`, `OPENLINE_API_KEY`, `OPENLINE_WEBHOOK_SECRET` (plus optional `OPENLINE_DEFAULT_DEVICE_ID` / `OPENLINE_DEFAULT_STREAM_URL`) in `.env`. Point OpenLine webhooks at `${HOTEL_PUBLIC_URL}/integrations/openline/webhook/`.
+- **Voice bridge:** ASGI endpoint `/ws/voice/openline/` served by Daphne; set `VOICE_PUBLIC_WSS_URL` (or `HOTEL_PUBLIC_URL` for derived WSS) and `OPENLINE_INCOMING_STREAM_MODE=webhook_attach`. Runtime needs Redis/Channels for ASGI; Docker compose includes Redis and runs Daphne.
+- **Operational commands:** `python manage.py migrate`, `python manage.py openline_check`, `django_openline.services.place_call()` / `@on_event(...)`, `openline_prune` for webhook/call retention, `prune_phone_data --days N [--apply]` for dry-run redaction of old terminal PhoneCall PII (defaults to `VOICE_PHONE_RETENTION_DAYS`, default 30; legal review still pending).
+- **Status:** real OpenLine server Phase 0 validation (webhook payloads/signatures, WS handshake/frame shapes, transfer capability, latency) is still pending before pilot.
 
 ---
 

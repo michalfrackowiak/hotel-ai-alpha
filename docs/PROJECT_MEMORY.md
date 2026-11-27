@@ -2,7 +2,7 @@
 
 Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE.md](ARCHITECTURE.md), endpoints in [API.md](API.md), plans in [ROADMAP.md](ROADMAP.md) and the branch/release process in [BRANCHING.md](BRANCHING.md). This file records state, decisions and traps that those documents do not.
 
-**Last updated:** 21 November 2026 - **Version:** v0.10.1 (released) - **Tests:** 391 passing (local gate)
+**Last updated:** 26 November 2026 - **Version:** v0.10.1 (released); v0.11.0 OpenLine phone-voice work in progress on `feature/v0.11.0-openline-integration` (uncommitted) - **Tests:** 453 passed, `ruff` clean, `manage.py check` 1 warning (`openline.W005` dev plain-http), `makemigrations --check --dry-run` clean
 
 ## Current state
 
@@ -28,8 +28,10 @@ Living notes for whoever picks this up next. Architecture lives in [ARCHITECTURE
 - The guest booking and voice pages pass an automated accessibility check (`tests/test_accessibility.py`) and an axe-core audit. The booking form has labelled controls and a labelled rate-plan radiogroup; the voice page announces call status through a live region and hides the avatar from assistive technology.
 - The same check audits the design tokens in `static/css/app.css` for WCAG AA contrast: 4.5:1 for text (including semantic badges and alpha text over the dark hero, call card and footer) and 3:1 for focus rings and control borders.
 - Throttling uses the database cache in production (created by the entrypoint) and an in-memory cache in tests.
-- The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails` and `send_booking_sms` every five minutes.
+- The Docker compose stack includes a `scheduler` sidecar that runs `expire_holds`, `reconcile_calendars --apply`, `send_booking_emails`, `send_booking_sms`, `sync_channel_feeds --apply`, `openline_prune`, and `prune_phone_data --apply` every five minutes.
 - Channel manager (v0.5.1): OTA iCal feeds are imported into per-room `RoomBlock` rows through `ChannelFeed`; availability, creation and modification honour them, and `Booking.clean()` rejects overlapping blocks. A signed `/calendar/<token>.ics` feed exports the hotel's blocking bookings (pending holds as `TENTATIVE`) and manual blocks. Conflicts with local blocking bookings are counted on the feed and surfaced on `/ops/`. The scheduler runs `sync_channel_feeds --apply`.
+- OpenLine telephony integration (optional): the vendored `django-openline` app connects to an external self-hosted OpenLine server (REST client, signed webhook inbox with de-duplication, `Call`/`WebhookEvent` models and admin, `openline_check`/`openline_call`/`openline_prune`). Configure `OPENLINE_URL`, `OPENLINE_API_KEY`, `OPENLINE_WEBHOOK_SECRET` and point OpenLine at `/integrations/openline/webhook/`. Unconfigured installs silence its two "not configured" checks.
+- Phone voice (v0.11.0, in progress): OpenLine webhooks are mapped to domain `PhoneCall` records and phone `Conversation`s (`apps/voice/telephony.py`, `openline_handlers.py`). The ASGI bridge at `/ws/voice/openline/` handles Twilio-format OpenLine media streams with per-call stream-token auth, basic RMS VAD, DTMF, barge-in (`clear`) with active utterance cancellation, background utterance handling, filler prompts, STT->`AgentEngine`->TTS turns, transfer fallback, max-duration/silence/concurrency/daily-minute guardrails, and transcript/summary persistence. Phone is off by default (`VOICE_PHONE_ENABLED`, `AgentSettings.phone_enabled`); fake-media/unit/ASGI tests cover auth, attach gating, webhook idempotency/sanitization, retention redaction (including linked phone Conversation/Message PII), and booking flows, but real OpenLine server contract/latency validation is still pending.
 
 - After confirmation, the agent asks whether the guest wants the confirmation by email or SMS. It can use a known address/number or ask for one, then sends through `send_confirmation_email` or `send_confirmation_sms` (demo and LLM tool path).
 - Demo/provider date parsing accepts natural inputs (e.g. “20th of November”, ranges without year, “from tomorrow for 5 days” / “od jutra na 3 noce”); tool date parsing is tolerant as a safety net.
@@ -126,7 +128,7 @@ docker compose down -v   # reset the demo database
 .\.venv\Scripts\python.exe manage.py send_booking_sms
 .\.venv\Scripts\python.exe manage.py sync_calendars --retry-failed
 .\.venv\Scripts\python.exe manage.py sync_calendars --reference HA-XXXXXX
-..\.venv\Scripts\python.exe manage.py reconcile_calendars
+.\.venv\Scripts\python.exe manage.py reconcile_calendars
 .\.venv\Scripts\python.exe manage.py reconcile_calendars --apply
 .\.venv\Scripts\python.exe manage.py export_bookings --from 2026-01-01 --to 2026-12-31 -o bookings.csv
 .\.venv\Scripts\python.exe manage.py rotate_provider_keys
@@ -180,6 +182,27 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 - **Colour tokens have contrast floors.** `--gold` is decorative; use `--gold-ink` for text on light backgrounds, `--focus-ring` for focus outlines and `--line-strong` for control borders. `tests/test_accessibility.py` fails if a pair drops below 4.5:1 (text) or 3:1 (focus rings and control borders).
 - **Demo provider guest count must survive turns.** `_asked_guests` only looked at the last assistant message, which after a tool call is empty, so a bare-number answer ("2") was forgotten and the agent re-asked guests forever. Recover the count by scanning the full message list for the guest question and the answer that followed it.
 - **Bare "1"/"2" are language choices only at the start.** `detect_language` used to treat any bare "2" as "English", which flipped a Polish conversation to English when the guest answered the guest-count question with "2". Number-based switching is now disabled once the conversation has user messages.
+
+## Phone voice (v0.11.0, in progress)
+
+- **PhoneCall is the domain record; `django_openline.Call` is provider audit.** Link by `external_id`/OpenLine call id; do not duplicate booking logic in webhook handlers.
+- **Phone uses the same AgentEngine/tools.** No channel-specific booking write path; all booking mutations stay in `apps/hotel/booking_service.py`.
+- **OpenLine connects as WS client to our ASGI endpoint.** `/ws/voice/openline/` speaks Twilio-format media (`connected/start/media/mark/stop/clear`); closing the WS hangs up the call. Use detach only when the call should continue.
+- **Phone is off by default.** Both `VOICE_PHONE_ENABLED` and `AgentSettings.phone_enabled` must be enabled; attach and bridge admission reject unknown/disabled/over-limit calls. Inbound attach and bridge admission require `AgentSettings.phone_enabled`, not only the Django setting.
+- **OpenLine media WS requires a per-call stream token.** Outbound placement and webhook-driven inbound attach generate/persist a token in `PhoneCall.metadata["stream_token"]`; the token is passed as Twilio `customParameters.streamToken` and/or `?token=` query param. The bridge rejects missing/invalid tokens and never trusts `start.callSid` alone.
+- **STT/TTS for phone cannot use browser providers.** Phone session uses server-side OpenAI STT/TTS; missing keys degrade to fallback/clean failure, not a stuck call.
+- **Outbound call ordering is provider-first.** `place_outbound_call()` places the OpenLine call before creating the phone `Conversation`; if OpenLine placement fails, no orphan conversation is created.
+- **Terminal phone state is sticky for transfers.** Late/out-of-order terminal OpenLine webhooks must not overwrite `PhoneCall.Status.TRANSFERRED`.
+- **OpenLine webhook audit payloads are sanitized.** Sensitive keys are redacted regardless of length; large strings/lists are truncated before `WebhookEvent.payload` is stored.
+- **Transcript/metadata may contain PII.** Basic controls exist: bridge logs redact phone numbers/emails; caller opt-out phrases (`do not record`/`nie nagrywaj`, etc.) set `PhoneCall.metadata.recording_opt_out` and store `[opt-out]` transcript markers. Raw audio is not logged. `prune_phone_data --days N [--apply]` redacts old terminal `PhoneCall` PII and linked phone `Conversation`/`Message` PII (dry-run default; `VOICE_PHONE_RETENTION_DAYS` configures the default window). Retention period and legal review are still pending before pilot.
+
+### Phone voice runbook (alpha)
+
+- **Enable:** set `VOICE_PHONE_ENABLED=true`, configure `OPENLINE_*`, set `VOICE_PUBLIC_WSS_URL` to a public `wss://.../ws/voice/openline/`, enable `AgentSettings.phone_enabled`, configure STT/TTS keys/models. Restart web.
+- **Disable/rollback:** set `VOICE_PHONE_ENABLED=false` and/or `AgentSettings.phone_enabled=false`, clear OpenLine stream config if needed; restart web. Existing booking/chat/voice web flows remain unchanged.
+- **Test call:** verify `manage.py openline_check` (when configured), place/receive a call, confirm webhook creates `PhoneCall`, stream connects, transcript appears, and booking tools work.
+- **Common failures:** missing WSS URL/keys -> stream attach or STT/TTS fails; OpenLine signature mismatch -> webhook 401; no conversation/disabled flags -> call rejected; repeated STT/LLM/TTS failures -> transfer fallback/hangup.
+- **Retention:** `openline_prune --days N` prunes OpenLine `WebhookEvent`/`Call` audit records (the Docker scheduler uses `OPENLINE_WEBHOOK_RETENTION_DAYS`, default 30). `prune_phone_data --days N [--apply]` redacts transcript/summary/metadata/recording URL/phone numbers on old terminal `PhoneCall` records and linked phone `Conversation`/`Message` PII (dry-run by default; `VOICE_PHONE_RETENTION_DAYS` sets the default, default 30). The Docker scheduler runs `prune_phone_data --apply --days $VOICE_PHONE_RETENTION_DAYS`; you can also run it manually with `--days N [--apply]`. Define retention period and legal policy before pilot.
 
 ## Verification log
 
@@ -288,6 +311,11 @@ Health: `/healthz` and `/api/v1/health/`. Admin: `/admin/`. API root: `/api/v1/`
 | 2026-11-20 | v0.8.0 (release gate) | `ruff check .` | clean |
 | 2026-11-20 | v0.8.0 (release gate) | Docker compose build/up + `/healthz` | image built, web healthy, `/healthz` returned `{"status":"ok"}` |
 | 2026-11-20 | v0.8.0 (release gate) | EN/PL smoke (Docker) | `/`, `/book/`, `/chat/` returned 200 in EN/PL with expected language; API booking create+confirm succeeded in EN (`HA-QEGZLM`) and PL (`HA-EZX967`) |
+| 2026-11-26 | v0.11.0 (phone-voice hardening, uncommitted) | `pytest tests/test_voice_phone.py -q` | 67 passed, 2 warnings |
+| 2026-11-26 | v0.11.0 (phone-voice hardening, uncommitted) | `pytest` (full) | 453 passed, 2 warnings |
+| 2026-11-26 | v0.11.0 (phone-voice hardening, uncommitted) | `manage.py check` | 1 warning: `openline.W005` plain-http `OPENLINE['BASE_URL']` in dev config |
+| 2026-11-26 | v0.11.0 (phone-voice hardening, uncommitted) | `makemigrations --check --dry-run` | no changes detected |
+| 2026-11-26 | v0.11.0 (phone-voice hardening, uncommitted) | `ruff check .` | clean |
 
 Update this table when the release gate is re-run.
 
@@ -302,4 +330,6 @@ Update this table when the release gate is re-run.
 
 v0.10.1 is released (patch: Hotel Aurora branding refresh, Hilton-inspired blue frontend/admin styling, improved voice orb/animation). v0.10.0 delivered core guest self-service (email/password + Google auth, verification/reset/change, profile/settings, unified authenticated `/my-bookings/`, preserved signed/reference+contact/magic-link fallbacks, and hardening).
 
-Next milestone planning is in [docs/ROADMAP.md](ROADMAP.md): **v0.11.0 (proposed)** focuses on platform hardening and commercial readiness (payments/billing evolution, account security hardening, API/integrations/identity, reliability/observability, and product/UX depth). Pick the first v0.11.0 slice deliberately; do not start implementation without confirming scope. Keep the full gate green per slice.
+Next milestone planning is in [docs/ROADMAP.md](ROADMAP.md): **v0.11.0 (proposed)** focuses on platform hardening and commercial readiness (payments/billing evolution, account security hardening, API/integrations/identity, reliability/observability, product/UX depth, and OpenLine phone voice). Pick the first v0.11.0 slice deliberately; do not start implementation without confirming scope. Keep the full gate green per slice.
+
+The OpenLine phone-voice track has its own plan: [docs/OPENLINE_VOICE_ROADMAP.md](OPENLINE_VOICE_ROADMAP.md). Phase 0 contract validation against a real OpenLine server is still required before production enablement. The v0.11.0 phone-voice implementation exists on `feature/v0.11.0-openline-integration` (OpenLine client stream methods, `PhoneCall` domain model, webhook handlers, ASGI media bridge with per-call stream-token auth, phone prompts/session, ops/admin visibility, Docker/ASGI wiring, retention/redaction tooling, and review hardening). Local gates are green (453 passed, ruff clean, `manage.py check` only `openline.W005` in dev plain-http config, no pending migrations), but it must remain behind `VOICE_PHONE_ENABLED=false` / `AgentSettings.phone_enabled=False` until real OpenLine/Android Phase 0 validation, real-call rollback, legal/retention review, and pilot sign-off.

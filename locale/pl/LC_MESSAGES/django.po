@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Hotel Aurora 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-21 17:59+0100\n"
+"POT-Creation-Date: 2026-11-25 23:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -117,6 +117,9 @@ msgstr "Klucz API"
 msgid "Account settings"
 msgstr "Ustawienia konta"
 
+msgid "Active"
+msgstr ""
+
 msgid "Active holds"
 msgstr "Aktywne rezerwacje wstępne"
 
@@ -152,6 +155,12 @@ msgstr "Zap?acona kwota nie mo?e by? ujemna."
 
 msgid "Amount paid must be zero or greater."
 msgstr "Zap?acona kwota musi by? r?wna zero lub wi?ksza."
+
+msgid "Answered"
+msgstr ""
+
+msgid "Answered phone calls today"
+msgstr "Odebrane połączenia telefoniczne dziś"
 
 msgid "Anthropic"
 msgstr "Anthropic"
@@ -208,6 +217,9 @@ msgstr "Aurora pisze"
 msgid "Availability and prices come from the hotel's booking engine, never from guesswork."
 msgstr "Dostępność i ceny pochodzą z silnika rezerwacji hotelu, a nie z domysłów."
 
+msgid "Average phone duration today"
+msgstr "Średni czas połączenia dziś"
+
 msgid "Back to My bookings"
 msgstr "Wróć do Moich rezerwacji"
 
@@ -237,6 +249,9 @@ msgstr "Zarezerwuj pobyt"
 
 msgid "Booked via"
 msgstr "Zarezerwowano przez"
+
+msgid "Booking"
+msgstr ""
 
 #, python-format
 msgid "Booking %(reference)s"
@@ -586,6 +601,9 @@ msgstr "Wymagana zaliczka"
 msgid "Direct booking"
 msgstr "Rezerwacja bezpośrednia"
 
+msgid "Direction"
+msgstr ""
+
 msgid "Dirty"
 msgstr "Brudny"
 
@@ -597,6 +615,9 @@ msgstr "Wyłącz wybranych dostawców"
 
 msgid "Do you have a room for two people?"
 msgstr "Czy macie pokój dla dwóch osób?"
+
+msgid "Duration"
+msgstr ""
 
 msgid "Email"
 msgstr "E-mail"
@@ -639,6 +660,9 @@ msgstr "Zaszyfrowany w bazie danych. Pozostaw puste, aby zachować obecny klucz.
 
 msgid "End call"
 msgstr "Zakończ połączenie"
+
+msgid "Ended"
+msgstr ""
 
 msgid "English"
 msgstr "Angielski"
@@ -686,6 +710,12 @@ msgstr ""
 msgid "Error"
 msgstr "Błąd"
 
+msgid "Estimated phone cost today"
+msgstr "Szacowany koszt telefonu dziś"
+
+msgid "Estimated phone cost/min today"
+msgstr "Szacowany koszt telefonu/min dziś"
+
 msgid "Event"
 msgstr "Zdarzenie"
 
@@ -698,11 +728,17 @@ msgstr "Wygasła"
 msgid "Expired holds to clean up"
 msgstr "Wygasłe rezerwacje wstępne do uprzątnięcia"
 
+msgid "External ID"
+msgstr ""
+
 msgid "Extras"
 msgstr "Dodatki"
 
 msgid "Failed"
 msgstr "Niepowodzenie"
+
+msgid "Failed phone calls today"
+msgstr "Nieudane połączenia telefoniczne dziś"
 
 msgid "Fake (demo/testing)"
 msgstr "Atrapa (demo/testy)"
@@ -900,6 +936,9 @@ msgstr ""
 msgid "Ignored an invalid rate for %(room)s on %(date)s."
 msgstr "Pominięto nieprawidłową stawkę dla %(room)s w dniu %(date)s."
 
+msgid "Inbound"
+msgstr ""
+
 msgid "Inbound SMS replies"
 msgstr "Przychodzące odpowiedzi SMS"
 
@@ -1086,6 +1125,9 @@ msgstr "Brak przychodzących odpowiedzi SMS."
 msgid "No microphone was found or audio capture failed."
 msgstr "Nie znaleziono mikrofonu lub przechwytywanie dźwięku nie powiodło się."
 
+msgid "No phone calls yet."
+msgstr "Brak połączeń telefonicznych."
+
 msgid "No rooms are available for those dates. Try different dates or ask the concierge."
 msgstr "Brak dostępnych pokoi w tych terminach. Spróbuj innych dat lub zapytaj konsjerża."
 
@@ -1133,6 +1175,9 @@ msgstr "Otwórz konsjerża głosowego i po prostu mów. Sprawdzi pokoje, ceny i 
 msgid "OpenAI"
 msgstr "OpenAI"
 
+msgid "OpenLine"
+msgstr ""
+
 msgid "Operations"
 msgstr "Operacje"
 
@@ -1141,6 +1186,9 @@ msgstr "Inny"
 
 msgid "Out of order"
 msgstr "Wyłączony z użytku"
+
+msgid "Outbound"
+msgstr ""
 
 msgid ""
 "Override the hotel deposit policy for this rate plan. Leave blank to inherit the "
@@ -1213,6 +1261,21 @@ msgstr "Procent kwoty ca?kowitej"
 
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Phone answer rate today"
+msgstr "Wskaźnik odebranych połączeń dziś"
+
+msgid "Phone calls today"
+msgstr "Połączenia telefoniczne dziś"
+
+msgid "Phone drop rate today"
+msgstr "Wskaźnik nieodebranych połączeń dziś"
+
+msgid "Phone turn p50 latency"
+msgstr "Opóźnienie tury telefonu p50"
+
+msgid "Phone turn p95 latency"
+msgstr "Opóźnienie tury telefonu p95"
 
 msgid ""
 "Pick your dates, choose a rate and leave your contact details. We will send a "
@@ -1322,6 +1385,9 @@ msgstr "Odebrano"
 msgid "Recent booking events"
 msgstr "Ostatnie zdarzenia rezerwacji"
 
+msgid "Recent phone calls"
+msgstr "Ostatnie połączenia telefoniczne"
+
 msgid "Reception"
 msgstr "Recepcja"
 
@@ -1377,6 +1443,9 @@ msgid "Review the summary, confirm, and receive a booking reference you can look
 msgstr ""
 "Sprawdź podsumowanie, potwierdź i otrzymaj numer rezerwacji, do którego możesz wrócić"
 " w każdej chwili."
+
+msgid "Ringing"
+msgstr ""
 
 msgid "Room"
 msgstr "Pokój"
@@ -1760,6 +1829,9 @@ msgstr "Ten pokój jest zablokowany do %(time)s. Potwierdź w recepcji, aby go z
 msgid "This room type sleeps up to %(capacity)s guests."
 msgstr "Ten typ pokoju mieści do %(capacity)s gości."
 
+msgid "Today's end reasons:"
+msgstr "Dzisiejsze powody zakończenia:"
+
 msgid "Too many attempts. Please try again later."
 msgstr "Zbyt wiele prób. Spróbuj ponownie później."
 
@@ -1775,6 +1847,12 @@ msgstr "Razem (z VAT)"
 #, python-format
 msgid "Total: %(total)s %(currency)s"
 msgstr "Razem: %(total)s %(currency)s"
+
+msgid "Transferred"
+msgstr ""
+
+msgid "Transferred phone calls today"
+msgstr "Przekazane połączenia telefoniczne dziś"
 
 msgid "Try Chrome or Edge, or use chat."
 msgstr "Spróbuj w Chrome lub Edge albo użyj czatu."
@@ -1979,6 +2057,9 @@ msgstr "kwota"
 msgid "amount paid"
 msgstr "zapłacona kwota"
 
+msgid "answered at"
+msgstr ""
+
 msgid "assistant name"
 msgstr "nazwa asystenta"
 
@@ -2174,6 +2255,12 @@ msgstr "Wartość depozytu"
 msgid "description"
 msgstr "opis"
 
+msgid "direction"
+msgstr ""
+
+msgid "duration (seconds)"
+msgstr ""
+
 msgid "email"
 msgstr "e-mail"
 
@@ -2191,6 +2278,9 @@ msgstr "włączony"
 
 msgid "enabled languages"
 msgstr "obsługiwane języki"
+
+msgid "ended at"
+msgstr ""
 
 msgid "error"
 msgstr "błąd"
@@ -2215,6 +2305,9 @@ msgstr "wygasa o"
 
 msgid "external UID"
 msgstr "zewnętrzny UID"
+
+msgid "external call id"
+msgstr ""
 
 msgid "extra settings"
 msgstr "ustawienia dodatkowe"
@@ -2309,6 +2402,9 @@ msgstr "zgoda marketingowa"
 msgid "max output tokens"
 msgstr "maks. tokenów wyjściowych"
 
+msgid "max phone call seconds"
+msgstr ""
+
 msgid "max tool iterations"
 msgstr "maks. iteracji narzędzi"
 
@@ -2320,6 +2416,9 @@ msgstr "wiadomość"
 
 msgid "messages"
 msgstr "wiadomości"
+
+msgid "metadata"
+msgstr ""
 
 msgid "minimum nights"
 msgstr "minimalna liczba nocy"
@@ -2360,6 +2459,33 @@ msgstr "status płatności"
 msgid "phone"
 msgstr "telefon"
 
+msgid "phone AI disclosure (English)"
+msgstr ""
+
+msgid "phone AI disclosure (Polish)"
+msgstr ""
+
+msgid "phone call"
+msgstr ""
+
+msgid "phone calls"
+msgstr ""
+
+msgid "phone enabled"
+msgstr ""
+
+msgid "phone greeting (English)"
+msgstr ""
+
+msgid "phone greeting (Polish)"
+msgstr ""
+
+msgid "phone silence timeout (seconds)"
+msgstr ""
+
+msgid "phone transfer number"
+msgstr ""
+
 msgid "price breakdown"
 msgstr "szczegóły ceny"
 
@@ -2395,6 +2521,9 @@ msgstr "odebrano"
 
 msgid "recipient"
 msgstr "odbiorca"
+
+msgid "recording URL"
+msgstr ""
 
 msgid "reference"
 msgstr "numer"
@@ -2450,6 +2579,9 @@ msgstr "specjalne życzenia"
 msgid "speech-to-text provider"
 msgstr "dostawca zamiany mowy na tekst"
 
+msgid "started at"
+msgstr ""
+
 msgid "state"
 msgstr "stan"
 
@@ -2500,6 +2632,9 @@ msgstr "nazwa narzędzia"
 
 msgid "total price"
 msgstr "cena całkowita"
+
+msgid "transcript"
+msgstr ""
 
 msgid "until"
 msgstr "do"

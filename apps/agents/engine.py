@@ -164,6 +164,10 @@ class AgentEngine:
             context += "Odpowiadaj wyłącznie po polsku.\n"
         else:
             context += "Respond only in English.\n"
+        if self.conversation.channel == Conversation.Channel.PHONE:
+            from .defaults import PHONE_SYSTEM_PROMPT_EN, PHONE_SYSTEM_PROMPT_PL
+
+            context += PHONE_SYSTEM_PROMPT_PL if language == "pl" else PHONE_SYSTEM_PROMPT_EN
         return f"{base_prompt.strip()}{context}"
 
     def _history(self) -> list[ChatMessage]:
@@ -354,10 +358,18 @@ def start_conversation(
         raise AgentUnavailableError("The chat assistant is currently disabled.")
     if channel == Conversation.Channel.VOICE and not settings_obj.voice_enabled:
         raise AgentUnavailableError("The voice assistant is currently disabled.")
+    if channel == Conversation.Channel.PHONE:
+        if not getattr(settings_obj, "phone_enabled", False):
+            raise AgentUnavailableError("The phone assistant is currently disabled.")
+        if not getattr(settings, "VOICE_PHONE_ENABLED", False):
+            raise AgentUnavailableError("The phone assistant is currently disabled.")
 
     language = normalize_language(language)
     conversation = Conversation.objects.create(channel=channel, language=language)
-    greeting = settings_obj.greeting_for(language, settings.HOTEL["name"])
+    if channel == Conversation.Channel.PHONE:
+        greeting = settings_obj.phone_greeting_for(language, settings.HOTEL["name"])
+    else:
+        greeting = settings_obj.greeting_for(language, settings.HOTEL["name"])
     Message.objects.create(
         conversation=conversation,
         role=Message.Role.ASSISTANT,

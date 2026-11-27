@@ -440,6 +440,46 @@ class VoiceSpeakView(APIView):
         return HttpResponse(audio, content_type=content_type)
 
 
+class PhoneCallCreateView(APIView):
+    """Staff-only outbound phone call placement through OpenLine."""
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        from apps.voice.services import PhoneServiceError, place_outbound_call
+
+        to_number = (request.data.get("to_number") or request.data.get("to") or "").strip()
+        device_id = (request.data.get("device_id") or "").strip()
+        reference = (request.data.get("reference") or "").strip()
+        metadata = request.data.get("metadata") if isinstance(request.data.get("metadata"), dict) else {}
+        try:
+            phone_call = place_outbound_call(
+                to_number=to_number, device_id=device_id, reference=reference, metadata=metadata
+            )
+        except PhoneServiceError as exc:
+            status = 400
+            if exc.code in {"phone_disabled", "phone_unavailable", "missing_stream_url"}:
+                status = 503
+            elif exc.code == "openline_error":
+                status = 502
+            raise ApiError(exc.code, exc.message, status_code=status) from exc
+        except Exception as exc:
+            raise ApiError("phone_call_failed", str(exc), status_code=502) from exc
+
+        return Response(
+            {
+                "id": phone_call.pk,
+                "external_id": phone_call.external_id,
+                "conversation_id": phone_call.conversation_id,
+                "status": phone_call.status,
+                "direction": phone_call.direction,
+                "to_number": phone_call.to_number,
+                "from_number": phone_call.from_number,
+            },
+            status=201,
+        )
+
+
 class EmailWebhookView(APIView):
     """Receive bounce/complaint/delivery events from an email provider."""
 

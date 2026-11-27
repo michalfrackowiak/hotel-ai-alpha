@@ -142,6 +142,21 @@ class AgentSettingsAdmin(admin.ModelAdmin):
                 )
             },
         ),
+        (
+            _("Phone"),
+            {
+                "fields": (
+                    "phone_enabled",
+                    "phone_greeting_en",
+                    "phone_greeting_pl",
+                    "phone_consent_message_en",
+                    "phone_consent_message_pl",
+                    "phone_max_seconds",
+                    "phone_transfer_number",
+                    "phone_silence_timeout_seconds",
+                )
+            },
+        ),
         (_("Metadata"), {"fields": ("created_at", "updated_at")}),
     )
 

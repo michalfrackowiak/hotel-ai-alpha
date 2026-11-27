@@ -35,6 +35,7 @@ urlpatterns = [
     path("voice/config/", views.VoiceConfigView.as_view(), name="voice-config"),
     path("voice/transcribe/", views.VoiceTranscribeView.as_view(), name="voice-transcribe"),
     path("voice/speak/", views.VoiceSpeakView.as_view(), name="voice-speak"),
+    path("phone/calls/", views.PhoneCallCreateView.as_view(), name="phone-call-create"),
     path("email/webhooks/<str:provider>/", views.EmailWebhookView.as_view(), name="email-webhook"),
     path("sms/webhooks/<str:provider>/", views.SmsWebhookView.as_view(), name="sms-webhook"),
 ]
